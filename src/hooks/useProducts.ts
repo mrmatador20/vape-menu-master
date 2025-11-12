@@ -9,7 +9,8 @@ export const useProducts = () => {
       const { data, error } = await supabase
         .from('products')
         .select('*')
-        .order('category', { ascending: true });
+        .order('category', { ascending: true })
+        .order('price', { ascending: true });
 
       if (error) throw error;
 
