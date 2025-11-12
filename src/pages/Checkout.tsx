@@ -6,20 +6,23 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import Header from '@/components/Header';
+import { supabase } from '@/integrations/supabase/client';
 
 const Checkout = () => {
   const { items, totalPrice, clearCart } = useCart();
   const navigate = useNavigate();
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   const [formData, setFormData] = useState({
     rua: '',
     numero: '',
     bairro: '',
     cidade: '',
-    paymentMethod: 'pix'
+    paymentMethod: 'pix',
+    changeAmount: ''
   });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -29,7 +32,7 @@ const Checkout = () => {
     });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     // Validação dos campos obrigatórios
@@ -38,13 +41,52 @@ const Checkout = () => {
       return;
     }
 
-    // Simular finalização do pedido
-    toast.success('Pedido realizado com sucesso!', {
-      description: `Pagamento: ${formData.paymentMethod === 'pix' ? 'PIX' : 'Dinheiro'}`
-    });
-    
-    clearCart();
-    navigate('/');
+    setIsSubmitting(true);
+
+    try {
+      // Criar pedido
+      const { data: order, error: orderError } = await supabase
+        .from('orders')
+        .insert({
+          payment_method: formData.paymentMethod,
+          change_amount: formData.changeAmount ? parseFloat(formData.changeAmount) : null,
+          address_street: formData.rua,
+          address_number: formData.numero,
+          address_neighborhood: formData.bairro,
+          address_city: formData.cidade,
+          total_amount: totalPrice,
+        })
+        .select()
+        .single();
+
+      if (orderError) throw orderError;
+
+      // Criar itens do pedido
+      const orderItems = items.map(item => ({
+        order_id: order.id,
+        product_id: item.id,
+        quantity: item.quantity,
+        price: item.price,
+      }));
+
+      const { error: itemsError } = await supabase
+        .from('order_items')
+        .insert(orderItems);
+
+      if (itemsError) throw itemsError;
+
+      toast.success('Pedido realizado com sucesso!', {
+        description: `Pagamento: ${formData.paymentMethod === 'pix' ? 'PIX' : 'Dinheiro'}`
+      });
+      
+      clearCart();
+      navigate('/');
+    } catch (error) {
+      console.error('Erro ao criar pedido:', error);
+      toast.error('Erro ao processar pedido. Tente novamente.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (items.length === 0) {
@@ -143,14 +185,38 @@ const Checkout = () => {
                       </Label>
                     </div>
                   </RadioGroup>
+                  
+                  {formData.paymentMethod === 'dinheiro' && (
+                    <div className="space-y-2 pt-2">
+                      <Label htmlFor="changeAmount" className="text-foreground">Troco para quanto?</Label>
+                      <Input
+                        id="changeAmount"
+                        name="changeAmount"
+                        type="number"
+                        step="0.01"
+                        value={formData.changeAmount}
+                        onChange={handleInputChange}
+                        className="bg-background border-border text-foreground"
+                        placeholder="Ex: 100.00"
+                      />
+                    </div>
+                  )}
                 </div>
 
                 <Button
                   type="submit"
                   className="w-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-glow"
                   size="lg"
+                  disabled={isSubmitting}
                 >
-                  Confirmar Pedido
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Processando...
+                    </>
+                  ) : (
+                    'Confirmar Pedido'
+                  )}
                 </Button>
               </form>
             </Card>
