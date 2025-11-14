@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '@/context/CartContext';
 import { Button } from '@/components/ui/button';
@@ -15,6 +15,7 @@ const Checkout = () => {
   const { items, totalPrice, clearCart } = useCart();
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
   
   const [formData, setFormData] = useState({
     rua: '',
@@ -24,6 +25,28 @@ const Checkout = () => {
     paymentMethod: 'pix',
     changeAmount: ''
   });
+
+  useEffect(() => {
+    // Check if user is authenticated
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session) {
+        toast.error('Você precisa estar logado para fazer um pedido');
+        navigate('/auth');
+      } else {
+        setUserId(session.user.id);
+      }
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!session) {
+        navigate('/auth');
+      } else {
+        setUserId(session.user.id);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [navigate]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
@@ -44,10 +67,17 @@ const Checkout = () => {
     setIsSubmitting(true);
 
     try {
+      if (!userId) {
+        toast.error('Erro de autenticação. Por favor, faça login novamente.');
+        navigate('/auth');
+        return;
+      }
+
       // Criar pedido
       const { data: order, error: orderError } = await supabase
         .from('orders')
         .insert({
+          user_id: userId,
           payment_method: formData.paymentMethod,
           change_amount: formData.changeAmount ? parseFloat(formData.changeAmount) : null,
           address_street: formData.rua,
