@@ -75,12 +75,40 @@ const Checkout = () => {
 
       if (itemsError) throw itemsError;
 
+      // Preparar mensagem para WhatsApp
+      const itemsList = items
+        .map(item => `• ${item.quantity}x ${item.name} - R$ ${(item.price * item.quantity).toFixed(2)}`)
+        .join('\n');
+
+      const paymentInfo = formData.paymentMethod === 'pix' 
+        ? 'PIX' 
+        : `Dinheiro (Troco para R$ ${formData.changeAmount || '0,00'})`;
+
+      const message = `🛒 *NOVO PEDIDO*
+
+📦 *Produtos:*
+${itemsList}
+
+💰 *Total: R$ ${totalPrice.toFixed(2)}*
+
+📍 *Endereço de Entrega:*
+${formData.rua}, ${formData.numero}
+${formData.bairro} - ${formData.cidade}
+
+💳 *Forma de Pagamento:*
+${paymentInfo}`;
+
+      const whatsappNumber = '5583996694806';
+      const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
+
       toast.success('Pedido realizado com sucesso!', {
-        description: `Pagamento: ${formData.paymentMethod === 'pix' ? 'PIX' : 'Dinheiro'}`
+        description: 'Redirecionando para WhatsApp...'
       });
       
       clearCart();
-      navigate('/');
+      
+      // Redirecionar para WhatsApp
+      window.location.href = whatsappUrl;
     } catch (error) {
       console.error('Erro ao criar pedido:', error);
       toast.error('Erro ao processar pedido. Tente novamente.');
