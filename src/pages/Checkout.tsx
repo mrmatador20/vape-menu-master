@@ -101,14 +101,13 @@ ${paymentInfo}`;
       const whatsappNumber = '5583996694806';
       const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
 
-      clearCart();
-      
       toast.success('Pedido realizado com sucesso!', {
         description: 'Redirecionando para WhatsApp...'
       });
       
-      // Aguardar um momento para o toast aparecer, depois redirecionar
+      // Limpar carrinho e redirecionar
       setTimeout(() => {
+        clearCart();
         window.location.href = whatsappUrl;
       }, 500);
     } catch (error) {
