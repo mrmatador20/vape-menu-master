@@ -101,28 +101,16 @@ ${paymentInfo}`;
       const whatsappNumber = '5583996694806';
       const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
 
-      toast.success('Pedido realizado com sucesso!', {
-        description: 'Abrindo WhatsApp...'
-      });
-      
       clearCart();
       
-      // Abrir WhatsApp em nova aba
-      const whatsappWindow = window.open(whatsappUrl, '_blank');
+      toast.success('Pedido realizado com sucesso!', {
+        description: 'Redirecionando para WhatsApp...'
+      });
       
-      // Se o navegador bloqueou, mostrar mensagem alternativa
-      if (!whatsappWindow) {
-        toast.info('Clique no botão para abrir o WhatsApp', {
-          description: 'Pop-ups podem estar bloqueados',
-          action: {
-            label: 'Abrir WhatsApp',
-            onClick: () => window.open(whatsappUrl, '_blank'),
-          },
-        });
-      }
-      
-      // Redirecionar para home após 1 segundo
-      setTimeout(() => navigate('/'), 1000);
+      // Aguardar um momento para o toast aparecer, depois redirecionar
+      setTimeout(() => {
+        window.location.href = whatsappUrl;
+      }, 500);
     } catch (error) {
       console.error('Erro ao criar pedido:', error);
       toast.error('Erro ao processar pedido. Tente novamente.');
