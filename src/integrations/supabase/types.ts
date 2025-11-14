@@ -68,6 +68,7 @@ export type Database = {
           payment_method: string
           status: string
           total_amount: number
+          user_id: string | null
         }
         Insert: {
           address_city: string
@@ -80,6 +81,7 @@ export type Database = {
           payment_method: string
           status?: string
           total_amount: number
+          user_id?: string | null
         }
         Update: {
           address_city?: string
@@ -92,6 +94,7 @@ export type Database = {
           payment_method?: string
           status?: string
           total_amount?: number
+          user_id?: string | null
         }
         Relationships: []
       }
