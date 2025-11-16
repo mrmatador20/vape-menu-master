@@ -10,6 +10,17 @@ import { ArrowLeft, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import Header from '@/components/Header';
 import { supabase } from '@/integrations/supabase/client';
+import { z } from 'zod';
+
+// Zod validation schema for checkout form
+const checkoutSchema = z.object({
+  rua: z.string().trim().min(1, 'Rua é obrigatória').max(100, 'Rua deve ter no máximo 100 caracteres'),
+  numero: z.string().trim().min(1, 'Número é obrigatório').max(20, 'Número deve ter no máximo 20 caracteres'),
+  bairro: z.string().trim().min(1, 'Bairro é obrigatório').max(100, 'Bairro deve ter no máximo 100 caracteres'),
+  cidade: z.string().trim().min(1, 'Cidade é obrigatória').max(100, 'Cidade deve ter no máximo 100 caracteres'),
+  paymentMethod: z.enum(['pix', 'dinheiro']),
+  changeAmount: z.string().optional(),
+});
 
 const Checkout = () => {
   const { items, totalPrice, clearCart } = useCart();
@@ -58,9 +69,12 @@ const Checkout = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validação dos campos obrigatórios
-    if (!formData.rua || !formData.numero || !formData.bairro || !formData.cidade) {
-      toast.error('Por favor, preencha todos os campos de endereço');
+    // Validate form data using Zod
+    const validationResult = checkoutSchema.safeParse(formData);
+    
+    if (!validationResult.success) {
+      const firstError = validationResult.error.errors[0];
+      toast.error(firstError.message);
       return;
     }
 
@@ -73,41 +87,46 @@ const Checkout = () => {
         return;
       }
 
-      // Criar pedido
-      const { data: order, error: orderError } = await supabase
-        .from('orders')
-        .insert({
-          user_id: userId,
-          payment_method: formData.paymentMethod,
-          change_amount: formData.changeAmount ? parseFloat(formData.changeAmount) : null,
-          address_street: formData.rua,
-          address_number: formData.numero,
-          address_neighborhood: formData.bairro,
-          address_city: formData.cidade,
-          total_amount: totalPrice,
-        })
-        .select()
-        .single();
+      // Get the current session for authentication
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        toast.error('Sessão expirada. Por favor, faça login novamente.');
+        navigate('/auth');
+        return;
+      }
 
-      if (orderError) throw orderError;
+      // Call secure edge function that validates prices server-side
+      const { data, error } = await supabase.functions.invoke('create-order', {
+        body: {
+          items: items.map(item => ({
+            id: item.id,
+            quantity: item.quantity,
+          })),
+          address: {
+            street: validationResult.data.rua,
+            number: validationResult.data.numero,
+            neighborhood: validationResult.data.bairro,
+            city: validationResult.data.cidade,
+          },
+          paymentMethod: validationResult.data.paymentMethod,
+          changeAmount: validationResult.data.changeAmount,
+        },
+      });
 
-      // Criar itens do pedido
-      const orderItems = items.map(item => ({
-        order_id: order.id,
-        product_id: item.id,
-        quantity: item.quantity,
-        price: item.price,
-      }));
+      if (error) {
+        toast.error('Erro ao processar pedido. Tente novamente.');
+        return;
+      }
 
-      const { error: itemsError } = await supabase
-        .from('order_items')
-        .insert(orderItems);
+      if (!data.success) {
+        toast.error(data.error || 'Erro ao processar pedido.');
+        return;
+      }
 
-      if (itemsError) throw itemsError;
-
-      // Preparar mensagem para WhatsApp
-      const itemsList = items
-        .map(item => `• ${item.quantity}x ${item.name} - R$ ${(item.price * item.quantity).toFixed(2)}`)
+      // Prepare WhatsApp message with server-validated data
+      const itemsList = data.order.items
+        .map((item: any) => `• ${item.quantity}x ${item.name} - R$ ${(item.price * item.quantity).toFixed(2)}`)
         .join('\n');
 
       const paymentInfo = formData.paymentMethod === 'pix' 
@@ -119,7 +138,7 @@ const Checkout = () => {
 📦 *Produtos:*
 ${itemsList}
 
-💰 *Total: R$ ${totalPrice.toFixed(2)}*
+💰 *Total: R$ ${data.order.total.toFixed(2)}*
 
 📍 *Endereço de Entrega:*
 ${formData.rua}, ${formData.numero}
@@ -135,13 +154,12 @@ ${paymentInfo}`;
         description: 'Redirecionando para WhatsApp...'
       });
       
-      // Limpar carrinho e redirecionar
+      // Clear cart and redirect
       setTimeout(() => {
         clearCart();
         window.location.href = whatsappUrl;
       }, 500);
     } catch (error) {
-      console.error('Erro ao cria pedido:', error);
       toast.error('Erro ao processar pedido. Tente novamente.');
     } finally {
       setIsSubmitting(false);
