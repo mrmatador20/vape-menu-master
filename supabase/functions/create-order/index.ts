@@ -21,6 +21,7 @@ interface OrderRequest {
   };
   paymentMethod: string;
   changeAmount?: string;
+  discountCode?: string;  // Adicionando o código de desconto
 }
 
 serve(async (req) => {
@@ -105,6 +106,43 @@ serve(async (req) => {
 
     console.log('Server-calculated total:', totalAmount);
 
+    // Apply discount if code is provided
+    let discountAmount = 0;
+
+    if (orderData.discountCode) {
+      // Fetch discount from Supabase
+      const { data: discount, error: discountError } = await supabaseClient
+        .from('discounts')
+        .select('value, type, valid_until, is_permanent')
+        .eq('code', orderData.discountCode)
+        .eq('is_active', true)
+        .single();
+
+      if (discountError || !discount) {
+        return new Response(
+          JSON.stringify({ error: 'Invalid or expired discount code' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Check if discount is valid (for non-permanent discounts)
+      if (!discount.is_permanent && discount.valid_until && new Date(discount.valid_until) < new Date()) {
+        return new Response(
+          JSON.stringify({ error: 'Discount code expired' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Apply discount
+      if (discount.type === 'percent') {
+        discountAmount = (totalAmount * discount.value) / 100;
+      } else {
+        discountAmount = discount.value;
+      }
+    }
+
+    const finalAmount = totalAmount - discountAmount;
+
     // Create the order with server-side validated data
     const { data: order, error: orderError } = await supabaseClient
       .from('orders')
@@ -116,7 +154,7 @@ serve(async (req) => {
         address_number: orderData.address.number,
         address_neighborhood: orderData.address.neighborhood,
         address_city: orderData.address.city,
-        total_amount: totalAmount,
+        total_amount: finalAmount,
       })
       .select()
       .single();
@@ -157,7 +195,7 @@ serve(async (req) => {
         success: true,
         order: {
           id: order.id,
-          total: totalAmount,
+          total: finalAmount,
           items: validatedItems,
         }
       }),

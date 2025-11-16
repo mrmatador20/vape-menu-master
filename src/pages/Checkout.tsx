@@ -19,6 +19,7 @@ const checkoutSchema = z.object({
   cidade: z.string().trim().min(1, 'Cidade é obrigatória').max(100, 'Cidade deve ter no máximo 100 caracteres'),
   paymentMethod: z.enum(['pix', 'dinheiro']),
   changeAmount: z.string().optional(),
+  discountCode: z.string().optional(), // Campo para o código de desconto
 });
 
 const Checkout = () => {
@@ -26,14 +27,16 @@ const Checkout = () => {
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
-  
+  const [discountAmount, setDiscountAmount] = useState<number>(0); // Armazena o valor do desconto
+
   const [formData, setFormData] = useState({
     rua: '',
     numero: '',
     bairro: '',
     cidade: '',
     paymentMethod: 'pix',
-    changeAmount: ''
+    changeAmount: '',
+    discountCode: '', // Campo para código de desconto
   });
 
   useEffect(() => {
@@ -64,6 +67,41 @@ const Checkout = () => {
 
   const handlePaymentChange = (value: string) => {
     setFormData(prev => ({ ...prev, paymentMethod: value }));
+  };
+
+  const applyDiscount = async (e: React.MouseEvent) => {
+    e.preventDefault(); // Evita que o botão submeta o formulário e redirecione para o WhatsApp.
+
+    if (!formData.discountCode) {
+      toast.error('Insira um código de desconto');
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from('discounts')
+      .select('value, type, valid_until')
+      .eq('code', formData.discountCode)
+      .eq('is_active', true)
+      .single();  // Garantir que o desconto é único
+
+    if (error || !data) {
+      toast.error('Código de desconto inválido ou expirado');
+      return;
+    }
+
+    // Verifica se o desconto é válido
+    if (data.valid_until && new Date(data.valid_until) < new Date()) {
+      toast.error('Código de desconto expirado');
+      return;
+    }
+
+    // Aplicar o desconto dependendo do tipo
+    const discount = data.type === 'percent'
+      ? totalPrice * (data.value / 100)
+      : data.value;
+
+    setDiscountAmount(discount);  // Salva o desconto no estado
+    toast.success('Desconto aplicado com sucesso!');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -107,6 +145,7 @@ const Checkout = () => {
           },
           paymentMethod: validatedData.paymentMethod,
           changeAmount: validatedData.changeAmount,
+          totalPrice: totalPrice - discountAmount, // Aplica o desconto ao total
         }
       });
 
@@ -233,6 +272,26 @@ const Checkout = () => {
                 />
               </div>
 
+              {/* Campo de código de desconto */}
+              <div>
+                <Label htmlFor="discountCode">Código de Desconto</Label>
+                <Input
+                  id="discountCode"
+                  name="discountCode"
+                  value={formData.discountCode}
+                  onChange={handleInputChange}
+                  placeholder="Digite o código"
+                  disabled={isSubmitting}
+                />
+                <Button 
+                  onClick={applyDiscount}
+                  className="mt-2"
+                  disabled={isSubmitting}
+                >
+                  Aplicar Desconto
+                </Button>
+              </div>
+
               <div className="space-y-2">
                 <Label>Forma de Pagamento</Label>
                 <RadioGroup
@@ -289,16 +348,32 @@ const Checkout = () => {
             <div className="space-y-4">
               {items.map((item) => (
                 <div key={item.id} className="flex justify-between">
-                  <span>
-                    {item.quantity}x {item.name}
+                  <span className="line-through text-muted-foreground">
+                    R$ {(item.price * item.quantity).toFixed(2)}
                   </span>
-                  <span>R$ {(item.price * item.quantity).toFixed(2)}</span>
+                  <span className="font-bold">
+                    R$ {((item.price * item.quantity) - discountAmount).toFixed(2)}
+                  </span>
                 </div>
               ))}
+
               <div className="border-t pt-4">
                 <div className="flex justify-between font-bold text-lg">
                   <span>Total</span>
                   <span>R$ {totalPrice.toFixed(2)}</span>
+                </div>
+
+                {/* Exibir desconto */}
+                {discountAmount > 0 && (
+                  <div className="flex justify-between font-bold text-lg text-red-500">
+                    <span>Desconto</span>
+                    <span>- R$ {discountAmount.toFixed(2)}</span>
+                  </div>
+                )}
+
+                <div className="flex justify-between font-bold text-xl">
+                  <span>Total com Desconto</span>
+                  <span>R$ {(totalPrice - discountAmount).toFixed(2)}</span>
                 </div>
               </div>
             </div>

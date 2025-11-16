@@ -47,10 +47,33 @@ CREATE TABLE public.order_items (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- Criação da tabela de descontos
+create table public.discounts (
+  id serial primary key,                            -- Identificador único do desconto
+  code varchar(100) not null unique,               -- Código do desconto (ex: "DESCONTO10")
+  value decimal not null,                          -- Valor do desconto
+  type varchar(10) check (type in ('fixed', 'percent')) not null, -- Tipo de desconto: 'fixed' ou 'percent'
+  description text,                                -- Descrição do desconto
+  valid_until timestamp,                           -- Data e hora até quando o desconto é válido
+  is_active boolean default true,                  -- Se o desconto está ativo
+  is_permanent boolean default false,              -- Se o desconto é permanente (aplicado sempre)
+  created_at timestamp default current_timestamp,  -- Data de criação do desconto
+  updated_at timestamp default current_timestamp   -- Data de atualização do desconto
+);
+
+-- Exemplo de Inserção de Desconto Permanente
+insert into public.discounts (code, value, type, description, is_permanent, is_active)
+values ('DESCONTO_PERMANENTE', 15, 'percent', 'Desconto permanente de 15% para todos os produtos', true, true);
+
+-- Exemplo de Inserção de Desconto com Código (válido até uma data específica)
+insert into public.discounts (code, value, type, description, valid_until, is_permanent, is_active)
+values ('DESCONTO10', 10, 'percent', 'Desconto de 10% até 31 de dezembro', '2025-12-31 23:59:59', false, true);
+
 -- Habilitar RLS nas tabelas
 ALTER TABLE public.products ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.orders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.order_items ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.discounts ENABLE ROW LEVEL SECURITY;
 
 -- Políticas RLS - produtos são públicos (todos podem ver)
 CREATE POLICY "Produtos são públicos"
@@ -75,7 +98,13 @@ CREATE POLICY "Qualquer um pode ver itens de pedido"
   ON public.order_items FOR SELECT
   USING (true);
 
+-- Políticas RLS - descontos são públicos (todos podem consultar)
+CREATE POLICY "Descontos são públicos"
+  ON public.discounts FOR SELECT
+  USING (true);
+
 -- Criar índices para melhor performance
 CREATE INDEX idx_products_category ON public.products(category);
 CREATE INDEX idx_order_items_order_id ON public.order_items(order_id);
 CREATE INDEX idx_order_items_product_id ON public.order_items(product_id);
+CREATE INDEX idx_discounts_code ON public.discounts(code);
