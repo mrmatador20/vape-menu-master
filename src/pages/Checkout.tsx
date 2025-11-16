@@ -141,7 +141,7 @@ ${paymentInfo}`;
         window.location.href = whatsappUrl;
       }, 500);
     } catch (error) {
-      console.error('Erro ao criar pedido:', error);
+      console.error('Erro ao cria pedido:', error);
       toast.error('Erro ao processar pedido. Tente novamente.');
     } finally {
       setIsSubmitting(false);
