@@ -1,0 +1,174 @@
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.81.1";
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+interface OrderItem {
+  id: string;
+  quantity: number;
+}
+
+interface OrderRequest {
+  items: OrderItem[];
+  address: {
+    street: string;
+    number: string;
+    neighborhood: string;
+    city: string;
+  };
+  paymentMethod: string;
+  changeAmount?: string;
+}
+
+serve(async (req) => {
+  // Handle CORS preflight requests
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
+
+    // Get the authenticated user
+    const authHeader = req.headers.get('Authorization')!;
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(token);
+
+    if (authError || !user) {
+      console.error('Authentication error:', authError);
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const orderData: OrderRequest = await req.json();
+    
+    console.log('Processing order for user:', user.id);
+
+    // Fetch current product prices from database
+    const productIds = orderData.items.map(item => item.id);
+    const { data: products, error: productsError } = await supabaseClient
+      .from('products')
+      .select('id, price, name, stock')
+      .in('id', productIds);
+
+    if (productsError || !products) {
+      console.error('Error fetching products:', productsError);
+      return new Response(
+        JSON.stringify({ error: 'Failed to fetch product information' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Create a map of product prices
+    const productMap = new Map(products.map(p => [p.id, p]));
+
+    // Verify all products exist and calculate server-side total
+    let totalAmount = 0;
+    const validatedItems = [];
+
+    for (const item of orderData.items) {
+      const product = productMap.get(item.id);
+      
+      if (!product) {
+        return new Response(
+          JSON.stringify({ error: `Product ${item.id} not found` }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      if (item.quantity <= 0 || item.quantity > 100) {
+        return new Response(
+          JSON.stringify({ error: 'Invalid quantity' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Use server-side price, never trust client
+      const itemTotal = Number(product.price) * item.quantity;
+      totalAmount += itemTotal;
+
+      validatedItems.push({
+        product_id: item.id,
+        quantity: item.quantity,
+        price: Number(product.price),
+        name: product.name,
+      });
+    }
+
+    console.log('Server-calculated total:', totalAmount);
+
+    // Create the order with server-side validated data
+    const { data: order, error: orderError } = await supabaseClient
+      .from('orders')
+      .insert({
+        user_id: user.id,
+        payment_method: orderData.paymentMethod,
+        change_amount: orderData.changeAmount ? parseFloat(orderData.changeAmount) : null,
+        address_street: orderData.address.street,
+        address_number: orderData.address.number,
+        address_neighborhood: orderData.address.neighborhood,
+        address_city: orderData.address.city,
+        total_amount: totalAmount,
+      })
+      .select()
+      .single();
+
+    if (orderError) {
+      console.error('Error creating order:', orderError);
+      return new Response(
+        JSON.stringify({ error: 'Failed to create order' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Create order items
+    const orderItems = validatedItems.map(item => ({
+      order_id: order.id,
+      product_id: item.product_id,
+      quantity: item.quantity,
+      price: item.price,
+    }));
+
+    const { error: itemsError } = await supabaseClient
+      .from('order_items')
+      .insert(orderItems);
+
+    if (itemsError) {
+      console.error('Error creating order items:', itemsError);
+      return new Response(
+        JSON.stringify({ error: 'Failed to create order items' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log('Order created successfully:', order.id);
+
+    // Return the validated items with names for WhatsApp message
+    return new Response(
+      JSON.stringify({
+        success: true,
+        order: {
+          id: order.id,
+          total: totalAmount,
+          items: validatedItems,
+        }
+      }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+
+  } catch (error) {
+    console.error('Error in create-order function:', error);
+    return new Response(
+      JSON.stringify({ error: 'Internal server error' }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+});

@@ -66,7 +66,6 @@ const Auth = () => {
         toast.success('Login realizado com sucesso!');
       }
     } catch (error: any) {
-      console.error('Auth error:', error);
       toast.error(error.message || 'Erro ao autenticar');
     } finally {
       setIsLoading(false);
