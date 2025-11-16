@@ -23,7 +23,7 @@ const Index = () => {
       <section className="py-20 px-4">
         <div className="container max-w-4xl text-center space-y-6">
           <h1 className="text-5xl md:text-6xl font-bold bg-gradient-primary bg-clip-text text-transparent animate-in fade-in slide-in-from-bottom-4 duration-1000">
-            Bem-vindo à VapeShop
+            Bem-vindo à NebulaVape
           </h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-1000 delay-150">
             Os melhores vapers com entrega rápida. Escolha entre nossas categorias V250 e V400.

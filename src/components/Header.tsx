@@ -17,7 +17,7 @@ const Header = () => {
         >
           <div className="h-8 w-8 rounded-lg bg-gradient-primary" />
           <span className="text-xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-            VapeShop
+            NebulaVape
           </span>
         </div>
         
