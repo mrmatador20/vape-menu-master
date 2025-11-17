@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      discount_usage: {
+        Row: {
+          discount_id: string
+          id: string
+          order_id: string
+          used_at: string
+          user_id: string
+        }
+        Insert: {
+          discount_id: string
+          id?: string
+          order_id: string
+          used_at?: string
+          user_id: string
+        }
+        Update: {
+          discount_id?: string
+          id?: string
+          order_id?: string
+          used_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "discount_usage_discount_id_fkey"
+            columns: ["discount_id"]
+            isOneToOne: false
+            referencedRelation: "discounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "discount_usage_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       discounts: {
         Row: {
           code: string
@@ -22,6 +61,7 @@ export type Database = {
           end_time: string | null
           id: string
           is_active: boolean
+          max_uses: number | null
           schedule_type: string
           start_time: string | null
           type: string
@@ -35,6 +75,7 @@ export type Database = {
           end_time?: string | null
           id?: string
           is_active?: boolean
+          max_uses?: number | null
           schedule_type: string
           start_time?: string | null
           type: string
@@ -48,6 +89,7 @@ export type Database = {
           end_time?: string | null
           id?: string
           is_active?: boolean
+          max_uses?: number | null
           schedule_type?: string
           start_time?: string | null
           type?: string
