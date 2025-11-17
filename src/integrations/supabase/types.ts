@@ -14,9 +14,81 @@ export type Database = {
   }
   public: {
     Tables: {
+      discounts: {
+        Row: {
+          code: string
+          created_at: string
+          day_of_week: number | null
+          end_time: string | null
+          id: string
+          is_active: boolean
+          schedule_type: string
+          start_time: string | null
+          type: string
+          valid_until: string | null
+          value: number
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          day_of_week?: number | null
+          end_time?: string | null
+          id?: string
+          is_active?: boolean
+          schedule_type: string
+          start_time?: string | null
+          type: string
+          valid_until?: string | null
+          value: number
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          day_of_week?: number | null
+          end_time?: string | null
+          id?: string
+          is_active?: boolean
+          schedule_type?: string
+          start_time?: string | null
+          type?: string
+          valid_until?: string | null
+          value?: number
+        }
+        Relationships: []
+      }
+      flavors: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          product_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          product_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          product_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "flavors_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       order_items: {
         Row: {
           created_at: string | null
+          flavor: string | null
           id: string
           order_id: string
           price: number
@@ -25,6 +97,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          flavor?: string | null
           id?: string
           order_id: string
           price: number
@@ -33,6 +106,7 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          flavor?: string | null
           id?: string
           order_id?: string
           price?: number
