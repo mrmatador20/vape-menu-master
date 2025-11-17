@@ -48,7 +48,7 @@ const Cart = () => {
 
           <div className="space-y-4">
             {items.map((item) => (
-              <Card key={item.id} className="p-4 bg-gradient-card border-border">
+              <Card key={`${item.id}-${item.flavor}`} className="p-4 bg-gradient-card border-border">
                 <div className="flex gap-4">
                   <img
                     src={item.image}
@@ -57,13 +57,16 @@ const Cart = () => {
                   />
                   <div className="flex-1 space-y-2">
                     <h3 className="font-semibold text-foreground">{item.name}</h3>
+                    {item.flavor && (
+                      <p className="text-sm text-primary font-medium">Sabor: {item.flavor}</p>
+                    )}
                     <p className="text-sm text-muted-foreground">{item.description}</p>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                          onClick={() => updateQuantity(`${item.id}-${item.flavor || 'no-flavor'}`, item.quantity - 1)}
                           className="h-8 w-8 p-0"
                         >
                           <Minus className="h-4 w-4" />
@@ -74,7 +77,7 @@ const Cart = () => {
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                          onClick={() => updateQuantity(`${item.id}-${item.flavor || 'no-flavor'}`, item.quantity + 1)}
                           className="h-8 w-8 p-0"
                         >
                           <Plus className="h-4 w-4" />
@@ -87,7 +90,7 @@ const Cart = () => {
                         <Button
                           size="sm"
                           variant="ghost"
-                          onClick={() => removeFromCart(item.id)}
+                          onClick={() => removeFromCart(`${item.id}-${item.flavor || 'no-flavor'}`)}
                           className="text-destructive hover:text-destructive/90"
                         >
                           <Trash2 className="h-4 w-4" />

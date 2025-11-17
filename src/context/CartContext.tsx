@@ -12,11 +12,13 @@ export interface Product {
 
 export interface CartItem extends Product {
   quantity: number;
+  flavor?: string;
+  cartItemId?: string; // Identificador único para itens com sabores diferentes
 }
 
 interface CartContextType {
   items: CartItem[];
-  addToCart: (product: Product) => void;
+  addToCart: (product: Product, flavor?: string) => void;
   removeFromCart: (productId: string) => void;
   updateQuantity: (productId: string, quantity: number) => void;
   clearCart: () => void;
@@ -29,38 +31,45 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 export const CartProvider = ({ children }: { children: React.ReactNode }) => {
   const [items, setItems] = useState<CartItem[]>([]);
 
-  const addToCart = (product: Product) => {
+  const addToCart = (product: Product, flavor?: string) => {
     setItems(currentItems => {
-      const existingItem = currentItems.find(item => item.id === product.id);
+      const existingItem = currentItems.find(
+        item => item.id === product.id && item.flavor === flavor
+      );
       
       if (existingItem) {
         toast.success('Quantidade atualizada no carrinho!');
         return currentItems.map(item =>
-          item.id === product.id
+          item.id === product.id && item.flavor === flavor
             ? { ...item, quantity: item.quantity + 1 }
             : item
         );
       }
       
+      const cartItemId = `${product.id}-${flavor || 'no-flavor'}`;
       toast.success('Produto adicionado ao carrinho!');
-      return [...currentItems, { ...product, quantity: 1 }];
+      return [...currentItems, { ...product, quantity: 1, flavor, cartItemId }];
     });
   };
 
-  const removeFromCart = (productId: string) => {
-    setItems(currentItems => currentItems.filter(item => item.id !== productId));
+  const removeFromCart = (cartItemId: string) => {
+    setItems(currentItems => currentItems.filter(item => 
+      `${item.id}-${item.flavor || 'no-flavor'}` !== cartItemId
+    ));
     toast.info('Produto removido do carrinho');
   };
 
-  const updateQuantity = (productId: string, quantity: number) => {
+  const updateQuantity = (cartItemId: string, quantity: number) => {
     if (quantity <= 0) {
-      removeFromCart(productId);
+      removeFromCart(cartItemId);
       return;
     }
     
     setItems(currentItems =>
       currentItems.map(item =>
-        item.id === productId ? { ...item, quantity } : item
+        `${item.id}-${item.flavor || 'no-flavor'}` === cartItemId 
+          ? { ...item, quantity } 
+          : item
       )
     );
   };

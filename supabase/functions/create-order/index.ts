@@ -9,6 +9,7 @@ const corsHeaders = {
 interface OrderItem {
   id: string;
   quantity: number;
+  flavor?: string;
 }
 
 interface OrderRequest {
@@ -101,6 +102,7 @@ serve(async (req) => {
         quantity: item.quantity,
         price: Number(product.price),
         name: product.name,
+        flavor: item.flavor,
       });
     }
 
@@ -173,6 +175,7 @@ serve(async (req) => {
       product_id: item.product_id,
       quantity: item.quantity,
       price: item.price,
+      flavor: item.flavor,
     }));
 
     const { error: itemsError } = await supabaseClient
