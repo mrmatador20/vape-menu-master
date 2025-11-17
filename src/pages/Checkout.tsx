@@ -133,7 +133,8 @@ const Checkout = () => {
         })
         .join('\n');
       
-      const message = `*Novo Pedido #${order.id}*\n\n*Itens:*\n${itemsList}\n\n*Total: R$ ${order.total.toFixed(2)}*\n\n*Endereço de Entrega:*\n${validatedData.rua}, ${validatedData.numero}\n${validatedData.bairro} - ${validatedData.cidade}\n\n*Forma de Pagamento:* ${validatedData.paymentMethod === 'pix' ? 'PIX' : 'Dinheiro'}${validatedData.paymentMethod === 'dinheiro' && validatedData.changeAmount ? `\nTroco para: R$ ${validatedData.changeAmount}` : ''}`;
+      const message = `*Novo Pedido #${order.id}*\n\n*Itens:*\n${itemsList}\n\n*Total: R$ ${order.total.toFixed(2)}*\n\n*Endereço de Entrega:*\n${validatedData.rua}, ${validatedData.numero}\n${validatedData.bairro} - ${validatedData.cidade}\n\n*Forma de Pagamento:* ${validatedData.paymentMethod === 'pix' ? 'PIX' : 'Dinheiro'}${validatedData.paymentMethod === 'dinheiro' && validatedData.changeAmount ? `\nTroco para: R$ ${(parseFloat(validatedData.changeAmount) || 0).toFixed(2)}` : ''}${validatedData.paymentMethod === 'dinheiro' && validatedData.changeAmount ? `\nTroco a ser pago: R$ ${(parseFloat(validatedData.changeAmount) - order.total).toFixed(2)}` : ''}`;
+
 
       const encodedMessage = encodeURIComponent(message);
       const whatsappUrl = `https://wa.me/5583996694806?text=${encodedMessage}`;
@@ -281,7 +282,7 @@ const Checkout = () => {
                   name="discountCode"
                   value={formData.discountCode}
                   onChange={handleInputChange}
-                  placeholder="Ex: NATAL7"
+                  placeholder="Ex: DESCONTO10"
                   disabled={isSubmitting}
                 />
               </div>
