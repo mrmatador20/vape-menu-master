@@ -110,12 +110,13 @@ serve(async (req) => {
 
     // Apply discount if code is provided
     let discountAmount = 0;
+    let discountId: string | null = null;
 
     if (orderData.discountCode) {
       // Fetch discount from Supabase
       const { data: discount, error: discountError } = await supabaseClient
         .from('discounts')
-        .select('value, type, valid_until, is_permanent')
+        .select('id, value, type, valid_until, schedule_type, max_uses')
         .eq('code', orderData.discountCode)
         .eq('is_active', true)
         .single();
@@ -127,10 +128,56 @@ serve(async (req) => {
         );
       }
 
-      // Check if discount is valid (for non-permanent discounts)
-      if (!discount.is_permanent && discount.valid_until && new Date(discount.valid_until) < new Date()) {
+      // Check if discount is valid
+      if (discount.valid_until && new Date(discount.valid_until) < new Date()) {
         return new Response(
           JSON.stringify({ error: 'Discount code expired' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Check usage limit
+      if (discount.max_uses) {
+        const { count, error: countError } = await supabaseClient
+          .from('discount_usage')
+          .select('*', { count: 'exact', head: true })
+          .eq('discount_id', discount.id);
+
+        if (countError) {
+          console.error('Error checking discount usage:', countError);
+          return new Response(
+            JSON.stringify({ error: 'Failed to validate discount code' }),
+            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        if (count && count >= discount.max_uses) {
+          return new Response(
+            JSON.stringify({ error: 'Discount code usage limit reached' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+      }
+
+      // Check if user already used this discount
+      const { data: existingUsage, error: usageError } = await supabaseClient
+        .from('discount_usage')
+        .select('id')
+        .eq('discount_id', discount.id)
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (usageError) {
+        console.error('Error checking user discount usage:', usageError);
+        return new Response(
+          JSON.stringify({ error: 'Failed to validate discount code' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      if (existingUsage) {
+        return new Response(
+          JSON.stringify({ error: 'You have already used this discount code' }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
@@ -141,6 +188,8 @@ serve(async (req) => {
       } else {
         discountAmount = discount.value;
       }
+
+      discountId = discount.id;
     }
 
     const finalAmount = totalAmount - discountAmount;
@@ -191,6 +240,22 @@ serve(async (req) => {
     }
 
     console.log('Order created successfully:', order.id);
+
+    // Track discount usage if discount was applied
+    if (discountId) {
+      const { error: usageError } = await supabaseClient
+        .from('discount_usage')
+        .insert({
+          discount_id: discountId,
+          user_id: user.id,
+          order_id: order.id,
+        });
+
+      if (usageError) {
+        console.error('Error tracking discount usage:', usageError);
+        // Don't fail the order if tracking fails, just log it
+      }
+    }
 
     // Return the validated items with names for WhatsApp message
     return new Response(

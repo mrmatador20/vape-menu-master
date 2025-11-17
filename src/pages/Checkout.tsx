@@ -34,6 +34,7 @@ const Checkout = () => {
     cidade: '',
     paymentMethod: 'pix',
     changeAmount: '',
+    discountCode: '',
   });
 
   useEffect(() => {
@@ -109,7 +110,7 @@ const Checkout = () => {
           },
           paymentMethod: validatedData.paymentMethod,
           changeAmount: validatedData.changeAmount,
-          totalPrice: totalPrice,
+          discountCode: formData.discountCode || undefined,
         }
       });
 
@@ -135,7 +136,7 @@ const Checkout = () => {
       const message = `*Novo Pedido #${order.id}*\n\n*Itens:*\n${itemsList}\n\n*Total: R$ ${order.total.toFixed(2)}*\n\n*Endereço de Entrega:*\n${validatedData.rua}, ${validatedData.numero}\n${validatedData.bairro} - ${validatedData.cidade}\n\n*Forma de Pagamento:* ${validatedData.paymentMethod === 'pix' ? 'PIX' : 'Dinheiro'}${validatedData.paymentMethod === 'dinheiro' && validatedData.changeAmount ? `\nTroco para: R$ ${validatedData.changeAmount}` : ''}`;
 
       const encodedMessage = encodeURIComponent(message);
-      const whatsappUrl = `https://wa.me/5511999999999?text=${encodedMessage}`;
+      const whatsappUrl = `https://wa.me/5583996694806?text=${encodedMessage}`;
 
       clearCart();
       toast.success('Pedido realizado com sucesso!');
@@ -273,7 +274,19 @@ const Checkout = () => {
                 </div>
               )}
 
-              <Button 
+              <div>
+                <Label htmlFor="discountCode">Código de Desconto (opcional)</Label>
+                <Input
+                  id="discountCode"
+                  name="discountCode"
+                  value={formData.discountCode}
+                  onChange={handleInputChange}
+                  placeholder="Ex: NATAL7"
+                  disabled={isSubmitting}
+                />
+              </div>
+
+              <Button
                 type="submit" 
                 className="w-full"
                 disabled={isSubmitting}
