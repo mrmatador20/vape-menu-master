@@ -21,6 +21,7 @@ export const useProducts = () => {
         price: Number(product.price),
         image: product.image,
         description: product.description,
+        stock: product.stock,
       })) as Product[];
     },
   });
