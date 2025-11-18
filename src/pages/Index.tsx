@@ -9,7 +9,7 @@ import { Loader2 } from 'lucide-react';
 const Index = () => {
   const { addToCart } = useCart();
   const { data: products, isLoading } = useProducts();
-  const [activeCategory, setActiveCategory] = useState<'all' | 'v250' | 'v400'>('all');
+  const [activeCategory, setActiveCategory] = useState<'all' | 'v250' | 'v400'| 'Seda'>('all');
 
   const filteredProducts = activeCategory === 'all' 
     ? products || []
@@ -51,7 +51,10 @@ const Index = () => {
                   V400
                 </TabsTrigger>
               </TabsList>
-
+                <TabsTrigger value="Seda" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                  Seda
+                </TabsTrigger>
+              </TabsList>
               <TabsContent value={activeCategory} className="mt-0">
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                   {filteredProducts.map((product) => (
