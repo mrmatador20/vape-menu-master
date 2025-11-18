@@ -1,10 +1,29 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.81.1";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+// Validation schema for input sanitization
+const orderRequestSchema = z.object({
+  items: z.array(z.object({
+    id: z.string().uuid(),
+    quantity: z.number().int().min(1).max(100),
+    flavor: z.string().trim().max(50).optional(),
+  })).min(1),
+  address: z.object({
+    street: z.string().trim().min(1).max(100),
+    number: z.string().trim().min(1).max(20),
+    neighborhood: z.string().trim().min(1).max(100),
+    city: z.string().trim().min(1).max(100),
+  }),
+  paymentMethod: z.enum(['pix', 'dinheiro']),
+  changeAmount: z.string().trim().optional(),
+  discountCode: z.string().trim().max(50).optional(),
+});
 
 interface OrderItem {
   id: string;
@@ -43,16 +62,30 @@ serve(async (req) => {
     const { data: { user }, error: authError } = await supabaseClient.auth.getUser(token);
 
     if (authError || !user) {
-      console.error('Authentication error:', authError);
       return new Response(
         JSON.stringify({ error: 'Unauthorized' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    const orderData: OrderRequest = await req.json();
+    // Parse and validate request body
+    const rawData = await req.json();
     
-    console.log('Processing order for user:', user.id);
+    let orderData: OrderRequest;
+    try {
+      orderData = orderRequestSchema.parse(rawData);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return new Response(
+          JSON.stringify({ 
+            error: 'Invalid request data', 
+            details: error.errors.map(e => `${e.path.join('.')}: ${e.message}`)
+          }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      throw error;
+    }
 
     // Fetch current product prices from database
     const productIds = orderData.items.map(item => item.id);
