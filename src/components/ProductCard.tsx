@@ -26,7 +26,15 @@ const ProductCard = ({ product, onAddToCart }: ProductCardProps) => {
   
   const discountedPrice = calculateDiscountedPrice(product.price, discounts || []);
   const hasDiscount = discountedPrice < product.price;
-  const isOutOfStock = product.stock === 0;
+  
+  // Determine if product is out of stock based on whether it has flavors
+  const isOutOfStock = flavors && flavors.length > 0
+    ? flavors.every(flavor => flavor.stock === 0) // All flavors out of stock
+    : product.stock === 0; // Product stock (no flavors)
+  
+  // Check if selected flavor is out of stock
+  const selectedFlavorData = flavors?.find(f => f.name === selectedFlavor);
+  const isSelectedFlavorOutOfStock = selectedFlavorData ? selectedFlavorData.stock === 0 : false;
 
   const handleAddToCart = () => {
     if (isOutOfStock) {
@@ -35,6 +43,10 @@ const ProductCard = ({ product, onAddToCart }: ProductCardProps) => {
     }
     if (flavors && flavors.length > 0 && !selectedFlavor) {
       toast.error('Por favor, selecione um sabor');
+      return;
+    }
+    if (isSelectedFlavorOutOfStock) {
+      toast.error('Sabor esgotado');
       return;
     }
     onAddToCart(product, selectedFlavor);
@@ -76,8 +88,12 @@ const ProductCard = ({ product, onAddToCart }: ProductCardProps) => {
               </SelectTrigger>
               <SelectContent>
                 {flavors.map((flavor) => (
-                  <SelectItem key={flavor.id} value={flavor.name}>
-                    {flavor.name}
+                  <SelectItem 
+                    key={flavor.id} 
+                    value={flavor.name}
+                    disabled={flavor.stock === 0}
+                  >
+                    {flavor.name} {flavor.stock === 0 ? '(Esgotado)' : ''}
                   </SelectItem>
                 ))}
               </SelectContent>
