@@ -2,12 +2,13 @@
 CREATE TABLE public.products (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT NOT NULL,
-  category TEXT NOT NULL CHECK (category IN ('v250', 'v400', 'seda')),
-  price DECIMAL(10,2) NOT NULL,
+  category TEXT NOT NULL CHECK (category IN ('v250', 'v400', 'seda')),  -- Aceitando 'seda' em minúsculo
+  price DECIMAL(10, 2) NOT NULL,
   image TEXT NOT NULL,
   description TEXT NOT NULL,
   stock INTEGER NOT NULL DEFAULT 0,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- Inserir produtos iniciais
@@ -21,38 +22,40 @@ INSERT INTO public.products (name, category, price, image, description, stock) V
 ('Vaper V400 Mango', 'v400', 134.90, '/placeholder.svg', '400 puffs, manga tropical suave', 100),
 ('Vaper V400 Watermelon', 'v400', 129.90, '/placeholder.svg', '400 puffs, melancia refrescante', 100),
 ('Vaper V400 Mint', 'v400', 134.90, '/placeholder.svg', '400 puffs, menta suave e refrescante', 100),
-('Vaper V400 Lychee', 'v400', 139.90, '/placeholder.svg', '400 puffs, lichia doce e exótica', 100);
+('Vaper V400 Lychee', 'v400', 139.90, '/placeholder.svg', '400 puffs, lichia doce e exótica', 100),
+('Vaper Seda Classic', 'seda', 89.90, '/placeholder.svg', '250 puffs, sabor menta refrescante', 50),
+('Vaper Seda Tropical', 'seda', 89.90, '/placeholder.svg', '250 puffs, mix de frutas tropicais', 50);
 
 -- Criar tabela de pedidos
 CREATE TABLE public.orders (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  payment_method TEXT NOT NULL CHECK (payment_method IN ('pix', 'dinheiro')),
+  payment_method TEXT NOT NULL CHECK (payment_method IN ('pix', 'dinheiro')),  -- Métodos de pagamento válidos
   change_amount DECIMAL(10,2),
   address_street TEXT NOT NULL,
   address_number TEXT NOT NULL,
   address_neighborhood TEXT NOT NULL,
   address_city TEXT NOT NULL,
   total_amount DECIMAL(10,2) NOT NULL,
-  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'confirmed', 'delivered', 'cancelled')),
+  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'confirmed', 'delivered', 'cancelled')),  -- Status do pedido
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- Criar tabela de itens do pedido
 CREATE TABLE public.order_items (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  order_id UUID NOT NULL REFERENCES public.orders(id) ON DELETE CASCADE,
-  product_id UUID NOT NULL REFERENCES public.products(id),
-  quantity INTEGER NOT NULL CHECK (quantity > 0),
-  price DECIMAL(10,2) NOT NULL,
+  order_id UUID NOT NULL REFERENCES public.orders(id) ON DELETE CASCADE,  -- Relacionamento com a tabela de pedidos
+  product_id UUID NOT NULL REFERENCES public.products(id),  -- Relacionamento com a tabela de produtos
+  quantity INTEGER NOT NULL CHECK (quantity > 0),  -- Quantidade do produto
+  price DECIMAL(10,2) NOT NULL,  -- Preço do produto no momento da compra
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Criação da tabela de descontos
+-- Criar tabela de descontos
 create table public.discounts (
   id serial primary key,                            -- Identificador único do desconto
   code varchar(100) not null unique,               -- Código do desconto (ex: "DESCONTO10")
   value decimal not null,                          -- Valor do desconto
-  type varchar(10) check (type in ('fixed', 'percent')) not null, -- Tipo de desconto: 'fixed' ou 'percent'
+  type varchar(10) check (type in ('fixed', 'percent')) not null,  -- Tipo de desconto: 'fixed' ou 'percent'
   description text,                                -- Descrição do desconto
   valid_until timestamp,                           -- Data e hora até quando o desconto é válido
   is_active boolean default true,                  -- Se o desconto está ativo
