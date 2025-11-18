@@ -5,6 +5,8 @@ export interface Flavor {
   id: string;
   product_id: string;
   name: string;
+  stock: number;
+  created_at: string;
 }
 
 export const useFlavors = (productId: string) => {

@@ -31,6 +31,20 @@ interface OrderItem {
   flavor?: string;
 }
 
+interface Product {
+  id: string;
+  price: number;
+  name: string;
+  stock: number;
+}
+
+interface Flavor {
+  id: string;
+  product_id: string;
+  name: string;
+  stock: number;
+}
+
 interface OrderRequest {
   items: OrderItem[];
   address: {
@@ -41,7 +55,7 @@ interface OrderRequest {
   };
   paymentMethod: string;
   changeAmount?: string;
-  discountCode?: string;  // Adicionando o código de desconto
+  discountCode?: string;
 }
 
 serve(async (req) => {
@@ -87,7 +101,7 @@ serve(async (req) => {
       throw error;
     }
 
-    // Fetch current product prices from database
+    // Fetch current product prices and flavors from database
     const productIds = orderData.items.map(item => item.id);
     const { data: products, error: productsError } = await supabaseClient
       .from('products')
@@ -102,8 +116,31 @@ serve(async (req) => {
       );
     }
 
-    // Create a map of product prices
-    const productMap = new Map(products.map(p => [p.id, p]));
+    // Fetch all flavors for products that have them
+    const { data: flavors, error: flavorsError } = await supabaseClient
+      .from('flavors')
+      .select('id, product_id, name, stock')
+      .in('product_id', productIds);
+
+    if (flavorsError) {
+      console.error('Error fetching flavors:', flavorsError);
+      return new Response(
+        JSON.stringify({ error: 'Failed to fetch flavor information' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Create maps for easy lookup
+    const productMap = new Map<string, Product>(products.map(p => [p.id, p]));
+    const flavorsByProduct = new Map<string, Flavor[]>();
+    if (flavors) {
+      flavors.forEach((flavor: Flavor) => {
+        if (!flavorsByProduct.has(flavor.product_id)) {
+          flavorsByProduct.set(flavor.product_id, []);
+        }
+        flavorsByProduct.get(flavor.product_id)!.push(flavor);
+      });
+    }
 
     // Verify all products exist and calculate server-side total
     let totalAmount = 0;
@@ -119,11 +156,30 @@ serve(async (req) => {
         );
       }
 
-      // Check stock availability
-      if (product.stock < item.quantity) {
+      // Check stock availability based on whether the product has flavors
+      const productFlavors = flavorsByProduct.get(item.id) || [];
+      let stockToCheck = product.stock;
+      let stockSource = 'product';
+
+      // If item has a flavor, check flavor stock instead
+      if (item.flavor && productFlavors.length > 0) {
+        const selectedFlavor = productFlavors.find((f: Flavor) => f.name === item.flavor);
+        
+        if (!selectedFlavor) {
+          return new Response(
+            JSON.stringify({ error: `Flavor "${item.flavor}" not found for ${product.name}` }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        
+        stockToCheck = selectedFlavor.stock;
+        stockSource = 'flavor';
+      }
+
+      if (stockToCheck < item.quantity) {
         return new Response(
           JSON.stringify({ 
-            error: `Insufficient stock for ${product.name}. Available: ${product.stock}, Requested: ${item.quantity}` 
+            error: `Insufficient stock for ${product.name}${item.flavor ? ` (${item.flavor})` : ''}. Available: ${stockToCheck}, Requested: ${item.quantity}` 
           }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
@@ -146,6 +202,7 @@ serve(async (req) => {
         price: Number(product.price),
         name: product.name,
         flavor: item.flavor,
+        stockSource, // Track whether to update product or flavor stock
       });
     }
 
@@ -282,19 +339,40 @@ serve(async (req) => {
       );
     }
 
-    // Decrement stock for each product
-    for (const item of orderData.items) {
-      const product = productMap.get(item.id);
-      const newStock = product!.stock - item.quantity;
-      
-      const { error: stockError } = await supabaseClient
-        .from('products')
-        .update({ stock: newStock })
-        .eq('id', item.id);
+    // Decrement stock for each item
+    for (const validatedItem of validatedItems) {
+      if (validatedItem.stockSource === 'flavor' && validatedItem.flavor) {
+        // Decrement flavor stock
+        const productFlavors = flavorsByProduct.get(validatedItem.product_id) || [];
+        const flavorToUpdate = productFlavors.find((f: Flavor) => f.name === validatedItem.flavor);
+        
+        if (flavorToUpdate) {
+          const newStock = flavorToUpdate.stock - validatedItem.quantity;
+          
+          const { error: stockError } = await supabaseClient
+            .from('flavors')
+            .update({ stock: newStock })
+            .eq('id', flavorToUpdate.id);
 
-      if (stockError) {
-        console.error('Error updating stock:', stockError);
-        // Don't fail the order if stock update fails, just log it
+          if (stockError) {
+            console.error('Error updating flavor stock:', stockError);
+          }
+        }
+      } else {
+        // Decrement product stock (no flavor or product has no flavors)
+        const product = productMap.get(validatedItem.product_id);
+        if (product) {
+          const newStock = product.stock - validatedItem.quantity;
+          
+          const { error: stockError } = await supabaseClient
+            .from('products')
+            .update({ stock: newStock })
+            .eq('id', validatedItem.product_id);
+
+          if (stockError) {
+            console.error('Error updating product stock:', stockError);
+          }
+        }
       }
     }
 
