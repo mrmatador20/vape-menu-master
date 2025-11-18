@@ -40,7 +40,7 @@ const Index = () => {
             </div>
           ) : (
             <Tabs value={activeCategory} onValueChange={(v) => setActiveCategory(v as any)} className="w-full">
-              <TabsList className="flex w-full max-w-md mx-auto mb-12 bg-card border border-border space-x-4">
+              <TabsList className="grid w-full max-w-md mx-auto grid-cols-4 mb-12 bg-card border border-border">
                 <TabsTrigger value="all" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
                   Todos
                 </TabsTrigger>
