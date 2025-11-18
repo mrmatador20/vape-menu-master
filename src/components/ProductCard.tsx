@@ -26,8 +26,13 @@ const ProductCard = ({ product, onAddToCart }: ProductCardProps) => {
   
   const discountedPrice = calculateDiscountedPrice(product.price, discounts || []);
   const hasDiscount = discountedPrice < product.price;
+  const isOutOfStock = product.stock === 0;
 
   const handleAddToCart = () => {
+    if (isOutOfStock) {
+      toast.error('Produto esgotado');
+      return;
+    }
     if (flavors && flavors.length > 0 && !selectedFlavor) {
       toast.error('Por favor, selecione um sabor');
       return;
@@ -36,9 +41,14 @@ const ProductCard = ({ product, onAddToCart }: ProductCardProps) => {
   };
 
   return (
-    <Card className="overflow-hidden bg-gradient-card border-border hover:border-primary transition-all duration-300 hover:shadow-glow group">
+    <Card className={`overflow-hidden bg-gradient-card border-border transition-all duration-300 group ${isOutOfStock ? 'opacity-60 grayscale' : 'hover:border-primary hover:shadow-glow'}`}>
       <div className="aspect-square overflow-hidden bg-muted relative">
-        {hasDiscount && (
+        {isOutOfStock && (
+          <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-10">
+            <span className="text-white text-2xl font-bold">ESGOTADO</span>
+          </div>
+        )}
+        {hasDiscount && !isOutOfStock && (
           <div className="absolute top-2 right-2 bg-primary text-primary-foreground px-3 py-1 rounded-full text-sm font-bold z-10">
             {Math.round(((product.price - discountedPrice) / product.price) * 100)}% OFF
           </div>
@@ -46,7 +56,7 @@ const ProductCard = ({ product, onAddToCart }: ProductCardProps) => {
         <img
           src={product.image}
           alt={product.name}
-          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+          className={`w-full h-full object-cover transition-transform duration-300 ${!isOutOfStock && 'group-hover:scale-110'}`}
         />
       </div>
       <div className="p-4 space-y-3">
@@ -57,7 +67,7 @@ const ProductCard = ({ product, onAddToCart }: ProductCardProps) => {
           <p className="text-sm text-muted-foreground mt-1">{product.description}</p>
         </div>
         
-        {flavors && flavors.length > 0 && (
+        {flavors && flavors.length > 0 && !isOutOfStock && (
           <div className="space-y-2">
             <label className="text-sm font-medium">Escolha o sabor:</label>
             <Select value={selectedFlavor} onValueChange={setSelectedFlavor}>
@@ -89,10 +99,11 @@ const ProductCard = ({ product, onAddToCart }: ProductCardProps) => {
           <Button
             onClick={handleAddToCart}
             size="sm"
-            className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-glow"
+            disabled={isOutOfStock}
+            className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-glow disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <ShoppingCart className="h-4 w-4 mr-2" />
-            Adicionar
+            {isOutOfStock ? 'Esgotado' : 'Adicionar'}
           </Button>
         </div>
       </div>

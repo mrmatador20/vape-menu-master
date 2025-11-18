@@ -119,6 +119,16 @@ serve(async (req) => {
         );
       }
 
+      // Check stock availability
+      if (product.stock < item.quantity) {
+        return new Response(
+          JSON.stringify({ 
+            error: `Insufficient stock for ${product.name}. Available: ${product.stock}, Requested: ${item.quantity}` 
+          }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
       if (item.quantity <= 0 || item.quantity > 100) {
         return new Response(
           JSON.stringify({ error: 'Invalid quantity' }),
@@ -272,7 +282,21 @@ serve(async (req) => {
       );
     }
 
-    console.log('Order created successfully:', order.id);
+    // Decrement stock for each product
+    for (const item of orderData.items) {
+      const product = productMap.get(item.id);
+      const newStock = product!.stock - item.quantity;
+      
+      const { error: stockError } = await supabaseClient
+        .from('products')
+        .update({ stock: newStock })
+        .eq('id', item.id);
+
+      if (stockError) {
+        console.error('Error updating stock:', stockError);
+        // Don't fail the order if stock update fails, just log it
+      }
+    }
 
     // Track discount usage if discount was applied
     if (discountId) {
