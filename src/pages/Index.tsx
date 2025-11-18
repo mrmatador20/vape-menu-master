@@ -50,7 +50,6 @@ const Index = () => {
                 <TabsTrigger value="v400" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
                   V400
                 </TabsTrigger>
-              </TabsList>
                 <TabsTrigger value="Seda" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
                   Seda
                 </TabsTrigger>
