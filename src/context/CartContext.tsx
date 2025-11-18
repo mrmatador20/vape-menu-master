@@ -4,7 +4,7 @@ import { toast } from 'sonner';
 export interface Product {
   id: string;
   name: string;
-  category: 'v250' | 'v400' | 'Seda';
+  category: 'v250' | 'v400' | 'seda';
   price: number;
   image: string;
   description: string;

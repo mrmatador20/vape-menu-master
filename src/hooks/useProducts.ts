@@ -17,7 +17,7 @@ export const useProducts = () => {
       return data.map(product => ({
         id: product.id,
         name: product.name,
-        category: product.category as 'v250' | 'v400' | 'Seda',
+        category: product.category as 'v250' | 'v400' | 'seda',
         price: Number(product.price),
         image: product.image,
         description: product.description,
