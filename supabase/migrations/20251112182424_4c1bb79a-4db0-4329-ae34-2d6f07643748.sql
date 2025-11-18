@@ -2,7 +2,7 @@
 CREATE TABLE public.products (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT NOT NULL,
-  category TEXT NOT NULL CHECK (category IN ('v250', 'v400')),
+  category TEXT NOT NULL CHECK (category IN ('v250', 'v400', 'seda')),
   price DECIMAL(10,2) NOT NULL,
   image TEXT NOT NULL,
   description TEXT NOT NULL,
