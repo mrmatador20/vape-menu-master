@@ -3,6 +3,7 @@ import { useCart } from '@/context/CartContext';
 import { useProducts } from '@/hooks/useProducts';
 import ProductCard from '@/components/ProductCard';
 import Header from '@/components/Header';
+import ProductSearch from '@/components/ProductSearch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2 } from 'lucide-react';
 
@@ -10,6 +11,7 @@ const Index = () => {
   const { addToCart } = useCart();
   const { data: products, isLoading } = useProducts();
   const [activeCategory, setActiveCategory] = useState<string>('all');
+  const [searchQuery, setSearchQuery] = useState<string>('');
 
   // Extrai categorias únicas dos produtos
   const categories = useMemo(() => {
@@ -18,9 +20,22 @@ const Index = () => {
     return uniqueCategories.sort();
   }, [products]);
 
-  const filteredProducts = activeCategory === 'all' 
-    ? products || []
-    : products?.filter(p => p.category === activeCategory) || [];
+  // Filtra produtos por categoria e busca
+  const filteredProducts = useMemo(() => {
+    let filtered = activeCategory === 'all' 
+      ? products || []
+      : products?.filter(p => p.category === activeCategory) || [];
+    
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(p => 
+        p.name.toLowerCase().includes(query) || 
+        p.description.toLowerCase().includes(query)
+      );
+    }
+    
+    return filtered;
+  }, [products, activeCategory, searchQuery]);
 
   return (
     <div className="min-h-screen bg-gradient-hero">
@@ -41,6 +56,8 @@ const Index = () => {
       {/* Products Section */}
       <section className="pb-20 px-4">
         <div className="container">
+          <ProductSearch value={searchQuery} onChange={setSearchQuery} />
+          
           {isLoading ? (
             <div className="flex justify-center items-center py-20">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
