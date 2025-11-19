@@ -221,9 +221,9 @@ export type Database = {
         Row: {
           category: string
           created_at: string | null
-          description: string
+          description: string | null
           id: string
-          image: string
+          image: string | null
           name: string
           price: number
           stock: number
@@ -231,9 +231,9 @@ export type Database = {
         Insert: {
           category: string
           created_at?: string | null
-          description: string
+          description?: string | null
           id?: string
-          image: string
+          image?: string | null
           name: string
           price: number
           stock?: number
@@ -241,9 +241,9 @@ export type Database = {
         Update: {
           category?: string
           created_at?: string | null
-          description?: string
+          description?: string | null
           id?: string
-          image?: string
+          image?: string | null
           name?: string
           price?: number
           stock?: number
