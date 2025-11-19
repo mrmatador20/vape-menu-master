@@ -30,6 +30,11 @@ const Index = () => {
     setActiveSubcategory('all');
   };
 
+  // Handle subcategory change
+  const handleSubcategoryChange = (subcategory: string | undefined) => {
+    setActiveSubcategory(subcategory || 'all');
+  };
+
   // Filtra produtos por categoria, subcategoria e busca
   const filteredProducts = useMemo(() => {
     let filtered = activeCategory === 'all' 
@@ -101,6 +106,8 @@ const Index = () => {
                 categories={productCategories}
                 activeCategory={activeCategory}
                 onCategoryChange={handleCategoryChange}
+                activeSubcategory={activeSubcategory}
+                onSubcategoryChange={handleSubcategoryChange}
               />
 
               {/* Products Grid - responsive margin */}
