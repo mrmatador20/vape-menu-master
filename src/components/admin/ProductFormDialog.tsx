@@ -16,13 +16,6 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -30,8 +23,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { Product } from "@/context/CartContext";
-import { useEffect, useMemo } from "react";
-import { useCategories } from "@/hooks/useCategories";
+import { useEffect } from "react";
 
 const productSchema = z.object({
   name: z.string().min(1, "Nome é obrigatório"),
@@ -55,7 +47,6 @@ interface ProductFormDialogProps {
 export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDialogProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { categories: dbCategories } = useCategories();
 
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productSchema),
@@ -70,25 +61,6 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
       description: "",
     },
   });
-
-  // Filtrar categorias principais
-  const mainCategories = useMemo(() => {
-    return dbCategories.filter(cat => !cat.parent_id);
-  }, [dbCategories]);
-
-  // Filtrar subcategorias baseado na categoria selecionada
-  const availableSubcategories = useMemo(() => {
-    const selectedCategory = form.watch('category');
-    if (!selectedCategory) return [];
-    
-    const mainCategory = dbCategories.find(
-      cat => cat.name.toLowerCase() === selectedCategory.toLowerCase() && !cat.parent_id
-    );
-    
-    if (!mainCategory) return [];
-    
-    return dbCategories.filter(cat => cat.parent_id === mainCategory.id);
-  }, [dbCategories, form.watch('category')]);
 
   useEffect(() => {
     if (product) {
@@ -204,27 +176,9 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Categoria</FormLabel>
-                  <Select 
-                    onValueChange={(value) => {
-                      field.onChange(value);
-                      // Limpar subcategoria quando mudar a categoria
-                      form.setValue('subcategory', '');
-                    }} 
-                    value={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione uma categoria" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {mainCategories.map((cat) => (
-                        <SelectItem key={cat.id} value={cat.name}>
-                          {cat.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <FormControl>
+                    <Input placeholder="Ex: v250, v400, seda" {...field} />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
@@ -236,29 +190,9 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Subcategoria (Opcional)</FormLabel>
-                  <Select 
-                    onValueChange={field.onChange} 
-                    value={field.value}
-                    disabled={availableSubcategories.length === 0}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder={
-                          availableSubcategories.length === 0 
-                            ? "Selecione uma categoria primeiro" 
-                            : "Selecione uma subcategoria"
-                        } />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="">Nenhuma (todos os produtos)</SelectItem>
-                      {availableSubcategories.map((subcat) => (
-                        <SelectItem key={subcat.id} value={subcat.name}>
-                          {subcat.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <FormControl>
+                    <Input placeholder="Ex: dichavador, seda, etc." {...field} />
+                  </FormControl>
                   <p className="text-xs text-muted-foreground">
                     Subcategorias aparecem dentro da categoria principal
                   </p>
