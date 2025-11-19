@@ -28,6 +28,7 @@ import { useEffect } from "react";
 const productSchema = z.object({
   name: z.string().min(1, "Nome é obrigatório"),
   category: z.string().min(1, "Categoria é obrigatória"),
+  subcategory: z.string().optional(),
   price: z.string().min(1, "Preço é obrigatório"),
   stock: z.string().min(0, "Estoque é obrigatório"),
   min_stock: z.string().min(0, "Nível mínimo é obrigatório"),
@@ -52,6 +53,7 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
     defaultValues: {
       name: "",
       category: "",
+      subcategory: "",
       price: "",
       stock: "0",
       min_stock: "10",
@@ -65,6 +67,7 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
       form.reset({
         name: product.name,
         category: product.category,
+        subcategory: (product as any).subcategory || "",
         price: product.price.toString(),
         stock: product.stock.toString(),
         min_stock: product.min_stock?.toString() || "10",
@@ -75,6 +78,7 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
       form.reset({
         name: "",
         category: "",
+        subcategory: "",
         price: "",
         stock: "0",
         min_stock: "10",
@@ -88,6 +92,7 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
     const productData = {
       name: values.name,
       category: values.category,
+      subcategory: values.subcategory || null,
       price: parseFloat(values.price),
       stock: parseInt(values.stock),
       min_stock: parseInt(values.min_stock),
@@ -174,6 +179,23 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
                   <FormControl>
                     <Input placeholder="Ex: v250, v400, seda" {...field} />
                   </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="subcategory"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Subcategoria (Opcional)</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Ex: dichavador, seda, etc." {...field} />
+                  </FormControl>
+                  <p className="text-xs text-muted-foreground">
+                    Subcategorias aparecem dentro da categoria principal
+                  </p>
                   <FormMessage />
                 </FormItem>
               )}
