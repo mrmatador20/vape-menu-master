@@ -53,20 +53,17 @@ export function CategorySidebar({
 
   return (
     <>
-      {/* Mobile Toggle Button */}
-      <Button
-        variant={isOpen ? "ghost" : "outline"}
-        size="icon"
-        className={cn(
-          "fixed top-24 left-4 z-50 md:hidden transition-all duration-300",
-          isOpen 
-            ? "h-8 w-8 hover:bg-accent" 
-            : "bg-primary text-primary-foreground shadow-glow hover:bg-primary/90 h-14 w-14"
-        )}
-        onClick={() => setIsOpen(!isOpen)}
-      >
-        {isOpen ? <X className="h-4 w-4" /> : <Menu className="h-5 w-5" />}
-      </Button>
+      {/* Mobile Toggle Button - only show when closed */}
+      {!isOpen && (
+        <Button
+          variant="outline"
+          size="icon"
+          className="fixed top-24 left-4 z-50 md:hidden bg-primary text-primary-foreground shadow-glow hover:bg-primary/90 h-14 w-14"
+          onClick={() => setIsOpen(true)}
+        >
+          <Menu className="h-5 w-5" />
+        </Button>
+      )}
 
       {/* Sidebar */}
       <aside
@@ -82,13 +79,19 @@ export function CategorySidebar({
       >
 
         <div className="p-3">
-          {/* Close button for desktop */}
-          <div className="hidden md:flex justify-end mb-2">
+          {/* Close button for both mobile and desktop */}
+          <div className="flex justify-end mb-2">
             <Button
               variant="ghost"
               size="icon"
               className="h-8 w-8 hover:bg-accent"
-              onClick={() => setIsDesktopOpen(false)}
+              onClick={() => {
+                if (window.innerWidth < 768) {
+                  setIsOpen(false);
+                } else {
+                  setIsDesktopOpen(false);
+                }
+              }}
             >
               <X className="h-4 w-4" />
             </Button>
