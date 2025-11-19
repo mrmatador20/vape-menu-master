@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
+import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, PieChart, Pie, Cell } from "recharts";
 import { Loader2 } from "lucide-react";
 
 export default function AdminStats() {
@@ -90,6 +90,27 @@ export default function AdminStats() {
 
   const COLORS = ['hsl(var(--primary))', 'hsl(var(--secondary))', 'hsl(var(--accent))', 'hsl(var(--muted))'];
 
+  const monthlyChartConfig = {
+    total: {
+      label: "Total",
+      color: "hsl(var(--primary))",
+    },
+  };
+
+  const statusChartConfig = {
+    count: {
+      label: "Pedidos",
+      color: "hsl(var(--primary))",
+    },
+  };
+
+  const productsChartConfig = {
+    quantity: {
+      label: "Quantidade",
+      color: "hsl(var(--primary))",
+    },
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -129,7 +150,7 @@ export default function AdminStats() {
               <CardDescription>Últimos 6 meses</CardDescription>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
+              <ChartContainer config={monthlyChartConfig} className="h-[300px] w-full">
                 <LineChart data={salesData.monthlyData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                   <XAxis dataKey="month" stroke="hsl(var(--foreground))" />
@@ -137,7 +158,7 @@ export default function AdminStats() {
                   <ChartTooltip content={<ChartTooltipContent />} />
                   <Line type="monotone" dataKey="total" stroke="hsl(var(--primary))" strokeWidth={2} />
                 </LineChart>
-              </ResponsiveContainer>
+              </ChartContainer>
             </CardContent>
           </Card>
         )}
@@ -149,7 +170,7 @@ export default function AdminStats() {
               <CardDescription>Distribuição por status</CardDescription>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
+              <ChartContainer config={statusChartConfig} className="h-[300px] w-full">
                 <PieChart>
                   <Pie
                     data={salesData.statusData}
@@ -166,7 +187,7 @@ export default function AdminStats() {
                   </Pie>
                   <ChartTooltip content={<ChartTooltipContent />} />
                 </PieChart>
-              </ResponsiveContainer>
+              </ChartContainer>
             </CardContent>
           </Card>
         )}
@@ -178,7 +199,7 @@ export default function AdminStats() {
               <CardDescription>Top 5 produtos por quantidade</CardDescription>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
+              <ChartContainer config={productsChartConfig} className="h-[300px] w-full">
                 <BarChart data={salesData.topProducts}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                   <XAxis dataKey="name" stroke="hsl(var(--foreground))" />
@@ -186,7 +207,7 @@ export default function AdminStats() {
                   <ChartTooltip content={<ChartTooltipContent />} />
                   <Bar dataKey="quantity" fill="hsl(var(--primary))" />
                 </BarChart>
-              </ResponsiveContainer>
+              </ChartContainer>
             </CardContent>
           </Card>
         )}
