@@ -4,7 +4,8 @@ import { useProducts } from '@/hooks/useProducts';
 import ProductCard from '@/components/ProductCard';
 import Header from '@/components/Header';
 import ProductSearch from '@/components/ProductSearch';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { CategorySidebar } from '@/components/CategorySidebar';
+import { CategoryCarousel } from '@/components/CategoryCarousel';
 import { Loader2 } from 'lucide-react';
 
 const Index = () => {
@@ -53,33 +54,36 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Products Section */}
+      {/* Products Section with Sidebar */}
       <section className="pb-20 px-4">
         <div className="container">
           <ProductSearch value={searchQuery} onChange={setSearchQuery} />
           
+          {/* Category Carousel */}
+          <div className="my-8">
+            <CategoryCarousel
+              categories={categories}
+              activeCategory={activeCategory}
+              onCategoryChange={setActiveCategory}
+            />
+          </div>
+
           {isLoading ? (
             <div className="flex justify-center items-center py-20">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
           ) : (
-            <Tabs value={activeCategory} onValueChange={setActiveCategory} className="w-full">
-              <TabsList className={`grid w-full max-w-md mx-auto mb-12 bg-card border border-border`} style={{ gridTemplateColumns: `repeat(${categories.length + 1}, minmax(0, 1fr))` }}>
-                <TabsTrigger value="all" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-                  Todos
-                </TabsTrigger>
-                {categories.map((category) => (
-                  <TabsTrigger 
-                    key={category} 
-                    value={category} 
-                    className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground capitalize"
-                  >
-                    {category}
-                  </TabsTrigger>
-                ))}
-              </TabsList>
-              <TabsContent value={activeCategory} className="mt-0">
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <div className="flex gap-6">
+              {/* Sidebar */}
+              <CategorySidebar
+                categories={categories}
+                activeCategory={activeCategory}
+                onCategoryChange={setActiveCategory}
+              />
+
+              {/* Products Grid */}
+              <div className="flex-1">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                   {filteredProducts.map((product) => (
                     <ProductCard
                       key={product.id}
@@ -88,8 +92,15 @@ const Index = () => {
                     />
                   ))}
                 </div>
-              </TabsContent>
-            </Tabs>
+                {filteredProducts.length === 0 && (
+                  <div className="text-center py-20">
+                    <p className="text-muted-foreground text-lg">
+                      Nenhum produto encontrado para esta categoria.
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
           )}
         </div>
       </section>
