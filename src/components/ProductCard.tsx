@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Product } from '@/context/CartContext';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { ShoppingCart } from 'lucide-react';
+import { ShoppingCart, ChevronDown, ChevronUp } from 'lucide-react';
 import { useFlavors } from '@/hooks/useFlavors';
 import { useDiscounts, calculateDiscountedPrice } from '@/hooks/useDiscounts';
 import {
@@ -13,6 +13,12 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { toast } from 'sonner';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
+import ProductReviews from './ProductReviews';
 
 interface ProductCardProps {
   product: Product;
@@ -21,6 +27,8 @@ interface ProductCardProps {
 
 const ProductCard = ({ product, onAddToCart }: ProductCardProps) => {
   const [selectedFlavor, setSelectedFlavor] = useState<string | undefined>();
+  const [isDescriptionOpen, setIsDescriptionOpen] = useState(false);
+  const [showReviews, setShowReviews] = useState(false);
   const { data: flavors } = useFlavors(product.id);
   const { data: discounts } = useDiscounts();
   
@@ -76,7 +84,33 @@ const ProductCard = ({ product, onAddToCart }: ProductCardProps) => {
           <h3 className="font-semibold text-lg text-foreground group-hover:text-primary transition-colors">
             {product.name}
           </h3>
-          <p className="text-sm text-muted-foreground mt-1">{product.description}</p>
+          {product.description && (
+            <Collapsible open={isDescriptionOpen} onOpenChange={setIsDescriptionOpen}>
+              <div className="mt-1">
+                <CollapsibleContent>
+                  <p className="text-sm text-muted-foreground whitespace-pre-line">{product.description}</p>
+                </CollapsibleContent>
+                {!isDescriptionOpen && (
+                  <p className="text-sm text-muted-foreground line-clamp-2">{product.description}</p>
+                )}
+              </div>
+              {product.description.length > 100 && (
+                <CollapsibleTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-auto p-0 mt-1 text-primary hover:text-primary/80">
+                    {isDescriptionOpen ? (
+                      <>
+                        Ver menos <ChevronUp className="h-3 w-3 ml-1" />
+                      </>
+                    ) : (
+                      <>
+                        Ver mais <ChevronDown className="h-3 w-3 ml-1" />
+                      </>
+                    )}
+                  </Button>
+                </CollapsibleTrigger>
+              )}
+            </Collapsible>
+          )}
         </div>
         
         {flavors && flavors.length > 0 && !isOutOfStock && (
@@ -122,6 +156,25 @@ const ProductCard = ({ product, onAddToCart }: ProductCardProps) => {
             {isOutOfStock ? 'Esgotado' : 'Adicionar'}
           </Button>
         </div>
+
+        {!isOutOfStock && (
+          <div className="pt-3 border-t border-border">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowReviews(!showReviews)}
+              className="w-full text-sm"
+            >
+              {showReviews ? 'Ocultar avaliações' : 'Ver avaliações'}
+              {showReviews ? <ChevronUp className="h-4 w-4 ml-2" /> : <ChevronDown className="h-4 w-4 ml-2" />}
+            </Button>
+            {showReviews && (
+              <div className="mt-3">
+                <ProductReviews productId={product.id} />
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </Card>
   );
