@@ -1,7 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useCart } from '@/context/CartContext';
 import { useProducts } from '@/hooks/useProducts';
-import { useCategories } from '@/hooks/useCategories';
 import ProductCard from '@/components/ProductCard';
 import Header from '@/components/Header';
 import ProductSearch from '@/components/ProductSearch';
@@ -12,7 +11,6 @@ import { Loader2 } from 'lucide-react';
 const Index = () => {
   const { addToCart } = useCart();
   const { data: products, isLoading } = useProducts();
-  const { categories: dbCategories } = useCategories();
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [activeSubcategory, setActiveSubcategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -82,7 +80,7 @@ const Index = () => {
           <div className="my-6 md:my-8 hidden md:block">
             <CategoryCarousel
               categories={productCategories}
-              dbCategories={dbCategories}
+              products={products || []}
               activeCategory={activeCategory}
               activeSubcategory={activeSubcategory}
               onCategoryChange={handleCategoryChange}
