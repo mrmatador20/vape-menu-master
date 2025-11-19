@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useCart } from '@/context/CartContext';
 import { useProducts } from '@/hooks/useProducts';
 import ProductCard from '@/components/ProductCard';
@@ -9,7 +9,14 @@ import { Loader2 } from 'lucide-react';
 const Index = () => {
   const { addToCart } = useCart();
   const { data: products, isLoading } = useProducts();
-  const [activeCategory, setActiveCategory] = useState<'all' | 'v250' | 'v400'| 'seda'>('all');
+  const [activeCategory, setActiveCategory] = useState<string>('all');
+
+  // Extrai categorias únicas dos produtos
+  const categories = useMemo(() => {
+    if (!products) return [];
+    const uniqueCategories = Array.from(new Set(products.map(p => p.category)));
+    return uniqueCategories.sort();
+  }, [products]);
 
   const filteredProducts = activeCategory === 'all' 
     ? products || []
@@ -39,20 +46,20 @@ const Index = () => {
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
           ) : (
-            <Tabs value={activeCategory} onValueChange={(v) => setActiveCategory(v as any)} className="w-full">
-              <TabsList className="grid w-full max-w-md mx-auto grid-cols-4 mb-12 bg-card border border-border">
+            <Tabs value={activeCategory} onValueChange={setActiveCategory} className="w-full">
+              <TabsList className={`grid w-full max-w-md mx-auto mb-12 bg-card border border-border`} style={{ gridTemplateColumns: `repeat(${categories.length + 1}, minmax(0, 1fr))` }}>
                 <TabsTrigger value="all" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
                   Todos
                 </TabsTrigger>
-                <TabsTrigger value="v250" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-                  V250
-                </TabsTrigger>
-                <TabsTrigger value="v400" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-                  V400
-                </TabsTrigger>
-                <TabsTrigger value="seda" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-                  seda
-                </TabsTrigger>
+                {categories.map((category) => (
+                  <TabsTrigger 
+                    key={category} 
+                    value={category} 
+                    className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground capitalize"
+                  >
+                    {category}
+                  </TabsTrigger>
+                ))}
               </TabsList>
               <TabsContent value={activeCategory} className="mt-0">
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
