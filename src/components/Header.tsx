@@ -1,12 +1,14 @@
-import { ShoppingCart } from 'lucide-react';
+import { ShoppingCart, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCart } from '@/context/CartContext';
 import { useNavigate } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
+import { useUserRole } from '@/hooks/useUserRole';
 
 const Header = () => {
   const { totalItems } = useCart();
   const navigate = useNavigate();
+  const { data: role } = useUserRole();
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -21,19 +23,32 @@ const Header = () => {
           </span>
         </div>
         
-        <Button
-          variant="outline"
-          size="sm"
-          className="relative border-primary/50 hover:bg-primary/10"
-          onClick={() => navigate('/cart')}
-        >
-          <ShoppingCart className="h-5 w-5 text-primary" />
-          {totalItems > 0 && (
-            <Badge className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 bg-secondary text-secondary-foreground">
-              {totalItems}
-            </Badge>
+        <div className="flex items-center gap-2">
+          {role === 'admin' && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="border-primary/50 hover:bg-primary/10"
+              onClick={() => navigate('/admin')}
+            >
+              <Settings className="h-5 w-5 text-primary" />
+            </Button>
           )}
-        </Button>
+          
+          <Button
+            variant="outline"
+            size="sm"
+            className="relative border-primary/50 hover:bg-primary/10"
+            onClick={() => navigate('/cart')}
+          >
+            <ShoppingCart className="h-5 w-5 text-primary" />
+            {totalItems > 0 && (
+              <Badge className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 bg-secondary text-secondary-foreground">
+                {totalItems}
+              </Badge>
+            )}
+          </Button>
+        </div>
       </div>
     </header>
   );
