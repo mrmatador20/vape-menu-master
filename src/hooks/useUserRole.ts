@@ -6,7 +6,7 @@ export type UserRole = 'admin' | 'moderator' | 'user';
 export const useUserRole = () => {
   return useQuery({
     queryKey: ['user-role'],
-    queryFn: async () => {
+    queryFn: async (): Promise<UserRole | null> => {
       const { data: { user } } = await supabase.auth.getUser();
       
       if (!user) return null;
@@ -22,7 +22,8 @@ export const useUserRole = () => {
         return null;
       }
 
-      return data?.role as UserRole | null;
+      return (data?.role as UserRole) || null;
     },
+    retry: false,
   });
 };
