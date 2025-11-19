@@ -55,12 +55,17 @@ export function CategorySidebar({
     <>
       {/* Mobile Toggle Button */}
       <Button
-        variant="outline"
+        variant={isOpen ? "ghost" : "outline"}
         size="icon"
-        className="fixed top-24 left-4 z-50 md:hidden bg-primary text-primary-foreground shadow-glow hover:bg-primary/90 h-14 w-14"
+        className={cn(
+          "fixed top-24 left-4 z-50 md:hidden transition-all duration-300",
+          isOpen 
+            ? "h-8 w-8 hover:bg-accent" 
+            : "bg-primary text-primary-foreground shadow-glow hover:bg-primary/90 h-14 w-14"
+        )}
         onClick={() => setIsOpen(!isOpen)}
       >
-        {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+        {isOpen ? <X className="h-4 w-4" /> : <Menu className="h-5 w-5" />}
       </Button>
 
       {/* Sidebar */}
