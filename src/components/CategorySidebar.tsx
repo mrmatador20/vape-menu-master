@@ -51,20 +51,15 @@ export function CategorySidebar({
         className={cn(
           "fixed left-0 h-[calc(100vh-5rem)] bg-card/95 backdrop-blur-sm border-r border-border shadow-xl transition-all duration-500 ease-in-out z-40 overflow-y-auto",
           // Mobile behavior
-          "md:top-auto top-20",
+          "top-20",
           isOpen ? "translate-x-0 w-72" : "-translate-x-full w-0",
-          // Desktop behavior  
-          "md:translate-x-0 md:w-16 md:hover:w-72 md:group"
+          // Desktop behavior - always expanded
+          "md:translate-x-0 md:w-72"
         )}
-        onMouseEnter={() => window.innerWidth >= 768 && setIsOpen(true)}
-        onMouseLeave={() => window.innerWidth >= 768 && setIsOpen(false)}
       >
-        {/* Hover indicator for desktop */}
-        <div className="hidden md:block absolute right-0 top-1/2 -translate-y-1/2 w-1 h-12 bg-primary/20 rounded-l-full transition-all duration-300 group-hover:bg-primary group-hover:w-2" />
 
         <div className="p-3">
-          {isOpen ? (
-            <div className="space-y-3">
+          <div className="space-y-3 block md:block">
               <Button
                 variant={activeCategory === "all" ? "default" : "ghost"}
                 className="w-full justify-start gap-3 h-11 text-base font-medium transition-all duration-300"
@@ -105,35 +100,7 @@ export function CategorySidebar({
                   );
                 })}
               </Accordion>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              <Button
-                variant={activeCategory === "all" ? "default" : "ghost"}
-                size="icon"
-                className="w-full h-11 transition-all duration-300"
-                onClick={() => onCategoryChange("all")}
-                title="Todas as Categorias"
-              >
-                <Menu className="h-5 w-5" />
-              </Button>
-              {categories.map((category) => {
-                const Icon = getCategoryIcon(category);
-                return (
-                  <Button
-                    key={category}
-                    variant={activeCategory === category ? "default" : "ghost"}
-                    size="icon"
-                    className="w-full h-11 transition-all duration-300"
-                    onClick={() => onCategoryChange(category)}
-                    title={category}
-                  >
-                    <Icon className="h-5 w-5" />
-                  </Button>
-                );
-              })}
-            </div>
-          )}
+          </div>
         </div>
       </aside>
 
