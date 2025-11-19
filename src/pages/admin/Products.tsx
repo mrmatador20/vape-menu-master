@@ -41,7 +41,12 @@ export default function AdminProducts() {
   const filteredProducts = products?.filter((product) =>
     product.name.toLowerCase().includes(search.toLowerCase()) ||
     product.category.toLowerCase().includes(search.toLowerCase())
-  );
+  ).sort((a, b) => {
+    // Produtos com estoque primeiro, esgotados por último
+    if (a.stock > 0 && b.stock === 0) return -1;
+    if (a.stock === 0 && b.stock > 0) return 1;
+    return 0;
+  });
 
   const handleDelete = async () => {
     if (!deleteProductId) return;

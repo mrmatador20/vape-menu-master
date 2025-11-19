@@ -9,8 +9,7 @@ export const useProducts = () => {
       const { data, error } = await supabase
         .from('products')
         .select('*')
-        .order('category', { ascending: true })
-        .order('price', { ascending: true });
+        .order('category', { ascending: true });
 
       if (error) throw error;
 
@@ -24,7 +23,13 @@ export const useProducts = () => {
         description: product.description,
         stock: product.stock,
         min_stock: product.min_stock || 10,
-      })) as Product[];
+      })).sort((a, b) => {
+        // Produtos com estoque primeiro, esgotados por último
+        if (a.stock > 0 && b.stock === 0) return -1;
+        if (a.stock === 0 && b.stock > 0) return 1;
+        // Se ambos têm estoque ou ambos estão esgotados, ordena por preço
+        return a.price - b.price;
+      }) as Product[];
     },
   });
 };
