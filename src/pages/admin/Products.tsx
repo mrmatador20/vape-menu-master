@@ -67,9 +67,9 @@ export default function AdminProducts() {
     setDeleteProductId(null);
   };
 
-  const getStockBadge = (stock: number) => {
+  const getStockBadge = (stock: number, minStock: number) => {
     if (stock === 0) return <Badge variant="destructive">Sem estoque</Badge>;
-    if (stock <= 10) return <Badge variant="outline" className="text-orange-500 border-orange-500">Estoque baixo</Badge>;
+    if (stock <= minStock) return <Badge variant="outline" className="text-orange-500 border-orange-500">Estoque baixo</Badge>;
     return <Badge variant="outline" className="text-green-500 border-green-500">Em estoque</Badge>;
   };
 
@@ -107,6 +107,7 @@ export default function AdminProducts() {
               <TableHead>Categoria</TableHead>
               <TableHead>Preço</TableHead>
               <TableHead>Estoque</TableHead>
+              <TableHead>Alerta</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="text-right">Ações</TableHead>
             </TableRow>
@@ -114,11 +115,11 @@ export default function AdminProducts() {
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center">Carregando...</TableCell>
+                <TableCell colSpan={8} className="text-center">Carregando...</TableCell>
               </TableRow>
             ) : filteredProducts?.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center">Nenhum produto encontrado</TableCell>
+                <TableCell colSpan={8} className="text-center">Nenhum produto encontrado</TableCell>
               </TableRow>
             ) : (
               filteredProducts?.map((product) => (
@@ -134,7 +135,8 @@ export default function AdminProducts() {
                   <TableCell className="capitalize">{product.category}</TableCell>
                   <TableCell>R$ {product.price.toFixed(2)}</TableCell>
                   <TableCell>{product.stock}</TableCell>
-                  <TableCell>{getStockBadge(product.stock)}</TableCell>
+                  <TableCell>{product.min_stock}</TableCell>
+                  <TableCell>{getStockBadge(product.stock, product.min_stock)}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
                       <Button

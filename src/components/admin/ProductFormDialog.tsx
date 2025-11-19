@@ -30,6 +30,7 @@ const productSchema = z.object({
   category: z.string().min(1, "Categoria é obrigatória"),
   price: z.string().min(1, "Preço é obrigatório"),
   stock: z.string().min(0, "Estoque é obrigatório"),
+  min_stock: z.string().min(0, "Nível mínimo é obrigatório"),
   image: z.string().url("URL inválida").optional().or(z.literal("")),
   description: z.string().optional(),
 });
@@ -53,6 +54,7 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
       category: "",
       price: "",
       stock: "0",
+      min_stock: "10",
       image: "",
       description: "",
     },
@@ -65,6 +67,7 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
         category: product.category,
         price: product.price.toString(),
         stock: product.stock.toString(),
+        min_stock: product.min_stock?.toString() || "10",
         image: product.image || "",
         description: product.description || "",
       });
@@ -74,6 +77,7 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
         category: "",
         price: "",
         stock: "0",
+        min_stock: "10",
         image: "",
         description: "",
       });
@@ -86,6 +90,7 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
       category: values.category,
       price: parseFloat(values.price),
       stock: parseInt(values.stock),
+      min_stock: parseInt(values.min_stock),
       image: values.image || null,
       description: values.description || null,
     };
@@ -203,6 +208,23 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
                 )}
               />
             </div>
+
+            <FormField
+              control={form.control}
+              name="min_stock"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Nível Mínimo de Estoque (Alerta)</FormLabel>
+                  <FormControl>
+                    <Input type="number" placeholder="10" {...field} />
+                  </FormControl>
+                  <p className="text-xs text-muted-foreground">
+                    Sistema alertará quando estoque atingir este nível
+                  </p>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <FormField
               control={form.control}

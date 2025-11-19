@@ -9,6 +9,7 @@ export interface Product {
   image: string;
   description: string;
   stock: number;
+  min_stock: number;
 }
 
 export interface CartItem extends Product {
