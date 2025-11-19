@@ -131,7 +131,7 @@ export function CategorySidebar({
         <Button
           variant="outline"
           size="icon"
-          className="hidden md:flex fixed left-4 bottom-4 z-50 bg-primary text-primary-foreground shadow-glow hover:bg-primary/90 h-12 w-12"
+          className="hidden md:flex fixed left-4 top-24 z-50 bg-primary text-primary-foreground shadow-glow hover:bg-primary/90 h-12 w-12"
           onClick={() => setIsDesktopOpen(true)}
         >
           <Menu className="h-5 w-5" />

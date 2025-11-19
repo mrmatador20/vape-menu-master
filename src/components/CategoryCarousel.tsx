@@ -20,7 +20,7 @@ export function CategoryCarousel({
   onCategoryChange,
 }: CategoryCarouselProps) {
   return (
-    <div className="w-full max-w-6xl mx-auto px-4 sm:px-8 md:px-16 relative">
+    <div className="w-full max-w-6xl mx-auto px-16 sm:px-20 md:px-24 relative">
       <Carousel
         opts={{
           align: "start",
@@ -59,8 +59,8 @@ export function CategoryCarousel({
             </CarouselItem>
           ))}
         </CarouselContent>
-        <CarouselPrevious className="left-0 h-10 w-10 bg-card/90 backdrop-blur-sm border-2 border-border shadow-lg hover:bg-card hover:scale-110 transition-all duration-300" />
-        <CarouselNext className="right-0 h-10 w-10 bg-card/90 backdrop-blur-sm border-2 border-border shadow-lg hover:bg-card hover:scale-110 transition-all duration-300" />
+        <CarouselPrevious className="-left-12 h-10 w-10 bg-card/90 backdrop-blur-sm border-2 border-border shadow-lg hover:bg-card hover:scale-110 transition-all duration-300" />
+        <CarouselNext className="-right-12 h-10 w-10 bg-card/90 backdrop-blur-sm border-2 border-border shadow-lg hover:bg-card hover:scale-110 transition-all duration-300" />
       </Carousel>
     </div>
   );
