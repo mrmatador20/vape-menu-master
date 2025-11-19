@@ -2,8 +2,13 @@
 CREATE TABLE public.products (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT NOT NULL,
+<<<<<<< HEAD
+  category TEXT NOT NULL CHECK (category IN ('v250', 'v400', 'seda')),
+  price DECIMAL(10,2) NOT NULL,
+=======
   category TEXT NOT NULL CHECK (category IN ('v250', 'v400', 'seda')),  -- Aceitando 'seda' em minúsculo
   price DECIMAL(10, 2) NOT NULL,
+>>>>>>> 75fe5d14089d5a1261bf5a398aee585515856c5e
   image TEXT NOT NULL,
   description TEXT NOT NULL,
   stock INTEGER NOT NULL DEFAULT 0,

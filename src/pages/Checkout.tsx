@@ -133,9 +133,18 @@ const Checkout = () => {
         })
         .join('\n');
       
-      const message = `*Novo Pedido #${order.id}*\n\n*Itens:*\n${itemsList}\n\n*Total: R$ ${order.total.toFixed(2)}*\n\n*Endereço de Entrega:*\n${validatedData.rua}, ${validatedData.numero}\n${validatedData.bairro} - ${validatedData.cidade}\n\n*Forma de Pagamento:* ${validatedData.paymentMethod === 'pix' ? 'PIX' : 'Dinheiro'}${validatedData.paymentMethod === 'dinheiro' && validatedData.changeAmount ? `\nTroco para: R$ ${(parseFloat(validatedData.changeAmount) || 0).toFixed(2)}` : ''}${validatedData.paymentMethod === 'dinheiro' && validatedData.changeAmount ? `\nTroco a ser pago: R$ ${(parseFloat(validatedData.changeAmount) - order.total).toFixed(2)}` : ''}`;
+      // Montando a mensagem para o WhatsApp
+      let message = `*Novo Pedido #${order.id}*\n\n*Itens:*\n${itemsList}\n\n*Total: R$ ${order.total.toFixed(2)}*\n\n*Endereço de Entrega:*\n${validatedData.rua}, ${validatedData.numero}\n${validatedData.bairro} - ${validatedData.cidade}\n\n*Forma de Pagamento:* ${validatedData.paymentMethod === 'pix' ? 'PIX' : 'Dinheiro'}`;
 
+      // Se o pagamento for em dinheiro e houver troco
+      if (validatedData.paymentMethod === 'dinheiro' && validatedData.changeAmount) {
+        const changeAmount = parseFloat(validatedData.changeAmount);
+        const changeToGive = changeAmount - order.total;
 
+        message += `\nTroco para: R$ ${changeAmount.toFixed(2)}\nTroco a ser pago: R$ ${changeToGive.toFixed(2)}`;
+      }
+
+      // Codificando a mensagem para ser passada na URL do WhatsApp
       const encodedMessage = encodeURIComponent(message);
       const whatsappUrl = `https://wa.me/5583996694806?text=${encodedMessage}`;
 
