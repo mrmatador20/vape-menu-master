@@ -97,8 +97,11 @@ const Index = () => {
               {/* Sidebar - provides layout structure */}
               <CategorySidebar
                 categories={productCategories}
+                products={products || []}
                 activeCategory={activeCategory}
+                activeSubcategory={activeSubcategory}
                 onCategoryChange={handleCategoryChange}
+                onSubcategoryChange={setActiveSubcategory}
               />
 
               {/* Products Grid - responsive margin */}

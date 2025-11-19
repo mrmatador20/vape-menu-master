@@ -83,53 +83,6 @@ export function CategoryCarousel({
         <CarouselPrevious className="-left-12 h-10 w-10 bg-card/90 backdrop-blur-sm border-2 border-border shadow-lg hover:bg-card hover:scale-110 transition-all duration-300" />
         <CarouselNext className="-right-12 h-10 w-10 bg-card/90 backdrop-blur-sm border-2 border-border shadow-lg hover:bg-card hover:scale-110 transition-all duration-300" />
       </Carousel>
-
-      {/* Subcategories Carousel - Only shows when a category is selected and has subcategories */}
-      {subcategories.length > 0 && (
-        <div className="animate-in slide-in-from-top-2 duration-300">
-          <Carousel
-            opts={{
-              align: "start",
-              loop: false,
-              dragFree: true,
-            }}
-            className="w-full"
-          >
-            <CarouselContent className="-ml-2 md:-ml-3">
-              <CarouselItem className="pl-2 md:pl-3 basis-auto">
-                <Button
-                  variant={activeSubcategory === "all" ? "secondary" : "ghost"}
-                  size="sm"
-                  className={cn(
-                    "whitespace-nowrap transition-all duration-300 hover:scale-105 font-medium px-4",
-                    activeSubcategory === "all" && "scale-105"
-                  )}
-                  onClick={() => onSubcategoryChange("all")}
-                >
-                  Todas
-                </Button>
-              </CarouselItem>
-              {subcategories.map((subcat) => (
-                <CarouselItem key={subcat} className="pl-2 md:pl-3 basis-auto">
-                  <Button
-                    variant={activeSubcategory === subcat ? "secondary" : "ghost"}
-                    size="sm"
-                    className={cn(
-                      "whitespace-nowrap capitalize transition-all duration-300 hover:scale-105 font-medium px-4",
-                      activeSubcategory === subcat && "scale-105"
-                    )}
-                    onClick={() => onSubcategoryChange(subcat)}
-                  >
-                    {subcat}
-                  </Button>
-                </CarouselItem>
-              ))}
-            </CarouselContent>
-            <CarouselPrevious className="-left-12 h-8 w-8 bg-card/90 backdrop-blur-sm border border-border shadow-md hover:bg-card hover:scale-110 transition-all duration-300" />
-            <CarouselNext className="-right-12 h-8 w-8 bg-card/90 backdrop-blur-sm border border-border shadow-md hover:bg-card hover:scale-110 transition-all duration-300" />
-          </Carousel>
-        </div>
-      )}
     </div>
   );
 }

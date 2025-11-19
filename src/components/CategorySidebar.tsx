@@ -1,5 +1,5 @@
 import { ChevronRight, Menu, X, Package, Sparkles } from "lucide-react";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   Accordion,
   AccordionContent,
@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { Product } from "@/context/CartContext";
 
 // Map categories to icons
 const categoryIcons: Record<string, any> = {
@@ -23,17 +24,32 @@ const getCategoryIcon = (category: string) => {
 
 interface CategorySidebarProps {
   categories: string[];
+  products: Product[];
   activeCategory: string;
+  activeSubcategory: string;
   onCategoryChange: (category: string) => void;
+  onSubcategoryChange: (subcategory: string) => void;
 }
 
 export function CategorySidebar({
   categories,
+  products,
   activeCategory,
+  activeSubcategory,
   onCategoryChange,
+  onSubcategoryChange,
 }: CategorySidebarProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isDesktopOpen, setIsDesktopOpen] = useState(true);
+
+  // Get subcategories for each category
+  const getCategorySubcategories = (category: string) => {
+    const subs = products
+      .filter(p => p.category === category && p.subcategory)
+      .map(p => p.subcategory as string);
+    
+    return Array.from(new Set(subs)).sort();
+  };
 
   return (
     <>
@@ -79,6 +95,7 @@ export function CategorySidebar({
                 className="w-full justify-start gap-3 h-11 text-base font-medium transition-all duration-300"
                 onClick={() => {
                   onCategoryChange("all");
+                  onSubcategoryChange('all');
                   if (window.innerWidth < 768) setIsOpen(false);
                 }}
               >
@@ -89,6 +106,8 @@ export function CategorySidebar({
               <Accordion type="single" collapsible className="w-full space-y-2">
                 {categories.map((category) => {
                   const Icon = getCategoryIcon(category);
+                  const subcategories = getCategorySubcategories(category);
+                  
                   return (
                     <AccordionItem key={category} value={category} className="border-none">
                       <AccordionTrigger className="py-3 hover:no-underline hover:bg-accent/50 px-3 rounded-lg transition-all duration-300">
@@ -97,18 +116,35 @@ export function CategorySidebar({
                           <span className="capitalize text-base font-medium">{category}</span>
                         </div>
                       </AccordionTrigger>
-                      <AccordionContent className="pb-2">
+                      <AccordionContent className="pb-2 space-y-1">
                         <Button
-                          variant={activeCategory === category ? "secondary" : "ghost"}
+                          variant={activeCategory === category && activeSubcategory === 'all' ? "secondary" : "ghost"}
                           size="sm"
                           className="w-full justify-start ml-8 gap-2 transition-all duration-300"
                           onClick={() => {
                             onCategoryChange(category);
+                            onSubcategoryChange('all');
                             if (window.innerWidth < 768) setIsOpen(false);
                           }}
                         >
                           Ver Produtos
                         </Button>
+                        
+                        {subcategories.map((subcat) => (
+                          <Button
+                            key={subcat}
+                            variant={activeCategory === category && activeSubcategory === subcat ? "secondary" : "ghost"}
+                            size="sm"
+                            className="w-full justify-start ml-8 gap-2 transition-all duration-300 capitalize text-sm"
+                            onClick={() => {
+                              onCategoryChange(category);
+                              onSubcategoryChange(subcat);
+                              if (window.innerWidth < 768) setIsOpen(false);
+                            }}
+                          >
+                            {subcat}
+                          </Button>
+                        ))}
                       </AccordionContent>
                     </AccordionItem>
                   );
