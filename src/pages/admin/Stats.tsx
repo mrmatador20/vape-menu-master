@@ -51,12 +51,17 @@ export default function AdminStats() {
         return acc;
       }, {});
 
+      // Filtrar apenas pedidos confirmados e entregues para receita total
+      const completedOrders = orders.filter(order => 
+        order.status === 'delivered' || order.status === 'confirmed'
+      );
+
       return {
         monthlyData: Object.values(salesByMonth).slice(-6),
         statusData: Object.values(salesByStatus),
         topProducts: Object.values(topProducts || {}).sort((a: any, b: any) => b.quantity - a.quantity).slice(0, 5),
-        totalRevenue: orders.reduce((sum, order) => sum + Number(order.total_amount), 0),
-        totalOrders: orders.length,
+        totalRevenue: completedOrders.reduce((sum, order) => sum + Number(order.total_amount), 0),
+        totalOrders: completedOrders.length,
       };
     },
   });
