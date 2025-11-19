@@ -54,13 +54,13 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Products Section with Sidebar */}
-      <section className="pb-20 px-2 sm:px-4">
-        <div className="container max-w-7xl">
+      {/* Products Section */}
+      <section className="pb-20">
+        <div className="container max-w-7xl px-2 sm:px-4">
           <ProductSearch value={searchQuery} onChange={setSearchQuery} />
           
-          {/* Category Carousel */}
-          <div className="my-6 md:my-8">
+          {/* Category Carousel - Desktop only */}
+          <div className="my-6 md:my-8 hidden md:block">
             <CategoryCarousel
               categories={categories}
               activeCategory={activeCategory}
@@ -73,16 +73,16 @@ const Index = () => {
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
           ) : (
-            <div className="flex gap-4 md:gap-6">
-              {/* Sidebar */}
+            <>
+              {/* Sidebar - provides layout structure */}
               <CategorySidebar
                 categories={categories}
                 activeCategory={activeCategory}
                 onCategoryChange={setActiveCategory}
               />
 
-              {/* Products Grid */}
-              <div className="flex-1 min-w-0">
+              {/* Products Grid - positioned by sidebar */}
+              <div className="md:ml-20 transition-all duration-500">
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
                   {filteredProducts.map((product) => (
                     <ProductCard
@@ -100,7 +100,7 @@ const Index = () => {
                   </div>
                 )}
               </div>
-            </div>
+            </>
           )}
         </div>
       </section>

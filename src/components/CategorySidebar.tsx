@@ -40,35 +40,27 @@ export function CategorySidebar({
       <Button
         variant="outline"
         size="icon"
-        className="fixed top-20 left-4 z-50 md:hidden bg-card shadow-lg"
+        className="fixed bottom-4 left-4 z-50 md:hidden bg-primary text-primary-foreground shadow-glow hover:bg-primary/90 h-14 w-14"
         onClick={() => setIsOpen(!isOpen)}
       >
-        {isOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+        {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
       </Button>
 
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed top-0 left-0 h-full bg-card/95 backdrop-blur-sm border-r border-border shadow-xl transition-all duration-500 ease-in-out z-40 pt-20",
-          isOpen ? "translate-x-0" : "-translate-x-full",
-          "md:translate-x-0 md:sticky md:top-20",
-          isOpen ? "w-72" : "md:w-16"
+          "fixed left-0 h-[calc(100vh-5rem)] bg-card/95 backdrop-blur-sm border-r border-border shadow-xl transition-all duration-500 ease-in-out z-40 overflow-y-auto",
+          // Mobile behavior
+          "md:top-auto top-20",
+          isOpen ? "translate-x-0 w-72" : "-translate-x-full w-0",
+          // Desktop behavior  
+          "md:translate-x-0 md:w-16 md:hover:w-72 md:group"
         )}
+        onMouseEnter={() => window.innerWidth >= 768 && setIsOpen(true)}
+        onMouseLeave={() => window.innerWidth >= 768 && setIsOpen(false)}
       >
-        {/* Desktop Toggle */}
-        <Button
-          variant="ghost"
-          size="icon"
-          className="hidden md:flex absolute -right-3 top-4 bg-card border border-border rounded-full shadow-md hover:shadow-lg transition-all duration-300"
-          onClick={() => setIsOpen(!isOpen)}
-        >
-          <ChevronRight
-            className={cn(
-              "h-4 w-4 transition-transform duration-500",
-              isOpen && "rotate-180"
-            )}
-          />
-        </Button>
+        {/* Hover indicator for desktop */}
+        <div className="hidden md:block absolute right-0 top-1/2 -translate-y-1/2 w-1 h-12 bg-primary/20 rounded-l-full transition-all duration-300 group-hover:bg-primary group-hover:w-2" />
 
         <div className="p-3">
           {isOpen ? (
@@ -148,7 +140,7 @@ export function CategorySidebar({
       {/* Overlay for mobile */}
       {isOpen && (
         <div
-          className="fixed inset-0 bg-background/80 z-30 md:hidden"
+          className="fixed inset-0 bg-background/80 backdrop-blur-sm z-30 md:hidden"
           onClick={() => setIsOpen(false)}
         />
       )}
