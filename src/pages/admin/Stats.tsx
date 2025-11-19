@@ -12,12 +12,17 @@ export default function AdminStats() {
       // Vendas por mês
       const { data: orders } = await supabase
         .from('orders')
-        .select('created_at, total_amount, status');
+        .select('id, created_at, total_amount, status');
 
       if (!orders) return null;
 
-      // Agrupar vendas por mês
-      const salesByMonth = orders.reduce((acc: any, order) => {
+      // Filtrar apenas pedidos confirmados e entregues
+      const completedOrders = orders.filter(order => 
+        order.status === 'delivered' || order.status === 'confirmed'
+      );
+
+      // Agrupar vendas por mês (apenas pedidos confirmados/entregues)
+      const salesByMonth = completedOrders.reduce((acc: any, order) => {
         const month = new Date(order.created_at!).toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' });
         if (!acc[month]) {
           acc[month] = { month, total: 0, count: 0 };
@@ -27,7 +32,7 @@ export default function AdminStats() {
         return acc;
       }, {});
 
-      // Vendas por status
+      // Vendas por status (todos os pedidos para visualização)
       const salesByStatus = orders.reduce((acc: any, order) => {
         if (!acc[order.status]) {
           acc[order.status] = { status: order.status, count: 0, total: 0 };
@@ -37,10 +42,12 @@ export default function AdminStats() {
         return acc;
       }, {});
 
-      // Produtos mais vendidos
+      // Produtos mais vendidos (apenas de pedidos confirmados/entregues)
+      const completedOrderIds = completedOrders.map(order => order.id);
       const { data: orderItems } = await supabase
         .from('order_items')
-        .select('product_id, quantity, products(name)');
+        .select('product_id, quantity, order_id, products(name)')
+        .in('order_id', completedOrderIds);
 
       const topProducts = orderItems?.reduce((acc: any, item) => {
         const productName = item.products?.name || 'Unknown';
@@ -50,11 +57,6 @@ export default function AdminStats() {
         acc[productName].quantity += item.quantity;
         return acc;
       }, {});
-
-      // Filtrar apenas pedidos confirmados e entregues para receita total
-      const completedOrders = orders.filter(order => 
-        order.status === 'delivered' || order.status === 'confirmed'
-      );
 
       return {
         monthlyData: Object.values(salesByMonth).slice(-6),
