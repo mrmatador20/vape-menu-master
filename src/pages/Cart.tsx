@@ -49,7 +49,7 @@ const Cart = () => {
           <div className="space-y-4">
             {items.map((item) => (
               <Card key={`${item.id}-${item.flavor}`} className="p-4 bg-gradient-card border-border">
-                <div className="flex gap-4">
+                <div className="flex gap-4 flex-col sm:flex-row">
                   <img
                     src={item.image}
                     alt={item.name}
@@ -87,6 +87,8 @@ const Cart = () => {
                         <span className="text-lg font-bold text-primary">
                           R$ {(item.price * item.quantity).toFixed(2)}
                         </span>
+                        
+                        {/* Lixeira sempre ao lado do valor */}
                         <Button
                           size="sm"
                           variant="ghost"

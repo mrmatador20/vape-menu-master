@@ -11,6 +11,7 @@ CREATE TABLE public.products (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+
 -- Inserir produtos iniciais
 INSERT INTO public.products (name, category, price, image, description, stock) VALUES
 ('Vaper V250 Classic', 'v250', 89.90, '/placeholder.svg', '250 puffs, sabor menta refrescante', 100),
