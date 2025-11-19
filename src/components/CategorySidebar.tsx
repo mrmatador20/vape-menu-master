@@ -33,6 +33,7 @@ export function CategorySidebar({
   onCategoryChange,
 }: CategorySidebarProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [isDesktopOpen, setIsDesktopOpen] = useState(true);
 
   return (
     <>
@@ -53,12 +54,25 @@ export function CategorySidebar({
           // Mobile behavior
           "top-20",
           isOpen ? "translate-x-0 w-72" : "-translate-x-full w-0",
-          // Desktop behavior - always expanded
-          "md:translate-x-0 md:w-72"
+          // Desktop behavior - collapsible
+          "md:translate-x-0",
+          isDesktopOpen ? "md:w-72" : "md:-translate-x-full md:w-0"
         )}
       >
 
         <div className="p-3">
+          {/* Close button for desktop */}
+          <div className="hidden md:flex justify-end mb-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 hover:bg-accent"
+              onClick={() => setIsDesktopOpen(false)}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+
           <div className="space-y-3 block md:block">
               <Button
                 variant={activeCategory === "all" ? "default" : "ghost"}
@@ -110,6 +124,18 @@ export function CategorySidebar({
           className="fixed inset-0 bg-background/80 backdrop-blur-sm z-30 md:hidden"
           onClick={() => setIsOpen(false)}
         />
+      )}
+
+      {/* Desktop toggle button - show when sidebar is closed */}
+      {!isDesktopOpen && (
+        <Button
+          variant="outline"
+          size="icon"
+          className="hidden md:flex fixed left-4 bottom-4 z-50 bg-primary text-primary-foreground shadow-glow hover:bg-primary/90 h-12 w-12"
+          onClick={() => setIsDesktopOpen(true)}
+        >
+          <Menu className="h-5 w-5" />
+        </Button>
       )}
     </>
   );
