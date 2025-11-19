@@ -41,7 +41,7 @@ export function CategorySidebar({
       <Button
         variant="outline"
         size="icon"
-        className="fixed bottom-4 left-4 z-50 md:hidden bg-primary text-primary-foreground shadow-glow hover:bg-primary/90 h-14 w-14"
+        className="fixed top-24 left-4 z-50 md:hidden bg-primary text-primary-foreground shadow-glow hover:bg-primary/90 h-14 w-14"
         onClick={() => setIsOpen(!isOpen)}
       >
         {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
