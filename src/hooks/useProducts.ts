@@ -22,6 +22,7 @@ export const useProducts = () => {
         image: product.image,
         description: product.description,
         stock: product.stock,
+        min_stock: product.min_stock || 10,
       })) as Product[];
     },
   });

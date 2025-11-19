@@ -2,23 +2,25 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Package, ShoppingCart, AlertCircle, DollarSign } from "lucide-react";
+import { LowStockAlert } from "@/components/admin/LowStockAlert";
 
 export default function AdminDashboard() {
   const { data: stats } = useQuery({
     queryKey: ['admin-stats'],
     queryFn: async () => {
-      const [productsRes, ordersRes, lowStockRes] = await Promise.all([
-        supabase.from('products').select('id', { count: 'exact', head: true }),
+      const [productsRes, ordersRes] = await Promise.all([
+        supabase.from('products').select('id, stock, min_stock'),
         supabase.from('orders').select('id, total_amount', { count: 'exact' }),
-        supabase.from('products').select('id', { count: 'exact' }).lte('stock', 10),
       ]);
 
+      // Contar produtos com estoque <= min_stock
+      const lowStockItems = productsRes.data?.filter(p => p.stock <= (p.min_stock || 10)).length || 0;
       const totalRevenue = ordersRes.data?.reduce((sum, order) => sum + Number(order.total_amount), 0) || 0;
 
       return {
-        totalProducts: productsRes.count || 0,
+        totalProducts: productsRes.data?.length || 0,
         totalOrders: ordersRes.count || 0,
-        lowStockItems: lowStockRes.count || 0,
+        lowStockItems,
         totalRevenue,
       };
     },
@@ -41,7 +43,7 @@ export default function AdminDashboard() {
       title: "Estoque Baixo",
       value: stats?.lowStockItems || 0,
       icon: AlertCircle,
-      description: "Produtos com estoque ≤ 10",
+      description: "Produtos abaixo do nível mínimo",
       alert: (stats?.lowStockItems || 0) > 0,
     },
     {
@@ -75,6 +77,8 @@ export default function AdminDashboard() {
           </Card>
         ))}
       </div>
+
+      <LowStockAlert />
     </div>
   );
 }
