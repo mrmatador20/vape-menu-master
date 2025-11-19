@@ -69,6 +69,25 @@ export default function AdminStats() {
     );
   }
 
+  if (!salesData || salesData.totalOrders === 0) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold">Dashboard de Vendas</h1>
+          <p className="text-muted-foreground">Visualize estatísticas e gráficos de vendas</p>
+        </div>
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center min-h-[400px] text-center">
+            <p className="text-xl font-semibold mb-2">Nenhum dado disponível</p>
+            <p className="text-muted-foreground">
+              Ainda não há pedidos para exibir estatísticas. Os gráficos aparecerão assim que houver vendas.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   const COLORS = ['hsl(var(--primary))', 'hsl(var(--secondary))', 'hsl(var(--accent))', 'hsl(var(--muted))'];
 
   return (
@@ -103,68 +122,74 @@ export default function AdminStats() {
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Vendas por Mês</CardTitle>
-            <CardDescription>Últimos 6 meses</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={salesData?.monthlyData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="month" stroke="hsl(var(--foreground))" />
-                <YAxis stroke="hsl(var(--foreground))" />
-                <ChartTooltip content={<ChartTooltipContent />} />
-                <Line type="monotone" dataKey="total" stroke="hsl(var(--primary))" strokeWidth={2} />
-              </LineChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
+        {salesData.monthlyData && salesData.monthlyData.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Vendas por Mês</CardTitle>
+              <CardDescription>Últimos 6 meses</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={salesData.monthlyData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="month" stroke="hsl(var(--foreground))" />
+                  <YAxis stroke="hsl(var(--foreground))" />
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <Line type="monotone" dataKey="total" stroke="hsl(var(--primary))" strokeWidth={2} />
+                </LineChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        )}
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Status dos Pedidos</CardTitle>
-            <CardDescription>Distribuição por status</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={salesData?.statusData}
-                  dataKey="count"
-                  nameKey="status"
-                  cx="50%"
-                  cy="50%"
-                  outerRadius={80}
-                  label
-                >
-                  {salesData?.statusData.map((entry: any, index: number) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <ChartTooltip content={<ChartTooltipContent />} />
-              </PieChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
+        {salesData.statusData && salesData.statusData.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Status dos Pedidos</CardTitle>
+              <CardDescription>Distribuição por status</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <PieChart>
+                  <Pie
+                    data={salesData.statusData}
+                    dataKey="count"
+                    nameKey="status"
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={80}
+                    label
+                  >
+                    {salesData.statusData.map((entry: any, index: number) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                </PieChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        )}
 
-        <Card className="md:col-span-2">
-          <CardHeader>
-            <CardTitle>Produtos Mais Vendidos</CardTitle>
-            <CardDescription>Top 5 produtos por quantidade</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={salesData?.topProducts}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="name" stroke="hsl(var(--foreground))" />
-                <YAxis stroke="hsl(var(--foreground))" />
-                <ChartTooltip content={<ChartTooltipContent />} />
-                <Bar dataKey="quantity" fill="hsl(var(--primary))" />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
+        {salesData.topProducts && salesData.topProducts.length > 0 && (
+          <Card className="md:col-span-2">
+            <CardHeader>
+              <CardTitle>Produtos Mais Vendidos</CardTitle>
+              <CardDescription>Top 5 produtos por quantidade</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={salesData.topProducts}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="name" stroke="hsl(var(--foreground))" />
+                  <YAxis stroke="hsl(var(--foreground))" />
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <Bar dataKey="quantity" fill="hsl(var(--primary))" />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );
