@@ -1,5 +1,5 @@
 import { ChevronRight, Menu, X, Package, Sparkles } from "lucide-react";
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import {
   Accordion,
   AccordionContent,
@@ -8,7 +8,6 @@ import {
 } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { useCategories, type Category } from "@/hooks/useCategories";
 
 // Map categories to icons
 const categoryIcons: Record<string, any> = {
@@ -26,43 +25,15 @@ interface CategorySidebarProps {
   categories: string[];
   activeCategory: string;
   onCategoryChange: (category: string) => void;
-  activeSubcategory?: string;
-  onSubcategoryChange: (subcategory: string | undefined) => void;
 }
 
 export function CategorySidebar({
   categories,
   activeCategory,
   onCategoryChange,
-  activeSubcategory,
-  onSubcategoryChange,
 }: CategorySidebarProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isDesktopOpen, setIsDesktopOpen] = useState(true);
-  const { categories: dbCategories } = useCategories();
-
-  // Group subcategories by parent category
-  const categoryMap = useMemo(() => {
-    const map: Record<string, Category[]> = {};
-    
-    categories.forEach(categoryName => {
-      // Find main category in database
-      const mainCategory = dbCategories.find(
-        c => c.name.toLowerCase() === categoryName.toLowerCase() && !c.parent_id
-      );
-      
-      if (mainCategory) {
-        // Get subcategories for this category
-        map[categoryName] = dbCategories
-          .filter(c => c.parent_id === mainCategory.id)
-          .sort((a, b) => a.display_order - b.display_order);
-      } else {
-        map[categoryName] = [];
-      }
-    });
-    
-    return map;
-  }, [categories, dbCategories]);
 
   return (
     <>
@@ -118,8 +89,6 @@ export function CategorySidebar({
               <Accordion type="single" collapsible className="w-full space-y-2">
                 {categories.map((category) => {
                   const Icon = getCategoryIcon(category);
-                  const subcategories = categoryMap[category] || [];
-                  
                   return (
                     <AccordionItem key={category} value={category} className="border-none">
                       <AccordionTrigger className="py-3 hover:no-underline hover:bg-accent/50 px-3 rounded-lg transition-all duration-300">
@@ -128,42 +97,18 @@ export function CategorySidebar({
                           <span className="capitalize text-base font-medium">{category}</span>
                         </div>
                       </AccordionTrigger>
-                      <AccordionContent className="pb-2 space-y-1">
+                      <AccordionContent className="pb-2">
                         <Button
-                          variant={activeCategory === category && !activeSubcategory ? "secondary" : "ghost"}
+                          variant={activeCategory === category ? "secondary" : "ghost"}
                           size="sm"
                           className="w-full justify-start ml-8 gap-2 transition-all duration-300"
                           onClick={() => {
                             onCategoryChange(category);
-                            onSubcategoryChange(undefined);
                             if (window.innerWidth < 768) setIsOpen(false);
                           }}
                         >
-                          <Package className="h-4 w-4" />
-                          Todos os Produtos
+                          Ver Produtos
                         </Button>
-                        
-                        {/* Subcategories */}
-                        {subcategories.length > 0 && (
-                          <div className="ml-8 mt-2 space-y-1 border-l-2 border-border pl-4">
-                            {subcategories.map((subcategory) => (
-                              <Button
-                                key={subcategory.id}
-                                variant={activeSubcategory === subcategory.name ? "secondary" : "ghost"}
-                                size="sm"
-                                className="w-full justify-start gap-2 text-sm transition-all duration-300 hover:bg-accent/50"
-                                onClick={() => {
-                                  onCategoryChange(category);
-                                  onSubcategoryChange(subcategory.name);
-                                  if (window.innerWidth < 768) setIsOpen(false);
-                                }}
-                              >
-                                <ChevronRight className="h-3 w-3" />
-                                {subcategory.name}
-                              </Button>
-                            ))}
-                          </div>
-                        )}
                       </AccordionContent>
                     </AccordionItem>
                   );
