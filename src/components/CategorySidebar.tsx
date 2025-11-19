@@ -26,12 +26,16 @@ interface CategorySidebarProps {
   categories: string[];
   activeCategory: string;
   onCategoryChange: (category: string) => void;
+  activeSubcategory?: string;
+  onSubcategoryChange: (subcategory: string | undefined) => void;
 }
 
 export function CategorySidebar({
   categories,
   activeCategory,
   onCategoryChange,
+  activeSubcategory,
+  onSubcategoryChange,
 }: CategorySidebarProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isDesktopOpen, setIsDesktopOpen] = useState(true);
@@ -126,11 +130,12 @@ export function CategorySidebar({
                       </AccordionTrigger>
                       <AccordionContent className="pb-2 space-y-1">
                         <Button
-                          variant={activeCategory === category ? "secondary" : "ghost"}
+                          variant={activeCategory === category && !activeSubcategory ? "secondary" : "ghost"}
                           size="sm"
                           className="w-full justify-start ml-8 gap-2 transition-all duration-300"
                           onClick={() => {
                             onCategoryChange(category);
+                            onSubcategoryChange(undefined);
                             if (window.innerWidth < 768) setIsOpen(false);
                           }}
                         >
@@ -144,11 +149,12 @@ export function CategorySidebar({
                             {subcategories.map((subcategory) => (
                               <Button
                                 key={subcategory.id}
-                                variant="ghost"
+                                variant={activeSubcategory === subcategory.name ? "secondary" : "ghost"}
                                 size="sm"
                                 className="w-full justify-start gap-2 text-sm transition-all duration-300 hover:bg-accent/50"
                                 onClick={() => {
                                   onCategoryChange(category);
+                                  onSubcategoryChange(subcategory.name);
                                   if (window.innerWidth < 768) setIsOpen(false);
                                 }}
                               >
