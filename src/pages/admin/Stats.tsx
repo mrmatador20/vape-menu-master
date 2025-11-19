@@ -1,18 +1,40 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, PieChart, Pie, Cell } from "recharts";
-import { Loader2 } from "lucide-react";
+import { Loader2, CalendarIcon } from "lucide-react";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 export default function AdminStats() {
+  const [dateFrom, setDateFrom] = useState<Date | undefined>();
+  const [dateTo, setDateTo] = useState<Date | undefined>();
   const { data: salesData, isLoading } = useQuery({
-    queryKey: ['admin-sales-stats'],
+    queryKey: ['admin-sales-stats', dateFrom, dateTo],
     queryFn: async () => {
       // Vendas por mês
-      const { data: orders } = await supabase
+      let query = supabase
         .from('orders')
         .select('id, created_at, total_amount, status');
+
+      // Aplicar filtro de data se definido
+      if (dateFrom) {
+        query = query.gte('created_at', dateFrom.toISOString());
+      }
+      if (dateTo) {
+        // Adicionar 1 dia para incluir todo o dia final
+        const endDate = new Date(dateTo);
+        endDate.setDate(endDate.getDate() + 1);
+        query = query.lt('created_at', endDate.toISOString());
+      }
+
+      const { data: orders } = await query;
 
       if (!orders) return null;
 
@@ -77,12 +99,91 @@ export default function AdminStats() {
   }
 
   if (!salesData || salesData.totalOrders === 0) {
-    return (
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold">Dashboard de Vendas</h1>
-          <p className="text-muted-foreground">Visualize estatísticas e gráficos de vendas</p>
-        </div>
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold">Dashboard de Vendas</h1>
+        <p className="text-muted-foreground">Visualize estatísticas e gráficos de vendas</p>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Filtrar por Período</CardTitle>
+          <CardDescription>Selecione o período para visualizar as estatísticas</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex-1">
+              <label className="text-sm font-medium mb-2 block">Data Inicial</label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !dateFrom && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {dateFrom ? format(dateFrom, "PPP", { locale: ptBR }) : "Selecione a data"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={dateFrom}
+                    onSelect={setDateFrom}
+                    initialFocus
+                    className="pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            <div className="flex-1">
+              <label className="text-sm font-medium mb-2 block">Data Final</label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !dateTo && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {dateTo ? format(dateTo, "PPP", { locale: ptBR }) : "Selecione a data"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={dateTo}
+                    onSelect={setDateTo}
+                    initialFocus
+                    className="pointer-events-auto"
+                    disabled={(date) => dateFrom ? date < dateFrom : false}
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            {(dateFrom || dateTo) && (
+              <div className="flex items-end">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setDateFrom(undefined);
+                    setDateTo(undefined);
+                  }}
+                >
+                  Limpar Filtros
+                </Button>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
         <Card>
           <CardContent className="flex flex-col items-center justify-center min-h-[400px] text-center">
             <p className="text-xl font-semibold mb-2">Nenhum dado disponível</p>
