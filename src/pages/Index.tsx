@@ -55,12 +55,12 @@ const Index = () => {
       </section>
 
       {/* Products Section with Sidebar */}
-      <section className="pb-20 px-4">
-        <div className="container">
+      <section className="pb-20 px-2 sm:px-4">
+        <div className="container max-w-7xl">
           <ProductSearch value={searchQuery} onChange={setSearchQuery} />
           
           {/* Category Carousel */}
-          <div className="my-8">
+          <div className="my-6 md:my-8">
             <CategoryCarousel
               categories={categories}
               activeCategory={activeCategory}
@@ -73,7 +73,7 @@ const Index = () => {
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
           ) : (
-            <div className="flex gap-6">
+            <div className="flex gap-4 md:gap-6">
               {/* Sidebar */}
               <CategorySidebar
                 categories={categories}
@@ -82,8 +82,8 @@ const Index = () => {
               />
 
               {/* Products Grid */}
-              <div className="flex-1">
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="flex-1 min-w-0">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
                   {filteredProducts.map((product) => (
                     <ProductCard
                       key={product.id}
