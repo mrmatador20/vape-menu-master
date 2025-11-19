@@ -8,11 +8,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useMemo } from "react";
-import type { Category } from "@/hooks/useCategories";
+import { Product } from "@/context/CartContext";
 
 interface CategoryCarouselProps {
   categories: string[];
-  dbCategories: Category[];
+  products: Product[];
   activeCategory: string;
   activeSubcategory: string;
   onCategoryChange: (category: string) => void;
@@ -21,28 +21,23 @@ interface CategoryCarouselProps {
 
 export function CategoryCarousel({
   categories,
-  dbCategories,
+  products,
   activeCategory,
   activeSubcategory,
   onCategoryChange,
   onSubcategoryChange,
 }: CategoryCarouselProps) {
-  // Get subcategories for the active category
+  // Get subcategories for the active category from products
   const subcategories = useMemo(() => {
     if (activeCategory === 'all') return [];
     
-    // Find main category in database
-    const mainCategory = dbCategories.find(
-      c => c.name.toLowerCase() === activeCategory.toLowerCase() && !c.parent_id
-    );
+    // Get unique subcategories for this category from products
+    const subs = products
+      .filter(p => p.category === activeCategory && p.subcategory)
+      .map(p => p.subcategory as string);
     
-    if (!mainCategory) return [];
-    
-    // Get all subcategories for this main category
-    return dbCategories
-      .filter(c => c.parent_id === mainCategory.id)
-      .sort((a, b) => a.display_order - b.display_order);
-  }, [activeCategory, dbCategories]);
+    return Array.from(new Set(subs)).sort();
+  }, [activeCategory, products]);
 
   return (
     <div className="w-full max-w-6xl mx-auto px-16 sm:px-20 md:px-24 relative space-y-4">
@@ -114,18 +109,18 @@ export function CategoryCarousel({
                   Todas
                 </Button>
               </CarouselItem>
-              {subcategories.map((subcategory) => (
-                <CarouselItem key={subcategory.id} className="pl-2 md:pl-3 basis-auto">
+              {subcategories.map((subcat) => (
+                <CarouselItem key={subcat} className="pl-2 md:pl-3 basis-auto">
                   <Button
-                    variant={activeSubcategory === subcategory.name ? "secondary" : "ghost"}
+                    variant={activeSubcategory === subcat ? "secondary" : "ghost"}
                     size="sm"
                     className={cn(
                       "whitespace-nowrap capitalize transition-all duration-300 hover:scale-105 font-medium px-4",
-                      activeSubcategory === subcategory.name && "scale-105"
+                      activeSubcategory === subcat && "scale-105"
                     )}
-                    onClick={() => onSubcategoryChange(subcategory.name)}
+                    onClick={() => onSubcategoryChange(subcat)}
                   >
-                    {subcategory.name}
+                    {subcat}
                   </Button>
                 </CarouselItem>
               ))}
