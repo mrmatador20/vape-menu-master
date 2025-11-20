@@ -16,6 +16,13 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -32,7 +39,8 @@ const productSchema = z.object({
   price: z.string().min(1, "Preço é obrigatório"),
   stock: z.string().min(0, "Estoque é obrigatório"),
   min_stock: z.string().min(0, "Nível mínimo é obrigatório"),
-  discount_percent: z.string().optional(),
+  discount_type: z.enum(['percent', 'fixed']).optional(),
+  discount_value: z.string().optional(),
   image: z.string().url("URL inválida").optional().or(z.literal("")),
   description: z.string().optional(),
 });
@@ -58,7 +66,8 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
       price: "",
       stock: "0",
       min_stock: "10",
-      discount_percent: "0",
+      discount_type: "percent",
+      discount_value: "0",
       image: "",
       description: "",
     },
@@ -73,7 +82,8 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
         price: product.price.toString(),
         stock: product.stock.toString(),
         min_stock: product.min_stock?.toString() || "10",
-        discount_percent: ((product as any).discount_percent || 0).toString(),
+        discount_type: ((product as any).discount_type || 'percent') as 'percent' | 'fixed',
+        discount_value: ((product as any).discount_value || 0).toString(),
         image: product.image || "",
         description: product.description || "",
       });
@@ -85,7 +95,8 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
         price: "",
         stock: "0",
         min_stock: "10",
-        discount_percent: "0",
+        discount_type: "percent",
+        discount_value: "0",
         image: "",
         description: "",
       });
@@ -100,7 +111,8 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
       price: parseFloat(values.price),
       stock: parseInt(values.stock),
       min_stock: parseInt(values.min_stock),
-      discount_percent: parseInt(values.discount_percent || "0"),
+      discount_type: values.discount_type || 'percent',
+      discount_value: parseFloat(values.discount_value || "0"),
       image: values.image || null,
       description: values.description || null,
     };
@@ -256,21 +268,54 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
 
               <FormField
                 control={form.control}
-                name="discount_percent"
+                name="discount_type"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Desconto (%)</FormLabel>
-                    <FormControl>
-                      <Input type="number" min="0" max="100" placeholder="0" {...field} />
-                    </FormControl>
-                    <p className="text-xs text-muted-foreground">
-                      Desconto individual deste produto (0-100%)
-                    </p>
+                    <FormLabel>Tipo de Desconto</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione o tipo" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="percent">Percentual (%)</SelectItem>
+                        <SelectItem value="fixed">Valor Fixo (R$)</SelectItem>
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
               />
             </div>
+
+            <FormField
+              control={form.control}
+              name="discount_value"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>
+                    {form.watch('discount_type') === 'percent' ? 'Desconto (%)' : 'Desconto (R$)'}
+                  </FormLabel>
+                  <FormControl>
+                    <Input 
+                      type="number" 
+                      step={form.watch('discount_type') === 'percent' ? '1' : '0.01'}
+                      min="0" 
+                      max={form.watch('discount_type') === 'percent' ? '100' : undefined}
+                      placeholder={form.watch('discount_type') === 'percent' ? '0-100' : '0.00'}
+                      {...field} 
+                    />
+                  </FormControl>
+                  <p className="text-xs text-muted-foreground">
+                    {form.watch('discount_type') === 'percent' 
+                      ? 'Desconto percentual individual (0-100%)' 
+                      : 'Valor fixo de desconto em reais'}
+                  </p>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
 
             <FormField
