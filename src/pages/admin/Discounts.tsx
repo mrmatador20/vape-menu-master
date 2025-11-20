@@ -16,13 +16,34 @@ export default function AdminDiscounts() {
   const { data: discounts, isLoading } = useQuery({
     queryKey: ['admin-discounts'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // Fetch discounts
+      const { data: discountsData, error: discountsError } = await supabase
         .from('discounts')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      return data;
+      if (discountsError) throw discountsError;
+      if (!discountsData) return [];
+
+      // Fetch usage counts for all discounts
+      const { data: usageCounts, error: usageError } = await supabase
+        .from('discount_usage')
+        .select('discount_id');
+
+      if (usageError) throw usageError;
+
+      // Count usage per discount
+      const usageMap = new Map<string, number>();
+      usageCounts?.forEach(usage => {
+        const count = usageMap.get(usage.discount_id) || 0;
+        usageMap.set(usage.discount_id, count + 1);
+      });
+
+      // Combine data
+      return discountsData.map(discount => ({
+        ...discount,
+        usage_count: usageMap.get(discount.id) || 0
+      }));
     },
   });
 
@@ -89,6 +110,7 @@ export default function AdminDiscounts() {
                 <TableHead>Valor</TableHead>
                 <TableHead>Agendamento</TableHead>
                 <TableHead>Validade</TableHead>
+                <TableHead>Usos</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Ações</TableHead>
               </TableRow>
@@ -114,6 +136,15 @@ export default function AdminDiscounts() {
                     {discount.valid_until 
                       ? new Date(discount.valid_until).toLocaleDateString('pt-BR')
                       : 'Sem limite'}
+                  </TableCell>
+                  <TableCell>
+                    <span className={discount.max_uses ? 'font-medium' : ''}>
+                      {discount.usage_count || 0}
+                      {discount.max_uses && ` / ${discount.max_uses}`}
+                    </span>
+                    {discount.max_uses && discount.usage_count >= discount.max_uses && (
+                      <Badge variant="destructive" className="ml-2">Esgotado</Badge>
+                    )}
                   </TableCell>
                   <TableCell>
                     <Badge variant={discount.is_active ? "default" : "secondary"}>
