@@ -33,8 +33,12 @@ const ProductCard = ({ product, onAddToCart }: ProductCardProps) => {
   const { data: discounts } = useDiscounts();
   
   // Calculate product individual discount first
-  const productDiscount = product.discount_percent || 0;
-  const priceAfterProductDiscount = product.price * (1 - productDiscount / 100);
+  const discountValue = product.discount_value || 0;
+  const discountType = product.discount_type || 'percent';
+  
+  const priceAfterProductDiscount = discountType === 'percent'
+    ? product.price * (1 - discountValue / 100)
+    : product.price - discountValue;
   
   // Then apply global discounts on top of product discount
   const finalPrice = calculateDiscountedPrice(priceAfterProductDiscount, discounts || []);
