@@ -50,7 +50,15 @@ export function DiscountFormDialog({ open, onOpenChange }: DiscountFormDialogPro
   });
 
   const onSubmit = (data: any) => {
-    createMutation.mutate(data);
+    // Clean up data - convert empty strings to null for time fields
+    const cleanedData = {
+      ...data,
+      start_time: data.start_time || null,
+      end_time: data.end_time || null,
+      valid_until: data.valid_until || null,
+      max_uses: data.max_uses || null,
+    };
+    createMutation.mutate(cleanedData);
   };
 
   return (
