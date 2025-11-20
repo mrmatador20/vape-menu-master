@@ -26,6 +26,13 @@ const Checkout = () => {
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
+  const [appliedDiscount, setAppliedDiscount] = useState<{
+    code: string;
+    type: string;
+    value: number;
+    discountAmount: number;
+  } | null>(null);
+  const [isValidatingCode, setIsValidatingCode] = useState(false);
 
   const [formData, setFormData] = useState({
     rua: '',
@@ -66,6 +73,68 @@ const Checkout = () => {
   const handlePaymentChange = (value: string) => {
     setFormData(prev => ({ ...prev, paymentMethod: value }));
   };
+
+  const handleApplyDiscount = async () => {
+    const code = formData.discountCode.trim().toUpperCase();
+    
+    if (!code) {
+      toast.error('Digite um código de desconto');
+      return;
+    }
+
+    setIsValidatingCode(true);
+
+    try {
+      const { data, error } = await supabase.rpc('validate_discount_code', {
+        code_input: code
+      });
+
+      if (error) throw error;
+
+      if (!data || data.length === 0) {
+        toast.error('Cupom não existe ou não está ativo');
+        setAppliedDiscount(null);
+        return;
+      }
+
+      const discount = data[0];
+      let discountAmount = 0;
+
+      if (discount.type === 'percent') {
+        discountAmount = (totalPrice * discount.value) / 100;
+      } else {
+        discountAmount = discount.value;
+      }
+
+      // Não pode descontar mais que o total
+      discountAmount = Math.min(discountAmount, totalPrice);
+
+      setAppliedDiscount({
+        code: discount.code,
+        type: discount.type,
+        value: discount.value,
+        discountAmount
+      });
+
+      toast.success(`Cupom aplicado! Desconto de R$ ${discountAmount.toFixed(2)}`);
+    } catch (error) {
+      console.error('Erro ao validar cupom:', error);
+      toast.error('Erro ao validar cupom');
+      setAppliedDiscount(null);
+    } finally {
+      setIsValidatingCode(false);
+    }
+  };
+
+  const handleRemoveDiscount = () => {
+    setAppliedDiscount(null);
+    setFormData(prev => ({ ...prev, discountCode: '' }));
+    toast.info('Cupom removido');
+  };
+
+  const finalTotal = appliedDiscount 
+    ? Math.max(0, totalPrice - appliedDiscount.discountAmount)
+    : totalPrice;
 
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -110,7 +179,7 @@ const Checkout = () => {
           },
           paymentMethod: validatedData.paymentMethod,
           changeAmount: validatedData.changeAmount,
-          discountCode: formData.discountCode || undefined,
+          discountCode: appliedDiscount?.code || undefined,
         }
       });
 
@@ -286,14 +355,53 @@ const Checkout = () => {
 
               <div>
                 <Label htmlFor="discountCode">Código de Desconto (opcional)</Label>
-                <Input
-                  id="discountCode"
-                  name="discountCode"
-                  value={formData.discountCode}
-                  onChange={handleInputChange}
-                  placeholder="Ex: DESCONTO10"
-                  disabled={isSubmitting}
-                />
+                <div className="flex gap-2">
+                  <Input
+                    id="discountCode"
+                    name="discountCode"
+                    value={formData.discountCode}
+                    onChange={(e) => {
+                      handleInputChange(e);
+                      setAppliedDiscount(null);
+                    }}
+                    placeholder="Ex: DESCONTO10"
+                    disabled={isSubmitting || isValidatingCode}
+                    className="uppercase"
+                  />
+                  {appliedDiscount ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handleRemoveDiscount}
+                      disabled={isSubmitting}
+                    >
+                      Remover
+                    </Button>
+                  ) : (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handleApplyDiscount}
+                      disabled={isSubmitting || isValidatingCode || !formData.discountCode}
+                    >
+                      {isValidatingCode ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        </>
+                      ) : (
+                        'Aplicar'
+                      )}
+                    </Button>
+                  )}
+                </div>
+                {appliedDiscount && (
+                  <p className="text-sm text-green-600 mt-1">
+                    ✓ Cupom "{appliedDiscount.code}" aplicado - 
+                    {appliedDiscount.type === 'percent' 
+                      ? ` ${appliedDiscount.value}% de desconto`
+                      : ` R$ ${appliedDiscount.value.toFixed(2)} de desconto`}
+                  </p>
+                )}
               </div>
 
               <Button
@@ -328,10 +436,22 @@ const Checkout = () => {
                 </div>
               ))}
 
-              <div className="border-t pt-4">
+              <div className="border-t pt-4 space-y-2">
+                {appliedDiscount && (
+                  <>
+                    <div className="flex justify-between text-muted-foreground">
+                      <span>Subtotal</span>
+                      <span>R$ {totalPrice.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between text-green-600">
+                      <span>Desconto ({appliedDiscount.code})</span>
+                      <span>- R$ {appliedDiscount.discountAmount.toFixed(2)}</span>
+                    </div>
+                  </>
+                )}
                 <div className="flex justify-between font-bold text-xl">
                   <span>Total</span>
-                  <span>R$ {totalPrice.toFixed(2)}</span>
+                  <span>R$ {finalTotal.toFixed(2)}</span>
                 </div>
               </div>
             </div>
