@@ -11,6 +11,7 @@ export interface Product {
   description: string;
   stock: number;
   min_stock: number;
+  discount_percent?: number;
 }
 
 export interface CartItem extends Product {
