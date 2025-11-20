@@ -356,6 +356,22 @@ export type Database = {
         }
         Returns: boolean
       }
+      validate_discount_code: {
+        Args: { code_input: string }
+        Returns: {
+          code: string
+          day_of_week: number
+          end_time: string
+          id: string
+          is_active: boolean
+          max_uses: number
+          schedule_type: string
+          start_time: string
+          type: string
+          valid_until: string
+          value: number
+        }[]
+      }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"

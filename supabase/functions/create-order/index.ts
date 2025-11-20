@@ -82,6 +82,27 @@ serve(async (req) => {
       );
     }
 
+    // Rate limiting: Check recent orders
+    const RATE_LIMIT_WINDOW = 60; // 1 minute in seconds
+    const MAX_ORDERS_PER_WINDOW = 3; // Max 3 orders per minute
+    
+    const { count: recentOrdersCount, error: rateLimitError } = await supabaseClient
+      .from('orders')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .gte('created_at', new Date(Date.now() - RATE_LIMIT_WINDOW * 1000).toISOString());
+
+    if (rateLimitError) {
+      console.error('Rate limit check failed');
+    }
+
+    if (recentOrdersCount !== null && recentOrdersCount >= MAX_ORDERS_PER_WINDOW) {
+      return new Response(
+        JSON.stringify({ error: 'Muitos pedidos. Por favor, aguarde antes de fazer outro pedido.' }),
+        { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     // Parse and validate request body
     const rawData = await req.json();
     
@@ -213,20 +234,18 @@ serve(async (req) => {
     let discountId: string | null = null;
 
     if (orderData.discountCode) {
-      // Fetch discount from Supabase
-      const { data: discount, error: discountError } = await supabaseClient
-        .from('discounts')
-        .select('id, value, type, valid_until, schedule_type, max_uses')
-        .eq('code', orderData.discountCode)
-        .eq('is_active', true)
-        .single();
+      // Use secure RPC function to validate discount code (prevents enumeration)
+      const { data: discounts, error: discountError } = await supabaseClient
+        .rpc('validate_discount_code', { code_input: orderData.discountCode });
 
-      if (discountError || !discount) {
+      if (discountError || !discounts || discounts.length === 0) {
         return new Response(
-          JSON.stringify({ error: 'Invalid or expired discount code' }),
+          JSON.stringify({ error: 'Código de desconto inválido ou expirado' }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
+
+      const discount = discounts[0];
 
       // Check if discount is valid
       if (discount.valid_until && new Date(discount.valid_until) < new Date()) {
