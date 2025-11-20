@@ -23,6 +23,7 @@ export const useProducts = () => {
         description: product.description,
         stock: product.stock,
         min_stock: product.min_stock || 10,
+        discount_percent: product.discount_percent || 0,
       })).sort((a, b) => {
         // Produtos com estoque primeiro, esgotados por último
         if (a.stock > 0 && b.stock === 0) return -1;

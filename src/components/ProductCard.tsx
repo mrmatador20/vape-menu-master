@@ -32,8 +32,14 @@ const ProductCard = ({ product, onAddToCart }: ProductCardProps) => {
   const { data: flavors } = useFlavors(product.id);
   const { data: discounts } = useDiscounts();
   
-  const discountedPrice = calculateDiscountedPrice(product.price, discounts || []);
-  const hasDiscount = discountedPrice < product.price;
+  // Calculate product individual discount first
+  const productDiscount = product.discount_percent || 0;
+  const priceAfterProductDiscount = product.price * (1 - productDiscount / 100);
+  
+  // Then apply global discounts on top of product discount
+  const finalPrice = calculateDiscountedPrice(priceAfterProductDiscount, discounts || []);
+  const hasDiscount = finalPrice < product.price;
+  const totalDiscountPercent = Math.round(((product.price - finalPrice) / product.price) * 100);
   
   // Determine if product is out of stock based on whether it has flavors
   const isOutOfStock = flavors && flavors.length > 0
@@ -70,7 +76,7 @@ const ProductCard = ({ product, onAddToCart }: ProductCardProps) => {
         )}
         {hasDiscount && !isOutOfStock && (
           <div className="absolute top-2 right-2 bg-primary text-primary-foreground px-3 py-1 rounded-full text-sm font-bold z-10">
-            {Math.round(((product.price - discountedPrice) / product.price) * 100)}% OFF
+            {totalDiscountPercent}% OFF
           </div>
         )}
         <img
@@ -143,7 +149,7 @@ const ProductCard = ({ product, onAddToCart }: ProductCardProps) => {
               </span>
             )}
             <span className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-              R$ {discountedPrice.toFixed(2)}
+              R$ {finalPrice.toFixed(2)}
             </span>
           </div>
           <Button

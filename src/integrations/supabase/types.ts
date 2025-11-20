@@ -254,6 +254,7 @@ export type Database = {
           category: string
           created_at: string | null
           description: string | null
+          discount_percent: number | null
           id: string
           image: string | null
           min_stock: number | null
@@ -266,6 +267,7 @@ export type Database = {
           category: string
           created_at?: string | null
           description?: string | null
+          discount_percent?: number | null
           id?: string
           image?: string | null
           min_stock?: number | null
@@ -278,6 +280,7 @@ export type Database = {
           category?: string
           created_at?: string | null
           description?: string | null
+          discount_percent?: number | null
           id?: string
           image?: string | null
           min_stock?: number | null

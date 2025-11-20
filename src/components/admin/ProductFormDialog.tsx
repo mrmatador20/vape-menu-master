@@ -32,6 +32,7 @@ const productSchema = z.object({
   price: z.string().min(1, "Preço é obrigatório"),
   stock: z.string().min(0, "Estoque é obrigatório"),
   min_stock: z.string().min(0, "Nível mínimo é obrigatório"),
+  discount_percent: z.string().optional(),
   image: z.string().url("URL inválida").optional().or(z.literal("")),
   description: z.string().optional(),
 });
@@ -57,6 +58,7 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
       price: "",
       stock: "0",
       min_stock: "10",
+      discount_percent: "0",
       image: "",
       description: "",
     },
@@ -71,6 +73,7 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
         price: product.price.toString(),
         stock: product.stock.toString(),
         min_stock: product.min_stock?.toString() || "10",
+        discount_percent: ((product as any).discount_percent || 0).toString(),
         image: product.image || "",
         description: product.description || "",
       });
@@ -82,6 +85,7 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
         price: "",
         stock: "0",
         min_stock: "10",
+        discount_percent: "0",
         image: "",
         description: "",
       });
@@ -96,6 +100,7 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
       price: parseFloat(values.price),
       stock: parseInt(values.stock),
       min_stock: parseInt(values.min_stock),
+      discount_percent: parseInt(values.discount_percent || "0"),
       image: values.image || null,
       description: values.description || null,
     };
@@ -231,22 +236,42 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
               />
             </div>
 
-            <FormField
-              control={form.control}
-              name="min_stock"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Nível Mínimo de Estoque (Alerta)</FormLabel>
-                  <FormControl>
-                    <Input type="number" placeholder="10" {...field} />
-                  </FormControl>
-                  <p className="text-xs text-muted-foreground">
-                    Sistema alertará quando estoque atingir este nível
-                  </p>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="min_stock"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nível Mínimo de Estoque</FormLabel>
+                    <FormControl>
+                      <Input type="number" placeholder="10" {...field} />
+                    </FormControl>
+                    <p className="text-xs text-muted-foreground">
+                      Sistema alertará quando atingir este nível
+                    </p>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="discount_percent"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Desconto (%)</FormLabel>
+                    <FormControl>
+                      <Input type="number" min="0" max="100" placeholder="0" {...field} />
+                    </FormControl>
+                    <p className="text-xs text-muted-foreground">
+                      Desconto individual deste produto (0-100%)
+                    </p>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
 
             <FormField
               control={form.control}
