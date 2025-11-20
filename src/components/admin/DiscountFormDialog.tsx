@@ -22,10 +22,10 @@ export function DiscountFormDialog({ open, onOpenChange }: DiscountFormDialogPro
       type: 'percent',
       value: 0,
       schedule_type: 'permanent',
-      start_time: '',
-      end_time: '',
+      start_time: null as string | null,
+      end_time: null as string | null,
       day_of_week: 0,
-      valid_until: '',
+      valid_until: null as string | null,
       is_active: true,
       max_uses: null as number | null,
     },
@@ -50,14 +50,21 @@ export function DiscountFormDialog({ open, onOpenChange }: DiscountFormDialogPro
   });
 
   const onSubmit = (data: any) => {
-    // Clean up data - convert empty strings to null for time fields
+    // Clean up data - convert empty strings to null for optional fields
     const cleanedData = {
-      ...data,
-      start_time: data.start_time || null,
-      end_time: data.end_time || null,
-      valid_until: data.valid_until || null,
-      max_uses: data.max_uses || null,
+      code: data.code,
+      type: data.type,
+      value: Number(data.value),
+      schedule_type: data.schedule_type,
+      start_time: data.start_time && data.start_time.trim() !== '' ? data.start_time : null,
+      end_time: data.end_time && data.end_time.trim() !== '' ? data.end_time : null,
+      day_of_week: data.schedule_type === 'daily' ? Number(data.day_of_week) : null,
+      valid_until: data.valid_until && data.valid_until.trim() !== '' ? data.valid_until : null,
+      max_uses: data.max_uses && Number(data.max_uses) > 0 ? Number(data.max_uses) : null,
+      is_active: data.is_active,
     };
+    
+    console.log('Dados a serem enviados:', cleanedData);
     createMutation.mutate(cleanedData);
   };
 
