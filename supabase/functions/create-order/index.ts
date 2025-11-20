@@ -265,14 +265,14 @@ serve(async (req) => {
         if (countError) {
           console.error('Error checking discount usage:', countError);
           return new Response(
-            JSON.stringify({ error: 'Failed to validate discount code' }),
+            JSON.stringify({ error: 'Falha ao validar cupom de desconto' }),
             { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           );
         }
 
         if (count && count >= discount.max_uses) {
           return new Response(
-            JSON.stringify({ error: 'Discount code usage limit reached' }),
+            JSON.stringify({ error: `Cupom atingiu o limite de ${discount.max_uses} usos` }),
             { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           );
         }
@@ -289,14 +289,14 @@ serve(async (req) => {
       if (usageError) {
         console.error('Error checking user discount usage:', usageError);
         return new Response(
-          JSON.stringify({ error: 'Failed to validate discount code' }),
+          JSON.stringify({ error: 'Falha ao validar cupom de desconto' }),
           { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
 
       if (existingUsage) {
         return new Response(
-          JSON.stringify({ error: 'You have already used this discount code' }),
+          JSON.stringify({ error: 'Você já utilizou este cupom anteriormente' }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }

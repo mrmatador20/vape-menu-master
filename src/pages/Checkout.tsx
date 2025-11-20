@@ -82,6 +82,11 @@ const Checkout = () => {
       return;
     }
 
+    if (!userId) {
+      toast.error('Você precisa estar logado para aplicar cupons');
+      return;
+    }
+
     setIsValidatingCode(true);
 
     try {
@@ -98,6 +103,49 @@ const Checkout = () => {
       }
 
       const discount = data[0];
+
+      // Verificar limite total de usos
+      if (discount.max_uses) {
+        const { count, error: countError } = await supabase
+          .from('discount_usage')
+          .select('*', { count: 'exact', head: true })
+          .eq('discount_id', discount.id);
+
+        if (countError) {
+          console.error('Erro ao verificar uso do cupom:', countError);
+          toast.error('Erro ao validar cupom');
+          setAppliedDiscount(null);
+          return;
+        }
+
+        if (count !== null && count >= discount.max_uses) {
+          toast.error(`Cupom atingiu o limite de ${discount.max_uses} usos`);
+          setAppliedDiscount(null);
+          return;
+        }
+      }
+
+      // Verificar se o usuário já usou este cupom
+      const { data: existingUsage, error: usageError } = await supabase
+        .from('discount_usage')
+        .select('id')
+        .eq('discount_id', discount.id)
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      if (usageError) {
+        console.error('Erro ao verificar uso do cupom pelo usuário:', usageError);
+        toast.error('Erro ao validar cupom');
+        setAppliedDiscount(null);
+        return;
+      }
+
+      if (existingUsage) {
+        toast.error('Você já utilizou este cupom anteriormente');
+        setAppliedDiscount(null);
+        return;
+      }
+
       let discountAmount = 0;
 
       if (discount.type === 'percent') {
