@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useActiveBanners } from '@/hooks/useBanners';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -45,19 +45,33 @@ export const BannerCarousel = () => {
   const { data: banners, isLoading } = useActiveBanners();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  useEffect(() => {
-    if (!banners || banners.length === 0) return;
+  const clearRotationInterval = () => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+  };
 
-    const interval = setInterval(() => {
+  const startRotationInterval = () => {
+    if (!banners || banners.length <= 1) return;
+    
+    clearRotationInterval();
+    
+    const rotationTime = (banners[currentIndex]?.rotation_seconds || 5) * 1000;
+    intervalRef.current = setInterval(() => {
       setIsTransitioning(true);
       setTimeout(() => {
-        setCurrentIndex((prevIndex) => (prevIndex + 1) % banners.length);
+        setCurrentIndex((prev) => (prev + 1) % banners.length);
         setIsTransitioning(false);
       }, 500);
-    }, (banners[currentIndex]?.rotation_seconds || 5) * 1000);
+    }, rotationTime);
+  };
 
-    return () => clearInterval(interval);
+  useEffect(() => {
+    startRotationInterval();
+    return () => clearRotationInterval();
   }, [banners, currentIndex]);
 
   if (isLoading || !banners || banners.length === 0) return null;
@@ -69,6 +83,8 @@ export const BannerCarousel = () => {
   );
 
   const nextBanner = () => {
+    if (isTransitioning) return;
+    clearRotationInterval();
     setIsTransitioning(true);
     setTimeout(() => {
       setCurrentIndex((prevIndex) => (prevIndex + 1) % banners.length);
@@ -77,9 +93,21 @@ export const BannerCarousel = () => {
   };
 
   const prevBanner = () => {
+    if (isTransitioning) return;
+    clearRotationInterval();
     setIsTransitioning(true);
     setTimeout(() => {
       setCurrentIndex((prevIndex) => (prevIndex - 1 + banners.length) % banners.length);
+      setIsTransitioning(false);
+    }, 500);
+  };
+
+  const goToBanner = (index: number) => {
+    if (isTransitioning || index === currentIndex) return;
+    clearRotationInterval();
+    setIsTransitioning(true);
+    setTimeout(() => {
+      setCurrentIndex(index);
       setIsTransitioning(false);
     }, 500);
   };
@@ -125,15 +153,7 @@ export const BannerCarousel = () => {
             {banners.map((_, index) => (
               <button
                 key={index}
-                onClick={() => {
-                  if (!isTransitioning && index !== currentIndex) {
-                    setIsTransitioning(true);
-                    setTimeout(() => {
-                      setCurrentIndex(index);
-                      setIsTransitioning(false);
-                    }, 500);
-                  }
-                }}
+                onClick={() => goToBanner(index)}
                 className="w-2 h-2 rounded-full transition-all duration-300 bg-white"
                 style={{
                   opacity: index === currentIndex ? 1 : 0.4,
@@ -207,15 +227,7 @@ export const BannerCarousel = () => {
             {banners.map((_, index) => (
               <button
                 key={index}
-                onClick={() => {
-                  if (!isTransitioning && index !== currentIndex) {
-                    setIsTransitioning(true);
-                    setTimeout(() => {
-                      setCurrentIndex(index);
-                      setIsTransitioning(false);
-                    }, 500);
-                  }
-                }}
+                onClick={() => goToBanner(index)}
                 className="w-2 h-2 rounded-full transition-all duration-300"
                 style={{
                   backgroundColor: currentBanner.text_color,
