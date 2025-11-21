@@ -105,8 +105,8 @@ const ProductCard = ({ product, onAddToCart }: ProductCardProps) => {
           className={`w-full h-full object-cover transition-transform duration-300 ${!isOutOfStock && 'group-hover:scale-110'}`}
         />
       </div>
-      <div className="p-4 space-y-3">
-        <div>
+      <div className="p-4 flex flex-col h-full">
+        <div className="mb-3">
           <h3 className="font-semibold text-lg text-foreground group-hover:text-primary transition-colors">
             {product.name}
           </h3>
@@ -139,8 +139,10 @@ const ProductCard = ({ product, onAddToCart }: ProductCardProps) => {
           )}
         </div>
         
+        <div className="flex-grow"></div>
+        
         {flavors && flavors.length > 0 && !isOutOfStock && (
-          <div className="space-y-2">
+          <div className="space-y-2 mb-3">
             <label className="text-sm font-medium">Escolha o sabor:</label>
             <Select value={selectedFlavor} onValueChange={setSelectedFlavor}>
               <SelectTrigger className="w-full">
@@ -161,7 +163,7 @@ const ProductCard = ({ product, onAddToCart }: ProductCardProps) => {
           </div>
         )}
         
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between mb-3">
           <div className="space-y-1">
             {hasDiscount && (
               <span className="text-sm text-muted-foreground line-through block">
