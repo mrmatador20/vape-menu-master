@@ -17,9 +17,11 @@ export type Database = {
       banners: {
         Row: {
           background_color: string
+          background_image_url: string | null
           created_at: string
           description: string | null
           display_order: number
+          full_banner_image_url: string | null
           id: string
           is_active: boolean
           rotation_seconds: number
@@ -29,9 +31,11 @@ export type Database = {
         }
         Insert: {
           background_color?: string
+          background_image_url?: string | null
           created_at?: string
           description?: string | null
           display_order?: number
+          full_banner_image_url?: string | null
           id?: string
           is_active?: boolean
           rotation_seconds?: number
@@ -41,9 +45,11 @@ export type Database = {
         }
         Update: {
           background_color?: string
+          background_image_url?: string | null
           created_at?: string
           description?: string | null
           display_order?: number
+          full_banner_image_url?: string | null
           id?: string
           is_active?: boolean
           rotation_seconds?: number
