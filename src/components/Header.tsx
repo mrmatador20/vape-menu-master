@@ -1,14 +1,47 @@
-import { ShoppingCart, Settings, Package } from 'lucide-react';
+import { ShoppingCart, Settings, Package, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCart } from '@/context/CartContext';
 import { useNavigate } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 import { useUserRole } from '@/hooks/useUserRole';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import { useState, useEffect } from 'react';
 
 const Header = () => {
   const { totalItems } = useCart();
   const navigate = useNavigate();
   const { data: role } = useUserRole();
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    // Check current session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setIsLoggedIn(!!session);
+    });
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setIsLoggedIn(!!session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleLogout = async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) throw error;
+
+      toast.success('Logout realizado com sucesso!');
+      navigate('/auth');
+    } catch (error: any) {
+      toast.error('Erro ao fazer logout', {
+        description: error.message
+      });
+    }
+  };
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -57,6 +90,17 @@ const Header = () => {
               </Badge>
             )}
           </Button>
+
+          {isLoggedIn && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="border-destructive/50 hover:bg-destructive/10"
+              onClick={handleLogout}
+            >
+              <LogOut className="h-5 w-5 text-destructive" />
+            </Button>
+          )}
         </div>
       </div>
     </header>
