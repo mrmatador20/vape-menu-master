@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { ShoppingCart, ChevronDown, ChevronUp } from 'lucide-react';
 import { useFlavors } from '@/hooks/useFlavors';
+import { useDiscounts, calculateDiscountedPrice } from '@/hooks/useDiscounts';
 import {
   Select,
   SelectContent,
@@ -29,6 +30,20 @@ const ProductCard = ({ product, onAddToCart }: ProductCardProps) => {
   const [isDescriptionOpen, setIsDescriptionOpen] = useState(false);
   const [showReviews, setShowReviews] = useState(false);
   const { data: flavors } = useFlavors(product.id);
+  const { data: discounts } = useDiscounts();
+  
+  // Calculate product individual discount first
+  const discountValue = product.discount_value || 0;
+  const discountType = product.discount_type || 'percent';
+  
+  const priceAfterProductDiscount = discountType === 'percent'
+    ? product.price * (1 - discountValue / 100)
+    : product.price - discountValue;
+  
+  // Then apply global discounts on top of product discount
+  const finalPrice = calculateDiscountedPrice(priceAfterProductDiscount, discounts || []);
+  const hasDiscount = finalPrice < product.price;
+  const totalDiscountPercent = Math.round(((product.price - finalPrice) / product.price) * 100);
   
   // Determine if product is out of stock based on whether it has flavors
   const isOutOfStock = flavors && flavors.length > 0
@@ -61,6 +76,11 @@ const ProductCard = ({ product, onAddToCart }: ProductCardProps) => {
         {isOutOfStock && (
           <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-10">
             <span className="text-white text-2xl font-bold">ESGOTADO</span>
+          </div>
+        )}
+        {hasDiscount && !isOutOfStock && (
+          <div className="absolute top-2 right-2 bg-primary text-primary-foreground px-3 py-1 rounded-full text-sm font-bold z-10">
+            {totalDiscountPercent}% OFF
           </div>
         )}
         <img
@@ -126,9 +146,14 @@ const ProductCard = ({ product, onAddToCart }: ProductCardProps) => {
         )}
         
         <div className="flex items-center justify-between">
-          <div>
+          <div className="space-y-1">
+            {hasDiscount && (
+              <span className="text-sm text-muted-foreground line-through block">
+                R$ {product.price.toFixed(2)}
+              </span>
+            )}
             <span className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-              R$ {product.price.toFixed(2)}
+              R$ {finalPrice.toFixed(2)}
             </span>
           </div>
           <Button
