@@ -27,6 +27,7 @@ export type Database = {
           rotation_seconds: number
           text_color: string
           title: string
+          transition_type: string
           updated_at: string
         }
         Insert: {
@@ -41,6 +42,7 @@ export type Database = {
           rotation_seconds?: number
           text_color?: string
           title: string
+          transition_type?: string
           updated_at?: string
         }
         Update: {
@@ -55,6 +57,7 @@ export type Database = {
           rotation_seconds?: number
           text_color?: string
           title?: string
+          transition_type?: string
           updated_at?: string
         }
         Relationships: []
