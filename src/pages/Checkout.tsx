@@ -472,17 +472,25 @@ const Checkout = () => {
           <Card className="p-6">
             <h2 className="text-2xl font-bold mb-6">Resumo do Pedido</h2>
             <div className="space-y-4">
-              {items.map((item) => (
-                <div key={`${item.id}-${item.flavor}`} className="flex justify-between">
-                  <span>
-                    {item.quantity}x {item.name}
-                    {item.flavor && <span className="text-muted-foreground"> ({item.flavor})</span>}
-                  </span>
-                  <span className="font-bold">
-                    R$ {(item.price * item.quantity).toFixed(2)}
-                  </span>
-                </div>
-              ))}
+              {items.map((item) => {
+                const discountValue = item.discount_value || 0;
+                const discountType = item.discount_type || 'percent';
+                const finalItemPrice = discountType === 'percent'
+                  ? item.price * (1 - discountValue / 100)
+                  : item.price - discountValue;
+                
+                return (
+                  <div key={`${item.id}-${item.flavor}`} className="flex justify-between">
+                    <span>
+                      {item.quantity}x {item.name}
+                      {item.flavor && <span className="text-muted-foreground"> ({item.flavor})</span>}
+                    </span>
+                    <span className="font-bold">
+                      R$ {(finalItemPrice * item.quantity).toFixed(2)}
+                    </span>
+                  </div>
+                );
+              })}
 
               <div className="border-t pt-4 space-y-2">
                 {appliedDiscount && (

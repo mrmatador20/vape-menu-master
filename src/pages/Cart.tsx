@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import Header from '@/components/Header';
 
 const Cart = () => {
-  const { items, removeFromCart, updateQuantity, totalPrice } = useCart();
+  const { items, removeFromCart, updateQuantity, totalPrice, getFinalPrice } = useCart();
   const navigate = useNavigate();
 
   if (items.length === 0) {
@@ -61,6 +61,22 @@ const Cart = () => {
                       <p className="text-sm text-primary font-medium">Sabor: {item.flavor}</p>
                     )}
                     <p className="text-sm text-muted-foreground">{item.description}</p>
+                    
+                    {/* Mostrar preço original e com desconto se houver desconto individual */}
+                    {(item.discount_value && item.discount_value > 0) && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-muted-foreground line-through">
+                          R$ {item.price.toFixed(2)}
+                        </span>
+                        <span className="text-sm font-bold text-primary">
+                          R$ {getFinalPrice(item).toFixed(2)}
+                        </span>
+                        <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded">
+                          {item.discount_type === 'percent' ? `${item.discount_value}% OFF` : `R$ ${item.discount_value} OFF`}
+                        </span>
+                      </div>
+                    )}
+                    
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <Button
@@ -85,7 +101,7 @@ const Cart = () => {
                       </div>
                       <div className="flex items-center gap-4">
                         <span className="text-lg font-bold text-primary">
-                          R$ {(item.price * item.quantity).toFixed(2)}
+                          R$ {(getFinalPrice(item) * item.quantity).toFixed(2)}
                         </span>
                         
                         {/* Lixeira sempre ao lado do valor */}
