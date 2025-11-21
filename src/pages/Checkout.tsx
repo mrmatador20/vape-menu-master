@@ -12,6 +12,7 @@ import Header from '@/components/Header';
 import { supabase } from '@/integrations/supabase/client';
 import { z } from 'zod';
 import { useShippingRateByCep } from '@/hooks/useShippingRates';
+import { useSettingByKey } from '@/hooks/useSettings';
 
 const checkoutSchema = z.object({
   rua: z.string().trim().min(1, 'Rua é obrigatória').max(100, 'Rua deve ter no máximo 100 caracteres'),
@@ -50,7 +51,11 @@ const Checkout = () => {
   // Buscar taxa de entrega baseada no CEP
   const cleanCep = formData.cep.replace(/\D/g, '');
   const { data: shippingRate } = useShippingRateByCep(cleanCep);
-  const shippingCost = shippingRate?.price ? Number(shippingRate.price) : null;
+  const baseShippingCost = shippingRate?.price ? Number(shippingRate.price) : null;
+  
+  // Buscar configuração de frete grátis
+  const { data: freeShippingSetting } = useSettingByKey('free_shipping_min_value');
+  const freeShippingMinValue = freeShippingSetting ? parseFloat(freeShippingSetting.value) : 0;
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -191,6 +196,10 @@ const Checkout = () => {
   const subtotal = appliedDiscount 
     ? Math.max(0, totalPrice - appliedDiscount.discountAmount)
     : totalPrice;
+  
+  // Verificar se qualifica para frete grátis
+  const qualifiesForFreeShipping = freeShippingMinValue > 0 && subtotal >= freeShippingMinValue;
+  const shippingCost = qualifiesForFreeShipping ? 0 : baseShippingCost;
   
   const finalTotal = shippingCost !== null ? subtotal + shippingCost : subtotal;
 
@@ -398,10 +407,21 @@ const Checkout = () => {
                   disabled={isSubmitting}
                 />
                 {cleanCep.length === 8 && (
-                  shippingCost !== null ? (
-                    <p className="text-sm text-green-600 mt-1">
-                      ✓ Taxa de entrega: R$ {shippingCost.toFixed(2)}
-                    </p>
+                  baseShippingCost !== null ? (
+                    qualifiesForFreeShipping ? (
+                      <p className="text-sm text-green-600 mt-1">
+                        ✓ Frete GRÁTIS! Pedido acima de R$ {freeShippingMinValue.toFixed(2)}
+                      </p>
+                    ) : (
+                      <p className="text-sm text-green-600 mt-1">
+                        ✓ Taxa de entrega: R$ {shippingCost?.toFixed(2)}
+                        {freeShippingMinValue > 0 && (
+                          <span className="block text-muted-foreground">
+                            Falta R$ {(freeShippingMinValue - subtotal).toFixed(2)} para frete grátis
+                          </span>
+                        )}
+                      </p>
+                    )
                   ) : (
                     <p className="text-sm text-amber-600 mt-1">
                       ⚠ CEP não cadastrado. Entre em contato via WhatsApp para negociar o valor da entrega.
@@ -549,7 +569,11 @@ const Checkout = () => {
                 {shippingCost !== null ? (
                   <div className="flex justify-between">
                     <span>Taxa de Entrega</span>
-                    <span>R$ {shippingCost.toFixed(2)}</span>
+                    {qualifiesForFreeShipping ? (
+                      <span className="text-green-600 font-semibold">GRÁTIS</span>
+                    ) : (
+                      <span>R$ {shippingCost.toFixed(2)}</span>
+                    )}
                   </div>
                 ) : cleanCep.length === 8 && (
                   <div className="flex justify-between text-amber-600 text-sm">

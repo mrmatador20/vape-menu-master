@@ -326,7 +326,25 @@ serve(async (req) => {
       discountId = discount.id;
     }
 
-    const finalAmount = totalAmount - discountAmount + orderData.shippingCost;
+    // Buscar configuração de frete grátis
+    const { data: freeShippingSettings, error: settingsError } = await supabaseClient
+      .from('settings')
+      .select('value')
+      .eq('key', 'free_shipping_min_value')
+      .maybeSingle();
+
+    if (settingsError) {
+      console.error('Error fetching free shipping settings:', settingsError);
+    }
+
+    const freeShippingMinValue = freeShippingSettings ? parseFloat(freeShippingSettings.value) : 0;
+    const subtotal = totalAmount - discountAmount;
+    
+    // Aplicar frete grátis se o subtotal qualificar
+    const qualifiesForFreeShipping = freeShippingMinValue > 0 && subtotal >= freeShippingMinValue;
+    const finalShippingCost = qualifiesForFreeShipping ? 0 : orderData.shippingCost;
+    
+    const finalAmount = subtotal + finalShippingCost;
 
     // Create the order with server-side validated data
     const { data: order, error: orderError } = await supabaseClient
@@ -340,7 +358,7 @@ serve(async (req) => {
         address_neighborhood: orderData.address.neighborhood,
         address_city: orderData.address.city,
         cep: orderData.cep,
-        shipping_cost: orderData.shippingCost,
+        shipping_cost: finalShippingCost,
         total_amount: finalAmount,
       })
       .select()
