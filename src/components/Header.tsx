@@ -1,4 +1,4 @@
-import { ShoppingCart, Settings } from 'lucide-react';
+import { ShoppingCart, Settings, Package } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCart } from '@/context/CartContext';
 import { useNavigate } from 'react-router-dom';
@@ -34,6 +34,15 @@ const Header = () => {
               <Settings className="h-5 w-5 text-primary" />
             </Button>
           )}
+          
+          <Button
+            variant="outline"
+            size="sm"
+            className="border-primary/50 hover:bg-primary/10"
+            onClick={() => navigate('/my-orders')}
+          >
+            <Package className="h-5 w-5 text-primary" />
+          </Button>
           
           <Button
             variant="outline"
