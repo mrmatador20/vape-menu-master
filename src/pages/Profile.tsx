@@ -15,6 +15,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Separator } from '@/components/ui/separator';
 import { MFAEnrollDialog } from '@/components/MFAEnrollDialog';
 import { ChangePasswordDialog } from '@/components/ChangePasswordDialog';
+import { ActivityLogsCard } from '@/components/ActivityLogsCard';
 import { Badge } from '@/components/ui/badge';
 import {
   AlertDialog,
@@ -500,6 +501,9 @@ const Profile = () => {
               </div>
             </CardContent>
           </Card>
+
+          {/* Activity Logs */}
+          <ActivityLogsCard />
 
           {/* Orders History Link */}
           <Card className="cursor-pointer hover:border-primary transition-colors" onClick={() => navigate('/my-orders')}>

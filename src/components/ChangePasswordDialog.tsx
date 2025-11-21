@@ -7,6 +7,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, Key, Eye, EyeOff, Check, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import { logActivity } from '@/hooks/useActivityLogs';
 import { z } from 'zod';
 
 interface ChangePasswordDialogProps {
@@ -111,6 +112,8 @@ export const ChangePasswordDialog = ({ open, onOpenChange }: ChangePasswordDialo
       });
 
       if (updateError) throw updateError;
+
+      await logActivity('password_changed');
 
       toast({
         title: 'Senha alterada com sucesso!',
