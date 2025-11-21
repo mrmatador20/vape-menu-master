@@ -6,7 +6,7 @@ import { useMFA } from '@/hooks/useMFA';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Loader2, User, MapPin, Phone, Calendar, Package, Shield, ShieldCheck, ShieldOff } from 'lucide-react';
+import { Loader2, User, MapPin, Phone, Calendar, Package, Shield, ShieldCheck, ShieldOff, Key } from 'lucide-react';
 import Header from '@/components/Header';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,6 +14,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Separator } from '@/components/ui/separator';
 import { MFAEnrollDialog } from '@/components/MFAEnrollDialog';
+import { ChangePasswordDialog } from '@/components/ChangePasswordDialog';
 import { Badge } from '@/components/ui/badge';
 import {
   AlertDialog,
@@ -49,6 +50,7 @@ const Profile = () => {
   const [showEnrollDialog, setShowEnrollDialog] = useState(false);
   const [showUnenrollDialog, setShowUnenrollDialog] = useState(false);
   const [selectedFactorId, setSelectedFactorId] = useState<string | null>(null);
+  const [showChangePasswordDialog, setShowChangePasswordDialog] = useState(false);
 
   const form = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
@@ -437,6 +439,12 @@ const Profile = () => {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        {/* Change Password Dialog */}
+        <ChangePasswordDialog
+          open={showChangePasswordDialog}
+          onOpenChange={setShowChangePasswordDialog}
+        />
       </div>
 
               {mfaFactors.length === 0 && (
@@ -450,6 +458,46 @@ const Profile = () => {
                   </ul>
                 </div>
               )}
+            </CardContent>
+          </Card>
+
+          {/* Password Change */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Key className="h-5 w-5" />
+                Alterar Senha
+              </CardTitle>
+              <CardDescription>
+                Mantenha sua conta segura atualizando sua senha regularmente
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-start justify-between p-4 border rounded-lg">
+                <div className="flex-1 space-y-2">
+                  <h4 className="font-medium">Senha da Conta</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Escolha uma senha forte com no mínimo 8 caracteres, incluindo letras maiúsculas, minúsculas, números e caracteres especiais.
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowChangePasswordDialog(true)}
+                >
+                  Alterar Senha
+                </Button>
+              </div>
+
+              <div className="bg-muted/50 p-4 rounded-lg space-y-2">
+                <h5 className="font-medium text-sm">Dicas de segurança:</h5>
+                <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
+                  <li>Use uma senha única que você não usa em outros sites</li>
+                  <li>Evite informações pessoais óbvias (nome, data de nascimento)</li>
+                  <li>Considere usar um gerenciador de senhas</li>
+                  <li>Altere sua senha periodicamente</li>
+                </ul>
+              </div>
             </CardContent>
           </Card>
 
