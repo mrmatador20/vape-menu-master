@@ -18,6 +18,7 @@ import AdminStats from "./pages/admin/Stats";
 import AdminDiscounts from "./pages/admin/Discounts";
 import AdminReviews from "./pages/admin/Reviews";
 import AdminShippingRates from "./pages/admin/ShippingRates";
+import AdminSettings from "./pages/admin/Settings";
 
 const queryClient = new QueryClient();
 
@@ -42,6 +43,7 @@ const App = () => (
               <Route path="stats" element={<AdminStats />} />
               <Route path="discounts" element={<AdminDiscounts />} />
               <Route path="shipping-rates" element={<AdminShippingRates />} />
+              <Route path="settings" element={<AdminSettings />} />
             </Route>
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />

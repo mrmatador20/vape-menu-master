@@ -1,4 +1,4 @@
-import { LayoutDashboard, Package, ShoppingCart, BarChart3, Tag, Star, Truck } from "lucide-react";
+import { LayoutDashboard, Package, ShoppingCart, BarChart3, Tag, Star, Truck, Settings } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import {
   Sidebar,
@@ -21,6 +21,7 @@ const menuItems = [
   { title: "Estatísticas", url: "/admin/stats", icon: BarChart3 },
   { title: "Descontos", url: "/admin/discounts", icon: Tag },
   { title: "Taxas de Entrega", url: "/admin/shipping-rates", icon: Truck },
+  { title: "Configurações", url: "/admin/settings", icon: Settings },
 ];
 
 export function AdminSidebar() {
