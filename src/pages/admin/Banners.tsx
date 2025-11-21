@@ -49,18 +49,35 @@ export default function Banners() {
           <Card key={banner.id} className="p-6">
             <div className="space-y-4">
               {/* Preview do Banner */}
-              <div
-                className="p-4 rounded-lg text-center"
-                style={{
-                  backgroundColor: banner.background_color,
-                  color: banner.text_color,
-                }}
-              >
-                <h3 className="text-xl font-bold">{banner.title}</h3>
-                {banner.description && (
-                  <p className="text-sm opacity-90 mt-1">{banner.description}</p>
-                )}
-              </div>
+              {banner.full_banner_image_url ? (
+                <div className="relative w-full rounded-lg overflow-hidden border">
+                  <img
+                    src={banner.full_banner_image_url}
+                    alt={banner.title}
+                    className="w-full h-auto"
+                  />
+                </div>
+              ) : (
+                <div
+                  className="relative p-4 rounded-lg text-center overflow-hidden"
+                  style={{
+                    backgroundColor: banner.background_color,
+                    color: banner.text_color,
+                    backgroundImage: banner.background_image_url 
+                      ? `url(${banner.background_image_url})` 
+                      : 'none',
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                  }}
+                >
+                  <div className="relative z-10">
+                    <h3 className="text-xl font-bold drop-shadow-lg">{banner.title}</h3>
+                    {banner.description && (
+                      <p className="text-sm opacity-90 mt-1 drop-shadow-lg">{banner.description}</p>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {/* Informações e Ações */}
               <div className="flex items-center justify-between">

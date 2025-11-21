@@ -8,6 +8,8 @@ export interface Banner {
   description: string | null;
   background_color: string;
   text_color: string;
+  background_image_url: string | null;
+  full_banner_image_url: string | null;
   is_active: boolean;
   display_order: number;
   rotation_seconds: number;
