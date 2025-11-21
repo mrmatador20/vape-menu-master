@@ -14,36 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      account_recovery_tokens: {
-        Row: {
-          created_at: string
-          email: string
-          expires_at: string
-          id: string
-          token: string
-          used_at: string | null
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          email: string
-          expires_at: string
-          id?: string
-          token: string
-          used_at?: string | null
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          email?: string
-          expires_at?: string
-          id?: string
-          token?: string
-          used_at?: string | null
-          user_id?: string
-        }
-        Relationships: []
-      }
       banners: {
         Row: {
           background_color: string
@@ -525,45 +495,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      security_questions: {
-        Row: {
-          answer_1_hash: string
-          answer_2_hash: string
-          answer_3_hash: string
-          created_at: string
-          id: string
-          question_1: string
-          question_2: string
-          question_3: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          answer_1_hash: string
-          answer_2_hash: string
-          answer_3_hash: string
-          created_at?: string
-          id?: string
-          question_1: string
-          question_2: string
-          question_3: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          answer_1_hash?: string
-          answer_2_hash?: string
-          answer_3_hash?: string
-          created_at?: string
-          id?: string
-          question_1?: string
-          question_2?: string
-          question_3?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
       }
       settings: {
         Row: {

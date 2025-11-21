@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useProfile } from '@/hooks/useProfile';
 import { useMFA } from '@/hooks/useMFA';
-import { useSecurityQuestions } from '@/hooks/useSecurityQuestions';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -16,7 +15,6 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Separator } from '@/components/ui/separator';
 import { MFAEnrollDialog } from '@/components/MFAEnrollDialog';
 import { ChangePasswordDialog } from '@/components/ChangePasswordDialog';
-import { SecurityQuestionsDialog } from '@/components/SecurityQuestionsDialog';
 import { ActivityLogsCard } from '@/components/ActivityLogsCard';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -48,14 +46,12 @@ const Profile = () => {
   const navigate = useNavigate();
   const { profile, isLoading, updateProfile, isUpdating } = useProfile();
   const { listFactors, unenrollMFA, isUnenrolling } = useMFA();
-  const { hasQuestions } = useSecurityQuestions();
   const [userEmail, setUserEmail] = useState<string>('');
   const [mfaFactors, setMfaFactors] = useState<any[]>([]);
   const [showEnrollDialog, setShowEnrollDialog] = useState(false);
   const [showUnenrollDialog, setShowUnenrollDialog] = useState(false);
   const [selectedFactorId, setSelectedFactorId] = useState<string | null>(null);
   const [showChangePasswordDialog, setShowChangePasswordDialog] = useState(false);
-  const [showSecurityQuestionsDialog, setShowSecurityQuestionsDialog] = useState(false);
 
   const form = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
@@ -506,49 +502,6 @@ const Profile = () => {
             </CardContent>
           </Card>
 
-          {/* Security Questions */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Shield className="h-5 w-5" />
-                Perguntas de Segurança
-              </CardTitle>
-              <CardDescription>
-                Configure perguntas de segurança para recuperação de conta
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-start justify-between p-4 border rounded-lg">
-                <div className="flex-1 space-y-2">
-                  <h4 className="font-medium">Perguntas de Recuperação</h4>
-                  <p className="text-sm text-muted-foreground">
-                    {hasQuestions 
-                      ? 'Você já configurou suas perguntas de segurança. Elas podem ser usadas para recuperar sua conta em caso de perda de acesso ao 2FA.'
-                      : 'Configure 3 perguntas de segurança para poder recuperar sua conta em caso de perda de acesso ao 2FA.'}
-                  </p>
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowSecurityQuestionsDialog(true)}
-                >
-                  {hasQuestions ? 'Atualizar' : 'Configurar'}
-                </Button>
-              </div>
-
-              {!hasQuestions && (
-                <div className="bg-muted/50 p-4 rounded-lg space-y-2">
-                  <h5 className="font-medium text-sm">Por que configurar?</h5>
-                  <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
-                    <li>Recupere o acesso à sua conta se perder o 2FA</li>
-                    <li>Verifique sua identidade de forma segura</li>
-                    <li>Responda perguntas apenas você conhece</li>
-                  </ul>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
           {/* Activity Logs */}
           <ActivityLogsCard />
 
@@ -571,18 +524,6 @@ const Profile = () => {
           </Card>
         </div>
       </div>
-
-      {/* Change Password Dialog */}
-      <ChangePasswordDialog
-        open={showChangePasswordDialog}
-        onOpenChange={setShowChangePasswordDialog}
-      />
-
-      {/* Security Questions Dialog */}
-      <SecurityQuestionsDialog
-        open={showSecurityQuestionsDialog}
-        onOpenChange={setShowSecurityQuestionsDialog}
-      />
     </div>
   );
 };
