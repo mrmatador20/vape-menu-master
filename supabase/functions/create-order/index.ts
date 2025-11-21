@@ -36,6 +36,8 @@ interface Product {
   price: number;
   name: string;
   stock: number;
+  discount_value?: number;
+  discount_type?: string;
 }
 
 interface Flavor {
@@ -126,7 +128,7 @@ serve(async (req) => {
     const productIds = orderData.items.map(item => item.id);
     const { data: products, error: productsError } = await supabaseClient
       .from('products')
-      .select('id, price, name, stock')
+      .select('id, price, name, stock, discount_value, discount_type')
       .in('id', productIds);
 
     if (productsError || !products) {
@@ -213,14 +215,23 @@ serve(async (req) => {
         );
       }
 
-      // Use server-side price, never trust client
-      const itemTotal = Number(product.price) * item.quantity;
+      // Calculate price with individual product discount
+      let finalPrice = Number(product.price);
+      if (product.discount_value && product.discount_value > 0) {
+        if (product.discount_type === 'percent') {
+          finalPrice = finalPrice * (1 - product.discount_value / 100);
+        } else if (product.discount_type === 'fixed') {
+          finalPrice = Math.max(0, finalPrice - product.discount_value);
+        }
+      }
+
+      const itemTotal = finalPrice * item.quantity;
       totalAmount += itemTotal;
 
       validatedItems.push({
         product_id: item.id,
         quantity: item.quantity,
-        price: Number(product.price),
+        price: finalPrice, // Save discounted price
         name: product.name,
         flavor: item.flavor,
         stockSource, // Track whether to update product or flavor stock
