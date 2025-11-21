@@ -199,7 +199,7 @@ const ProductCard = ({ product, onAddToCart }: ProductCardProps) => {
                 </Button>
               </CollapsibleTrigger>
               <CollapsibleContent className="overflow-hidden transition-all duration-300 ease-in-out data-[state=open]:animate-accordion-down data-[state=closed]:animate-accordion-up">
-                <div className="mt-3">
+                <div className="mt-3 max-h-[400px] overflow-y-auto">
                   <ProductReviews productId={product.id} />
                 </div>
               </CollapsibleContent>
