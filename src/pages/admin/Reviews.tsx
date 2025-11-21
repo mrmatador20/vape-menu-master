@@ -21,8 +21,20 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Trash2, Star } from 'lucide-react';
+import { Trash2, Star, MessageSquare, Edit2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAddReviewResponse, useUpdateReviewResponse, useDeleteReviewResponse } from '@/hooks/useReviewResponses';
+import ResponseFormDialog from '@/components/admin/ResponseFormDialog';
+import { Badge } from '@/components/ui/badge';
+
+interface ReviewResponse {
+  id: string;
+  review_id: string;
+  admin_user_id: string;
+  response_text: string;
+  created_at: string;
+  updated_at: string;
+}
 
 interface Review {
   id: string;
@@ -31,11 +43,19 @@ interface Review {
   created_at: string;
   product_id: string;
   user_id: string;
+  review_responses: ReviewResponse[];
 }
 
 export default function AdminReviews() {
   const [deleteReviewId, setDeleteReviewId] = useState<string | null>(null);
+  const [responseDialogOpen, setResponseDialogOpen] = useState(false);
+  const [editingResponse, setEditingResponse] = useState<{ responseId: string; reviewId: string; text: string } | null>(null);
+  const [selectedReviewId, setSelectedReviewId] = useState<string | null>(null);
   const queryClient = useQueryClient();
+
+  const addResponse = useAddReviewResponse();
+  const updateResponse = useUpdateReviewResponse();
+  const deleteResponse = useDeleteReviewResponse();
 
   const { data: reviews, isLoading } = useQuery({
     queryKey: ['admin-reviews'],
@@ -47,6 +67,14 @@ export default function AdminReviews() {
           products (
             name,
             image
+          ),
+          review_responses (
+            id,
+            review_id,
+            admin_user_id,
+            response_text,
+            created_at,
+            updated_at
           )
         `)
         .order('created_at', { ascending: false });
@@ -84,6 +112,42 @@ export default function AdminReviews() {
       hour: '2-digit',
       minute: '2-digit',
     });
+  };
+
+  const handleAddResponse = (reviewId: string) => {
+    setSelectedReviewId(reviewId);
+    setEditingResponse(null);
+    setResponseDialogOpen(true);
+  };
+
+  const handleEditResponse = (responseId: string, reviewId: string, text: string) => {
+    setEditingResponse({ responseId, reviewId, text });
+    setSelectedReviewId(reviewId);
+    setResponseDialogOpen(true);
+  };
+
+  const handleSubmitResponse = async (responseText: string) => {
+    if (editingResponse) {
+      await updateResponse.mutateAsync({
+        responseId: editingResponse.responseId,
+        responseText,
+        reviewId: editingResponse.reviewId,
+      });
+    } else if (selectedReviewId) {
+      await addResponse.mutateAsync({
+        reviewId: selectedReviewId,
+        responseText,
+      });
+    }
+    setResponseDialogOpen(false);
+    setEditingResponse(null);
+    setSelectedReviewId(null);
+  };
+
+  const handleDeleteResponse = async (responseId: string, reviewId: string) => {
+    if (confirm('Tem certeza que deseja excluir esta resposta?')) {
+      await deleteResponse.mutateAsync({ responseId, reviewId });
+    }
   };
 
   const renderStars = (rating: number) => {
@@ -136,44 +200,104 @@ export default function AdminReviews() {
                 </TableHeader>
                 <TableBody>
                   {reviews.map((review) => (
-                    <TableRow key={review.id}>
-                      <TableCell>
-                        <div className="flex items-center gap-3">
-                          {review.products.image && (
-                            <img
-                              src={review.products.image}
-                              alt={review.products.name}
-                              className="h-10 w-10 rounded object-cover"
-                            />
-                          )}
-                          <span className="font-medium">{review.products.name}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>{renderStars(review.rating)}</TableCell>
-                      <TableCell>
-                        <div className="max-w-xs">
-                          {review.comment ? (
-                            <p className="text-sm line-clamp-2">{review.comment}</p>
-                          ) : (
-                            <span className="text-muted-foreground text-sm italic">
-                              Sem comentário
-                            </span>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {formatDate(review.created_at)}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => setDeleteReviewId(review.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
+                    <>
+                      <TableRow key={review.id}>
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            {review.products.image && (
+                              <img
+                                src={review.products.image}
+                                alt={review.products.name}
+                                className="h-10 w-10 rounded object-cover"
+                              />
+                            )}
+                            <span className="font-medium">{review.products.name}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>{renderStars(review.rating)}</TableCell>
+                        <TableCell>
+                          <div className="max-w-xs">
+                            {review.comment ? (
+                              <p className="text-sm line-clamp-2">{review.comment}</p>
+                            ) : (
+                              <span className="text-muted-foreground text-sm italic">
+                                Sem comentário
+                              </span>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {formatDate(review.created_at)}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleAddResponse(review.id)}
+                            >
+                              <MessageSquare className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => setDeleteReviewId(review.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                      {review.review_responses && review.review_responses.length > 0 && (
+                        <TableRow>
+                          <TableCell colSpan={5}>
+                            <div className="pl-8 space-y-3">
+                              {review.review_responses.map((response) => (
+                                <div
+                                  key={response.id}
+                                  className="bg-muted/50 rounded-lg p-4 space-y-2"
+                                >
+                                  <div className="flex items-center justify-between">
+                                    <Badge variant="secondary" className="gap-1">
+                                      <MessageSquare className="h-3 w-3" />
+                                      Resposta do Admin
+                                    </Badge>
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-xs text-muted-foreground">
+                                        {formatDate(response.created_at)}
+                                      </span>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() =>
+                                          handleEditResponse(
+                                            response.id,
+                                            review.id,
+                                            response.response_text
+                                          )
+                                        }
+                                      >
+                                        <Edit2 className="h-3 w-3" />
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() =>
+                                          handleDeleteResponse(response.id, review.id)
+                                        }
+                                      >
+                                        <Trash2 className="h-3 w-3" />
+                                      </Button>
+                                    </div>
+                                  </div>
+                                  <p className="text-sm">{response.response_text}</p>
+                                </div>
+                              ))}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </>
                   ))}
                 </TableBody>
               </Table>
@@ -205,6 +329,15 @@ export default function AdminReviews() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <ResponseFormDialog
+        open={responseDialogOpen}
+        onOpenChange={setResponseDialogOpen}
+        onSubmit={handleSubmitResponse}
+        initialValue={editingResponse?.text || ''}
+        isLoading={addResponse.isPending || updateResponse.isPending}
+        title={editingResponse ? 'Editar Resposta' : 'Adicionar Resposta'}
+      />
     </div>
   );
 }
