@@ -142,10 +142,10 @@ const ProductCard = ({ product, onAddToCart }: ProductCardProps) => {
         <div className="min-h-[80px]">
           {flavors && flavors.length > 0 && !isOutOfStock && (
             <div className="space-y-2">
-              <label className="text-sm font-medium">Escolha o sabor:</label>
+              <label className="text-sm font-medium">Escolha:</label>
               <Select value={selectedFlavor} onValueChange={setSelectedFlavor}>
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Selecione um sabor" />
+                  <SelectValue placeholder="Selecione um item" />
                 </SelectTrigger>
                 <SelectContent>
                   {flavors.map((flavor) => (
