@@ -10,16 +10,19 @@ export default function AdminDashboard() {
     queryFn: async () => {
       const [productsRes, ordersRes] = await Promise.all([
         supabase.from('products').select('id, stock, min_stock'),
-        supabase.from('orders').select('id, total_amount', { count: 'exact' }),
+        supabase.from('orders').select('id, total_amount, status', { count: 'exact' }),
       ]);
 
+      // Filtrar apenas pedidos confirmados ou entregues
+      const validOrders = ordersRes.data?.filter(o => o.status === 'delivered' || o.status === 'confirmed') || [];
+      
       // Contar produtos com estoque <= min_stock
       const lowStockItems = productsRes.data?.filter(p => p.stock <= (p.min_stock || 10)).length || 0;
-      const totalRevenue = ordersRes.data?.reduce((sum, order) => sum + Number(order.total_amount), 0) || 0;
+      const totalRevenue = validOrders.reduce((sum, order) => sum + Number(order.total_amount), 0);
 
       return {
         totalProducts: productsRes.data?.length || 0,
-        totalOrders: ordersRes.count || 0,
+        totalOrders: validOrders.length,
         lowStockItems,
         totalRevenue,
       };
