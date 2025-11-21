@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState } from 'react';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface Product {
   id: string;
@@ -37,7 +38,21 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 export const CartProvider = ({ children }: { children: React.ReactNode }) => {
   const [items, setItems] = useState<CartItem[]>([]);
 
-  const addToCart = (product: Product, flavor?: string) => {
+  const addToCart = async (product: Product, flavor?: string) => {
+    // Se tem sabor, busca o preço da variante
+    let variantPrice = product.price;
+    if (flavor) {
+      const { data: flavors } = await supabase
+        .from('flavors')
+        .select('*')
+        .eq('product_id', product.id)
+        .eq('name', flavor);
+      
+      if (flavors && flavors.length > 0 && flavors[0].price) {
+        variantPrice = Number(flavors[0].price);
+      }
+    }
+
     setItems(currentItems => {
       const existingItem = currentItems.find(
         item => item.id === product.id && item.flavor === flavor
@@ -54,7 +69,9 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
       
       const cartItemId = `${product.id}-${flavor || 'no-flavor'}`;
       toast.success('Produto adicionado ao carrinho!');
-      return [...currentItems, { ...product, quantity: 1, flavor, cartItemId }];
+      // Atualiza o preço do produto com o preço da variante
+      const productWithVariantPrice = { ...product, price: variantPrice };
+      return [...currentItems, { ...productWithVariantPrice, quantity: 1, flavor, cartItemId }];
     });
   };
 
