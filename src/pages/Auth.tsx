@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { useMFA } from '@/hooks/useMFA';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -8,11 +9,15 @@ import { Card } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 import Header from '@/components/Header';
+import { MFAVerifyDialog } from '@/components/MFAVerifyDialog';
 
 const Auth = () => {
   const navigate = useNavigate();
+  const { listFactors } = useMFA();
   const [isLoading, setIsLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
+  const [showMFADialog, setShowMFADialog] = useState(false);
+  const [mfaFactorId, setMfaFactorId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -56,20 +61,44 @@ const Auth = () => {
         });
         setIsSignUp(false);
       } else {
-        const { error } = await supabase.auth.signInWithPassword({
+        // Try to sign in
+        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
           email: formData.email,
           password: formData.password,
         });
 
-        if (error) throw error;
-
-        toast.success('Login realizado com sucesso!');
+        // If sign in was successful, check if MFA is required
+        if (!signInError && signInData.user) {
+          // Check if user has MFA enabled
+          const factors = await listFactors();
+          
+          if (factors.totp && factors.totp.length > 0) {
+            // MFA is enabled, show verification dialog
+            const activeFactor = factors.totp.find((f: any) => f.status === 'verified');
+            if (activeFactor) {
+              setMfaFactorId(activeFactor.id);
+              setShowMFADialog(true);
+              setIsLoading(false);
+              return;
+            }
+          }
+          
+          // No MFA or not required, proceed with login
+          toast.success('Login realizado com sucesso!');
+        } else if (signInError) {
+          throw signInError;
+        }
       }
     } catch (error: any) {
       toast.error(error.message || 'Erro ao autenticar');
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleMFASuccess = () => {
+    toast.success('Login realizado com sucesso!');
+    navigate('/');
   };
 
   return (
@@ -144,6 +173,16 @@ const Auth = () => {
             </button>
           </div>
         </Card>
+
+        {/* MFA Verification Dialog */}
+        {mfaFactorId && (
+          <MFAVerifyDialog
+            open={showMFADialog}
+            onOpenChange={setShowMFADialog}
+            factorId={mfaFactorId}
+            onSuccess={handleMFASuccess}
+          />
+        )}
       </div>
     </>
   );
