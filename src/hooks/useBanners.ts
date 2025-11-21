@@ -13,6 +13,7 @@ export interface Banner {
   is_active: boolean;
   display_order: number;
   rotation_seconds: number;
+  transition_type: string;
   created_at: string;
   updated_at: string;
 }

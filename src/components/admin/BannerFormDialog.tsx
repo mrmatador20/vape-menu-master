@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus, Loader2, Upload, X } from 'lucide-react';
 import { useCreateBanner, useUpdateBanner, Banner } from '@/hooks/useBanners';
 import { supabase } from '@/integrations/supabase/client';
@@ -25,6 +26,7 @@ export function BannerFormDialog({ banner, trigger }: BannerFormDialogProps) {
   const [isActive, setIsActive] = useState(true);
   const [displayOrder, setDisplayOrder] = useState(0);
   const [rotationSeconds, setRotationSeconds] = useState(5);
+  const [transitionType, setTransitionType] = useState('fade');
   const [backgroundImageFile, setBackgroundImageFile] = useState<File | null>(null);
   const [backgroundImagePreview, setBackgroundImagePreview] = useState<string | null>(null);
   const [fullBannerImageFile, setFullBannerImageFile] = useState<File | null>(null);
@@ -44,6 +46,7 @@ export function BannerFormDialog({ banner, trigger }: BannerFormDialogProps) {
       setIsActive(banner.is_active);
       setDisplayOrder(banner.display_order);
       setRotationSeconds(banner.rotation_seconds);
+      setTransitionType(banner.transition_type || 'fade');
       setBackgroundImagePreview(banner.background_image_url);
       setFullBannerImagePreview(banner.full_banner_image_url);
       
@@ -125,6 +128,7 @@ export function BannerFormDialog({ banner, trigger }: BannerFormDialogProps) {
         is_active: isActive,
         display_order: displayOrder,
         rotation_seconds: rotationSeconds,
+        transition_type: transitionType,
       };
 
       if (banner) {
@@ -150,6 +154,7 @@ export function BannerFormDialog({ banner, trigger }: BannerFormDialogProps) {
     setIsActive(true);
     setDisplayOrder(0);
     setRotationSeconds(5);
+    setTransitionType('fade');
     setBackgroundImageFile(null);
     setBackgroundImagePreview(null);
     setFullBannerImageFile(null);
@@ -349,6 +354,26 @@ export function BannerFormDialog({ banner, trigger }: BannerFormDialogProps) {
                 max="60"
               />
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="transitionType">Tipo de Transição</Label>
+            <Select value={transitionType} onValueChange={setTransitionType}>
+              <SelectTrigger id="transitionType">
+                <SelectValue placeholder="Selecione o tipo de transição" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="fade">Fade (Dissolver)</SelectItem>
+                <SelectItem value="slide-left">Deslizar para Esquerda</SelectItem>
+                <SelectItem value="slide-right">Deslizar para Direita</SelectItem>
+                <SelectItem value="slide-up">Deslizar para Cima</SelectItem>
+                <SelectItem value="slide-down">Deslizar para Baixo</SelectItem>
+                <SelectItem value="zoom">Zoom</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              Animação aplicada ao trocar entre banners
+            </p>
           </div>
 
           <div className="flex items-center space-x-2">
