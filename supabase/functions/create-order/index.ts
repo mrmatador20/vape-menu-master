@@ -369,42 +369,8 @@ serve(async (req) => {
       );
     }
 
-    // Decrement stock for each item
-    for (const validatedItem of validatedItems) {
-      if (validatedItem.stockSource === 'flavor' && validatedItem.flavor) {
-        // Decrement flavor stock
-        const productFlavors = flavorsByProduct.get(validatedItem.product_id) || [];
-        const flavorToUpdate = productFlavors.find((f: Flavor) => f.name === validatedItem.flavor);
-        
-        if (flavorToUpdate) {
-          const newStock = flavorToUpdate.stock - validatedItem.quantity;
-          
-          const { error: stockError } = await supabaseClient
-            .from('flavors')
-            .update({ stock: newStock })
-            .eq('id', flavorToUpdate.id);
-
-          if (stockError) {
-            console.error('Error updating flavor stock:', stockError);
-          }
-        }
-      } else {
-        // Decrement product stock (no flavor or product has no flavors)
-        const product = productMap.get(validatedItem.product_id);
-        if (product) {
-          const newStock = product.stock - validatedItem.quantity;
-          
-          const { error: stockError } = await supabaseClient
-            .from('products')
-            .update({ stock: newStock })
-            .eq('id', validatedItem.product_id);
-
-          if (stockError) {
-            console.error('Error updating product stock:', stockError);
-          }
-        }
-      }
-    }
+    // Stock will be decremented automatically by the database trigger
+    // when the order status is changed to 'confirmed' or 'delivered'
 
     // Track discount usage if discount was applied
     if (discountId) {
