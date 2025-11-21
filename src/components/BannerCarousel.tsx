@@ -65,7 +65,7 @@ export const BannerCarousel = () => {
       setTimeout(() => {
         setCurrentIndex((prev) => (prev + 1) % banners.length);
         setIsTransitioning(false);
-      }, 900);
+      }, 400);
     }, rotationTime);
   };
 
@@ -89,7 +89,7 @@ export const BannerCarousel = () => {
     setTimeout(() => {
       setCurrentIndex((prevIndex) => (prevIndex + 1) % banners.length);
       setIsTransitioning(false);
-    }, 900);
+    }, 400);
   };
 
   const prevBanner = () => {
@@ -99,7 +99,7 @@ export const BannerCarousel = () => {
     setTimeout(() => {
       setCurrentIndex((prevIndex) => (prevIndex - 1 + banners.length) % banners.length);
       setIsTransitioning(false);
-    }, 900);
+    }, 400);
   };
 
   const goToBanner = (index: number) => {
@@ -109,7 +109,7 @@ export const BannerCarousel = () => {
     setTimeout(() => {
       setCurrentIndex(index);
       setIsTransitioning(false);
-    }, 900);
+    }, 400);
   };
 
   // Banner completo (imagem)
