@@ -6,6 +6,7 @@ import Header from '@/components/Header';
 import ProductSearch from '@/components/ProductSearch';
 import { CategorySidebar } from '@/components/CategorySidebar';
 import { CategoryCarousel } from '@/components/CategoryCarousel';
+import { BannerCarousel } from '@/components/BannerCarousel';
 import { Loader2 } from 'lucide-react';
 
 const Index = () => {
@@ -58,6 +59,9 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-gradient-hero">
       <Header />
+      
+      {/* Banner Carousel */}
+      <BannerCarousel />
       
       {/* Hero Section */}
       <section className="py-20 px-4">
