@@ -187,20 +187,23 @@ const ProductCard = ({ product, onAddToCart }: ProductCardProps) => {
 
         {!isOutOfStock && (
           <div className="pt-3 border-t border-border">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowReviews(!showReviews)}
-              className="w-full text-sm"
-            >
-              {showReviews ? 'Ocultar avaliações' : 'Ver avaliações'}
-              {showReviews ? <ChevronUp className="h-4 w-4 ml-2" /> : <ChevronDown className="h-4 w-4 ml-2" />}
-            </Button>
-            {showReviews && (
-              <div className="mt-3">
-                <ProductReviews productId={product.id} />
-              </div>
-            )}
+            <Collapsible open={showReviews} onOpenChange={setShowReviews}>
+              <CollapsibleTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-full text-sm"
+                >
+                  {showReviews ? 'Ocultar avaliações' : 'Ver avaliações'}
+                  {showReviews ? <ChevronUp className="h-4 w-4 ml-2" /> : <ChevronDown className="h-4 w-4 ml-2" />}
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="overflow-hidden transition-all duration-300 ease-in-out data-[state=open]:animate-accordion-down data-[state=closed]:animate-accordion-up">
+                <div className="mt-3">
+                  <ProductReviews productId={product.id} />
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
           </div>
         )}
       </div>
