@@ -7,6 +7,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, Copy, Shield, Smartphone } from 'lucide-react';
 import { useMFA } from '@/hooks/useMFA';
 import { toast } from '@/hooks/use-toast';
+import { BackupCodesDialog } from './BackupCodesDialog';
 
 interface MFAEnrollDialogProps {
   open: boolean;
@@ -23,6 +24,8 @@ export const MFAEnrollDialog = ({ open, onOpenChange, onSuccess }: MFAEnrollDial
     secret: string;
   } | null>(null);
   const [verificationCode, setVerificationCode] = useState('');
+  const [backupCodes, setBackupCodes] = useState<string[]>([]);
+  const [showBackupCodes, setShowBackupCodes] = useState(false);
 
   const handleEnroll = async () => {
     try {
@@ -38,9 +41,13 @@ export const MFAEnrollDialog = ({ open, onOpenChange, onSuccess }: MFAEnrollDial
     if (!enrollmentData || !verificationCode) return;
 
     try {
-      await verifyEnrollment(enrollmentData.factorId, verificationCode);
+      const result = await verifyEnrollment(enrollmentData.factorId, verificationCode);
+      if (result?.backupCodes) {
+        setBackupCodes(result.backupCodes);
+        setShowBackupCodes(true);
+        handleClose();
+      }
       onSuccess();
-      handleClose();
     } catch (error) {
       console.error('Verification error:', error);
     }
@@ -51,6 +58,11 @@ export const MFAEnrollDialog = ({ open, onOpenChange, onSuccess }: MFAEnrollDial
     setEnrollmentData(null);
     setVerificationCode('');
     onOpenChange(false);
+  };
+
+  const handleBackupCodesClose = () => {
+    setShowBackupCodes(false);
+    setBackupCodes([]);
   };
 
   const copySecret = () => {
@@ -64,8 +76,9 @@ export const MFAEnrollDialog = ({ open, onOpenChange, onSuccess }: MFAEnrollDial
   };
 
   return (
-    <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-md">
+    <>
+      <Dialog open={open} onOpenChange={handleClose}>
+        <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Shield className="h-5 w-5 text-primary" />
@@ -186,7 +199,14 @@ export const MFAEnrollDialog = ({ open, onOpenChange, onSuccess }: MFAEnrollDial
             )}
           </div>
         )}
-      </DialogContent>
-    </Dialog>
+        </DialogContent>
+      </Dialog>
+
+      <BackupCodesDialog
+        open={showBackupCodes}
+        onOpenChange={handleBackupCodesClose}
+        backupCodes={backupCodes}
+      />
+    </>
   );
 };
