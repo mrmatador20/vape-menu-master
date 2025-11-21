@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 import Header from '@/components/Header';
 import { MFAVerifyDialog } from '@/components/MFAVerifyDialog';
+import { AccountRecoveryDialog } from '@/components/AccountRecoveryDialog';
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -19,6 +20,7 @@ const Auth = () => {
   const [isSignUp, setIsSignUp] = useState(false);
   const [showMFADialog, setShowMFADialog] = useState(false);
   const [mfaFactorId, setMfaFactorId] = useState<string | null>(null);
+  const [showRecoveryDialog, setShowRecoveryDialog] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -166,10 +168,20 @@ const Auth = () => {
             </Button>
           </form>
 
-          <div className="mt-6 text-center">
+          <div className="mt-6 space-y-4">
+            {!isSignUp && (
+              <button
+                type="button"
+                onClick={() => setShowRecoveryDialog(true)}
+                className="text-sm text-muted-foreground hover:text-primary underline w-full text-center"
+              >
+                Perdeu acesso ao 2FA? Recuperar conta
+              </button>
+            )}
+            
             <button
               onClick={() => setIsSignUp(!isSignUp)}
-              className="text-sm text-primary hover:text-primary/90 underline"
+              className="text-sm text-primary hover:text-primary/90 underline w-full text-center block"
             >
               {isSignUp 
                 ? 'Já tem uma conta? Entre aqui' 
@@ -187,6 +199,12 @@ const Auth = () => {
             onSuccess={handleMFASuccess}
           />
         )}
+
+        {/* Account Recovery Dialog */}
+        <AccountRecoveryDialog
+          open={showRecoveryDialog}
+          onOpenChange={setShowRecoveryDialog}
+        />
       </div>
     </>
   );
