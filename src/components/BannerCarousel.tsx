@@ -7,36 +7,36 @@ const getTransitionClasses = (transitionType: string, isExiting: boolean) => {
   if (isExiting) {
     switch (transitionType) {
       case 'fade':
-        return 'animate-fade-out';
+        return 'animate-[fade-out_0.8s_ease-in-out]';
       case 'slide-left':
-        return 'animate-[slide-out-left_0.5s_ease-in-out]';
+        return 'animate-[slide-out-left_0.8s_ease-in-out]';
       case 'slide-right':
-        return 'animate-[slide-out-right_0.5s_ease-in-out]';
+        return 'animate-[slide-out-right_0.8s_ease-in-out]';
       case 'slide-up':
-        return 'animate-[slide-out-up_0.5s_ease-in-out]';
+        return 'animate-[slide-out-up_0.8s_ease-in-out]';
       case 'slide-down':
-        return 'animate-[slide-out-down_0.5s_ease-in-out]';
+        return 'animate-[slide-out-down_0.8s_ease-in-out]';
       case 'zoom':
-        return 'animate-[zoom-out_0.5s_ease-in-out]';
+        return 'animate-[zoom-out_0.8s_ease-in-out]';
       default:
-        return 'animate-fade-out';
+        return 'animate-[fade-out_0.8s_ease-in-out]';
     }
   } else {
     switch (transitionType) {
       case 'fade':
-        return 'animate-fade-in';
+        return 'animate-[fade-in_0.8s_ease-in-out]';
       case 'slide-left':
-        return 'animate-[slide-in-left_0.5s_ease-in-out]';
+        return 'animate-[slide-in-left_0.8s_ease-in-out]';
       case 'slide-right':
-        return 'animate-[slide-in-right_0.5s_ease-in-out]';
+        return 'animate-[slide-in-right_0.8s_ease-in-out]';
       case 'slide-up':
-        return 'animate-[slide-in-up_0.5s_ease-in-out]';
+        return 'animate-[slide-in-up_0.8s_ease-in-out]';
       case 'slide-down':
-        return 'animate-[slide-in-down_0.5s_ease-in-out]';
+        return 'animate-[slide-in-down_0.8s_ease-in-out]';
       case 'zoom':
-        return 'animate-[zoom-in_0.5s_ease-in-out]';
+        return 'animate-[zoom-in_0.8s_ease-in-out]';
       default:
-        return 'animate-fade-in';
+        return 'animate-[fade-in_0.8s_ease-in-out]';
     }
   }
 };
@@ -65,7 +65,7 @@ export const BannerCarousel = () => {
       setTimeout(() => {
         setCurrentIndex((prev) => (prev + 1) % banners.length);
         setIsTransitioning(false);
-      }, 500);
+      }, 900);
     }, rotationTime);
   };
 
@@ -89,7 +89,7 @@ export const BannerCarousel = () => {
     setTimeout(() => {
       setCurrentIndex((prevIndex) => (prevIndex + 1) % banners.length);
       setIsTransitioning(false);
-    }, 500);
+    }, 900);
   };
 
   const prevBanner = () => {
@@ -99,7 +99,7 @@ export const BannerCarousel = () => {
     setTimeout(() => {
       setCurrentIndex((prevIndex) => (prevIndex - 1 + banners.length) % banners.length);
       setIsTransitioning(false);
-    }, 500);
+    }, 900);
   };
 
   const goToBanner = (index: number) => {
@@ -109,7 +109,7 @@ export const BannerCarousel = () => {
     setTimeout(() => {
       setCurrentIndex(index);
       setIsTransitioning(false);
-    }, 500);
+    }, 900);
   };
 
   // Banner completo (imagem)
