@@ -20,6 +20,8 @@ const orderRequestSchema = z.object({
     neighborhood: z.string().trim().min(1).max(100),
     city: z.string().trim().min(1).max(100),
   }),
+  cep: z.string().trim().min(8).max(8),
+  shippingCost: z.number().min(0),
   paymentMethod: z.enum(['pix', 'dinheiro']),
   changeAmount: z.string().trim().optional(),
   discountCode: z.string().trim().max(50).optional(),
@@ -55,6 +57,8 @@ interface OrderRequest {
     neighborhood: string;
     city: string;
   };
+  cep: string;
+  shippingCost: number;
   paymentMethod: string;
   changeAmount?: string;
   discountCode?: string;
@@ -322,7 +326,7 @@ serve(async (req) => {
       discountId = discount.id;
     }
 
-    const finalAmount = totalAmount - discountAmount;
+    const finalAmount = totalAmount - discountAmount + orderData.shippingCost;
 
     // Create the order with server-side validated data
     const { data: order, error: orderError } = await supabaseClient
@@ -335,6 +339,8 @@ serve(async (req) => {
         address_number: orderData.address.number,
         address_neighborhood: orderData.address.neighborhood,
         address_city: orderData.address.city,
+        cep: orderData.cep,
+        shipping_cost: orderData.shippingCost,
         total_amount: finalAmount,
       })
       .select()

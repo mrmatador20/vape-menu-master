@@ -216,10 +216,12 @@ export type Database = {
           address_neighborhood: string
           address_number: string
           address_street: string
+          cep: string | null
           change_amount: number | null
           created_at: string | null
           id: string
           payment_method: string
+          shipping_cost: number | null
           status: string
           total_amount: number
           user_id: string
@@ -229,10 +231,12 @@ export type Database = {
           address_neighborhood: string
           address_number: string
           address_street: string
+          cep?: string | null
           change_amount?: number | null
           created_at?: string | null
           id?: string
           payment_method: string
+          shipping_cost?: number | null
           status?: string
           total_amount: number
           user_id: string
@@ -242,10 +246,12 @@ export type Database = {
           address_neighborhood?: string
           address_number?: string
           address_street?: string
+          cep?: string | null
           change_amount?: number | null
           created_at?: string | null
           id?: string
           payment_method?: string
+          shipping_cost?: number | null
           status?: string
           total_amount?: number
           user_id?: string
@@ -366,6 +372,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      shipping_rates: {
+        Row: {
+          cep: string
+          created_at: string
+          id: string
+          price: number
+          updated_at: string
+        }
+        Insert: {
+          cep: string
+          created_at?: string
+          id?: string
+          price: number
+          updated_at?: string
+        }
+        Update: {
+          cep?: string
+          created_at?: string
+          id?: string
+          price?: number
+          updated_at?: string
+        }
+        Relationships: []
       }
       user_roles: {
         Row: {
