@@ -1,4 +1,4 @@
-import { ShoppingCart, Settings, Package, LogOut } from 'lucide-react';
+import { ShoppingCart, Settings, Package, LogOut, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCart } from '@/context/CartContext';
 import { useNavigate } from 'react-router-dom';
@@ -92,14 +92,24 @@ const Header = () => {
           </Button>
 
           {isLoggedIn && (
-            <Button
-              variant="outline"
-              size="sm"
-              className="border-destructive/50 hover:bg-destructive/10"
-              onClick={handleLogout}
-            >
-              <LogOut className="h-5 w-5 text-destructive" />
-            </Button>
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                className="border-primary/50 hover:bg-primary/10"
+                onClick={() => navigate('/profile')}
+              >
+                <User className="h-5 w-5 text-primary" />
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="border-destructive/50 hover:bg-destructive/10"
+                onClick={handleLogout}
+              >
+                <LogOut className="h-5 w-5 text-destructive" />
+              </Button>
+            </>
           )}
         </div>
       </div>

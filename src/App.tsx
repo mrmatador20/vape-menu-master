@@ -10,6 +10,7 @@ import Cart from "./pages/Cart";
 import Checkout from "./pages/Checkout";
 import Auth from "./pages/Auth";
 import MyOrders from "./pages/MyOrders";
+import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 import AdminLayout from "./pages/admin/AdminLayout";
 import AdminDashboard from "./pages/admin/Dashboard";
@@ -47,6 +48,11 @@ const App = () => (
             <Route path="/my-orders" element={
               <ProtectedRoute>
                 <MyOrders />
+              </ProtectedRoute>
+            } />
+            <Route path="/profile" element={
+              <ProtectedRoute>
+                <Profile />
               </ProtectedRoute>
             } />
             <Route path="/admin" element={<AdminLayout />}>
