@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { ShoppingCart, ChevronDown, ChevronUp } from 'lucide-react';
 import { useFlavors } from '@/hooks/useFlavors';
-import { useDiscounts, calculateDiscountedPrice } from '@/hooks/useDiscounts';
 import {
   Select,
   SelectContent,
@@ -30,20 +29,17 @@ const ProductCard = ({ product, onAddToCart }: ProductCardProps) => {
   const [isDescriptionOpen, setIsDescriptionOpen] = useState(false);
   const [showReviews, setShowReviews] = useState(false);
   const { data: flavors } = useFlavors(product.id);
-  const { data: discounts } = useDiscounts();
   
-  // Calculate product individual discount first
+  // Calculate only product individual discount (not global coupons)
   const discountValue = product.discount_value || 0;
   const discountType = product.discount_type || 'percent';
   
-  const priceAfterProductDiscount = discountType === 'percent'
+  const finalPrice = discountType === 'percent'
     ? product.price * (1 - discountValue / 100)
     : product.price - discountValue;
   
-  // Then apply global discounts on top of product discount
-  const finalPrice = calculateDiscountedPrice(priceAfterProductDiscount, discounts || []);
   const hasDiscount = finalPrice < product.price;
-  const totalDiscountPercent = Math.round(((product.price - finalPrice) / product.price) * 100);
+  const totalDiscountPercent = discountValue;
   
   // Determine if product is out of stock based on whether it has flavors
   const isOutOfStock = flavors && flavors.length > 0
