@@ -25,6 +25,8 @@ export type Database = {
           id: string
           is_active: boolean
           rotation_seconds: number
+          scheduled_end: string | null
+          scheduled_start: string | null
           text_color: string
           title: string
           transition_type: string
@@ -40,6 +42,8 @@ export type Database = {
           id?: string
           is_active?: boolean
           rotation_seconds?: number
+          scheduled_end?: string | null
+          scheduled_start?: string | null
           text_color?: string
           title: string
           transition_type?: string
@@ -55,6 +59,8 @@ export type Database = {
           id?: string
           is_active?: boolean
           rotation_seconds?: number
+          scheduled_end?: string | null
+          scheduled_start?: string | null
           text_color?: string
           title?: string
           transition_type?: string
