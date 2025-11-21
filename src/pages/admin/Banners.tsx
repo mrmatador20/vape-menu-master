@@ -84,6 +84,14 @@ export default function Banners() {
                 <div className="text-sm text-muted-foreground space-y-1">
                   <p>Ordem: {banner.display_order}</p>
                   <p>Rotação: {banner.rotation_seconds}s</p>
+                  <p>Transição: {
+                    banner.transition_type === 'fade' ? 'Fade' :
+                    banner.transition_type === 'slide-left' ? 'Deslizar ←' :
+                    banner.transition_type === 'slide-right' ? 'Deslizar →' :
+                    banner.transition_type === 'slide-up' ? 'Deslizar ↑' :
+                    banner.transition_type === 'slide-down' ? 'Deslizar ↓' :
+                    banner.transition_type === 'zoom' ? 'Zoom' : 'Fade'
+                  }</p>
                   <p>Status: {banner.is_active ? 'Ativo' : 'Inativo'}</p>
                 </div>
 
