@@ -33,6 +33,8 @@ export function BannerFormDialog({ banner, trigger }: BannerFormDialogProps) {
   const [fullBannerImagePreview, setFullBannerImagePreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [bannerType, setBannerType] = useState<'color' | 'full'>('color');
+  const [previewAnimating, setPreviewAnimating] = useState(false);
+  const [showPreview, setShowPreview] = useState(true);
 
   const createBanner = useCreateBanner();
   const updateBanner = useUpdateBanner();
@@ -57,6 +59,46 @@ export function BannerFormDialog({ banner, trigger }: BannerFormDialogProps) {
       }
     }
   }, [banner]);
+
+  // Auto-play animation preview
+  useEffect(() => {
+    if (!open) return;
+    
+    const interval = setInterval(() => {
+      setPreviewAnimating(true);
+      setShowPreview(false);
+      
+      setTimeout(() => {
+        setShowPreview(true);
+        setTimeout(() => {
+          setPreviewAnimating(false);
+        }, 600);
+      }, 100);
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [open, transitionType]);
+
+  const getTransitionClasses = () => {
+    if (!previewAnimating) return '';
+    
+    switch (transitionType) {
+      case 'fade':
+        return showPreview ? 'animate-fade-in' : 'animate-fade-out';
+      case 'slide-left':
+        return showPreview ? 'animate-slide-in-left' : 'animate-slide-out-left';
+      case 'slide-right':
+        return showPreview ? 'animate-slide-in-right' : 'animate-slide-out-right';
+      case 'slide-up':
+        return showPreview ? 'animate-slide-in-up' : 'animate-slide-out-up';
+      case 'slide-down':
+        return showPreview ? 'animate-slide-in-down' : 'animate-slide-out-down';
+      case 'zoom':
+        return showPreview ? 'animate-zoom-in' : 'animate-zoom-out';
+      default:
+        return '';
+    }
+  };
 
   const handleBackgroundImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -385,29 +427,64 @@ export function BannerFormDialog({ banner, trigger }: BannerFormDialogProps) {
             <Label htmlFor="isActive">Banner Ativo</Label>
           </div>
 
-          {/* Preview */}
-          {bannerType === 'color' && (
-            <div className="space-y-2">
-              <Label>Preview</Label>
-              <div
-                className="relative p-4 rounded-lg text-center overflow-hidden"
-                style={{
-                  backgroundColor: backgroundColor,
-                  color: textColor,
-                  backgroundImage: backgroundImagePreview 
-                    ? `url(${backgroundImagePreview})` 
-                    : 'none',
-                  backgroundSize: 'cover',
-                  backgroundPosition: 'center',
-                }}
-              >
-                <div className="relative z-10">
-                  <h3 className="text-xl font-bold drop-shadow-lg">{title || 'Título do Banner'}</h3>
-                  {description && <p className="text-sm opacity-90 mt-1 drop-shadow-lg">{description}</p>}
-                </div>
-              </div>
+          {/* Animated Preview */}
+          <div className="space-y-2 border-t pt-4">
+            <div className="flex items-center justify-between">
+              <Label>Preview com Animação</Label>
+              <span className="text-xs text-muted-foreground">
+                Animação se repete a cada 3 segundos
+              </span>
             </div>
-          )}
+            <div className="relative h-32 bg-muted rounded-lg overflow-hidden">
+              {showPreview && (
+                <>
+                  {bannerType === 'color' ? (
+                    <div
+                      className={`absolute inset-0 p-4 flex items-center justify-center text-center ${getTransitionClasses()}`}
+                      style={{
+                        backgroundColor: backgroundColor,
+                        color: textColor,
+                        backgroundImage: backgroundImagePreview 
+                          ? `url(${backgroundImagePreview})` 
+                          : 'none',
+                        backgroundSize: 'cover',
+                        backgroundPosition: 'center',
+                      }}
+                    >
+                      <div className="relative z-10">
+                        <h3 className="text-lg font-bold drop-shadow-lg">
+                          {title || 'Título do Banner'}
+                        </h3>
+                        {description && (
+                          <p className="text-sm opacity-90 mt-1 drop-shadow-lg">
+                            {description}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    fullBannerImagePreview && (
+                      <img
+                        src={fullBannerImagePreview}
+                        alt="Preview"
+                        className={`absolute inset-0 w-full h-full object-cover ${getTransitionClasses()}`}
+                      />
+                    )
+                  )}
+                </>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              💡 Transição atual: <strong>
+                {transitionType === 'fade' ? 'Fade (Dissolver)' :
+                 transitionType === 'slide-left' ? 'Deslizar para Esquerda' :
+                 transitionType === 'slide-right' ? 'Deslizar para Direita' :
+                 transitionType === 'slide-up' ? 'Deslizar para Cima' :
+                 transitionType === 'slide-down' ? 'Deslizar para Baixo' :
+                 transitionType === 'zoom' ? 'Zoom' : 'Fade'}
+              </strong>
+            </p>
+          </div>
 
           <div className="flex justify-end gap-2">
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>
