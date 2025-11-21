@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import { logActivity } from '@/hooks/useActivityLogs';
 import QRCode from 'qrcode';
 
 // Generate random backup code
@@ -95,6 +96,8 @@ export const useMFA = () => {
       // Generate backup codes after successful enrollment
       const backupCodes = await generateBackupCodes();
 
+      await logActivity('mfa_enabled');
+
       toast({
         title: '2FA ativado com sucesso!',
         description: 'Sua conta agora está protegida com autenticação de dois fatores.',
@@ -186,6 +189,8 @@ export const useMFA = () => {
       const { error } = await supabase.auth.mfa.unenroll({ factorId });
 
       if (error) throw error;
+
+      await logActivity('mfa_disabled');
 
       toast({
         title: '2FA desativado',

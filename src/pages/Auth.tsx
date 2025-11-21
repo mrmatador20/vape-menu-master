@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useMFA } from '@/hooks/useMFA';
+import { logActivity } from '@/hooks/useActivityLogs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -84,8 +85,10 @@ const Auth = () => {
           }
           
           // No MFA or not required, proceed with login
+          await logActivity('login');
           toast.success('Login realizado com sucesso!');
         } else if (signInError) {
+          await logActivity('login_failed', { error: signInError.message });
           throw signInError;
         }
       }
@@ -96,7 +99,8 @@ const Auth = () => {
     }
   };
 
-  const handleMFASuccess = () => {
+  const handleMFASuccess = async () => {
+    await logActivity('login', { method: '2FA' });
     toast.success('Login realizado com sucesso!');
     navigate('/');
   };
