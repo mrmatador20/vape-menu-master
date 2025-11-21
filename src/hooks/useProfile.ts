@@ -13,6 +13,7 @@ export interface Profile {
   address_city: string | null;
   address_state: string | null;
   cep: string | null;
+  avatar_url: string | null;
 }
 
 export const useProfile = () => {

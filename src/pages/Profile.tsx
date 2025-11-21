@@ -16,6 +16,7 @@ import { Separator } from '@/components/ui/separator';
 import { MFAEnrollDialog } from '@/components/MFAEnrollDialog';
 import { ChangePasswordDialog } from '@/components/ChangePasswordDialog';
 import { ActivityLogsCard } from '@/components/ActivityLogsCard';
+import { AvatarUpload } from '@/components/AvatarUpload';
 import { Badge } from '@/components/ui/badge';
 import {
   AlertDialog,
@@ -152,6 +153,17 @@ const Profile = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              <div className="flex flex-col items-center pb-4">
+                <AvatarUpload
+                  currentAvatarUrl={profile?.avatar_url || null}
+                  onAvatarChange={(url) => {
+                    // Avatar is already updated via direct DB call in component
+                  }}
+                />
+              </div>
+
+              <Separator />
+
               <div>
                 <label className="text-sm font-medium text-muted-foreground">Email</label>
                 <p className="text-foreground font-medium">{userEmail}</p>
