@@ -139,27 +139,29 @@ const ProductCard = ({ product, onAddToCart }: ProductCardProps) => {
           )}
         </div>
         
-        {flavors && flavors.length > 0 && !isOutOfStock && (
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Escolha o sabor:</label>
-            <Select value={selectedFlavor} onValueChange={setSelectedFlavor}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Selecione um sabor" />
-              </SelectTrigger>
-              <SelectContent>
-                {flavors.map((flavor) => (
-                  <SelectItem 
-                    key={flavor.id} 
-                    value={flavor.name}
-                    disabled={flavor.stock === 0}
-                  >
-                    {flavor.name} {flavor.stock === 0 ? '(Esgotado)' : ''}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        )}
+        <div className="min-h-[80px]">
+          {flavors && flavors.length > 0 && !isOutOfStock && (
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Escolha o sabor:</label>
+              <Select value={selectedFlavor} onValueChange={setSelectedFlavor}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Selecione um sabor" />
+                </SelectTrigger>
+                <SelectContent>
+                  {flavors.map((flavor) => (
+                    <SelectItem 
+                      key={flavor.id} 
+                      value={flavor.name}
+                      disabled={flavor.stock === 0}
+                    >
+                      {flavor.name} {flavor.stock === 0 ? '(Esgotado)' : ''}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+        </div>
         
         <div className="flex items-center justify-between">
           <div className="space-y-1">
