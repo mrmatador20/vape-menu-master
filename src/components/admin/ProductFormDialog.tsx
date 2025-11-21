@@ -1,6 +1,7 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -8,6 +9,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   Form,
   FormControl,
@@ -30,7 +41,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { Product } from "@/context/CartContext";
-import { useEffect } from "react";
+import { useFlavors, Flavor } from "@/hooks/useFlavors";
+import { FlavorFormDialog } from "./FlavorFormDialog";
+import { Trash2, Edit, Plus } from "lucide-react";
 
 const productSchema = z.object({
   name: z.string().min(1, "Nome é obrigatório"),
@@ -56,6 +69,10 @@ interface ProductFormDialogProps {
 export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDialogProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [isFlavorDialogOpen, setIsFlavorDialogOpen] = useState(false);
+  const [editingFlavor, setEditingFlavor] = useState<Flavor | null>(null);
+  const [deleteFlavorId, setDeleteFlavorId] = useState<string | null>(null);
+  const { data: flavors } = useFlavors(product?.id || "");
 
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productSchema),
@@ -102,6 +119,33 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
       });
     }
   }, [product, form]);
+
+  const handleDeleteFlavor = async () => {
+    if (!deleteFlavorId) return;
+
+    try {
+      const { error } = await supabase
+        .from("flavors")
+        .delete()
+        .eq("id", deleteFlavorId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Variante excluída",
+        description: "A variante foi removida com sucesso.",
+      });
+
+      queryClient.invalidateQueries({ queryKey: ["flavors", product?.id] });
+    } catch (error: any) {
+      toast({
+        title: "Erro ao excluir",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+    setDeleteFlavorId(null);
+  };
 
   const onSubmit = async (values: ProductFormValues) => {
     const productData = {
@@ -346,6 +390,73 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
               )}
             />
 
+            {product && (
+              <div className="space-y-4 mt-6 pt-6 border-t">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-lg font-semibold">Variantes do Produto</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Configure diferentes formatos com preços específicos (Ex: Livreto, Unidade)
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={() => {
+                      setEditingFlavor(null);
+                      setIsFlavorDialogOpen(true);
+                    }}
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Adicionar Variante
+                  </Button>
+                </div>
+
+                {flavors && flavors.length > 0 ? (
+                  <div className="space-y-2">
+                    {flavors.map((flavor) => (
+                      <div
+                        key={flavor.id}
+                        className="flex items-center justify-between p-3 border rounded-lg"
+                      >
+                        <div>
+                          <p className="font-medium">{flavor.name}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {flavor.price ? `R$ ${Number(flavor.price).toFixed(2)}` : "Usa preço base"} • Estoque: {flavor.stock}
+                          </p>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setEditingFlavor(flavor);
+                              setIsFlavorDialogOpen(true);
+                            }}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setDeleteFlavorId(flavor.id)}
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    Nenhuma variante cadastrada. Adicione variantes para permitir que os clientes escolham entre diferentes formatos.
+                  </p>
+                )}
+              </div>
+            )}
+
             <div className="flex justify-end gap-2">
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                 Cancelar
@@ -357,6 +468,34 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
           </form>
         </Form>
       </DialogContent>
+
+      {product && (
+        <>
+          <FlavorFormDialog
+            open={isFlavorDialogOpen}
+            onOpenChange={setIsFlavorDialogOpen}
+            productId={product.id}
+            flavor={editingFlavor}
+          />
+
+          <AlertDialog open={!!deleteFlavorId} onOpenChange={() => setDeleteFlavorId(null)}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Tem certeza que deseja excluir esta variante? Esta ação não pode ser desfeita.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDeleteFlavor} className="bg-destructive hover:bg-destructive/90">
+                  Excluir
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </>
+      )}
     </Dialog>
   );
 }

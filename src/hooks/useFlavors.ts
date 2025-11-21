@@ -6,6 +6,7 @@ export interface Flavor {
   product_id: string;
   name: string;
   stock: number;
+  price?: number;
   created_at: string;
 }
 

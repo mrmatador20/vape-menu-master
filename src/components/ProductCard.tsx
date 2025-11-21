@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Product } from '@/context/CartContext';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -28,17 +28,37 @@ const ProductCard = ({ product, onAddToCart }: ProductCardProps) => {
   const [selectedFlavor, setSelectedFlavor] = useState<string | undefined>();
   const [isDescriptionOpen, setIsDescriptionOpen] = useState(false);
   const [showReviews, setShowReviews] = useState(false);
+  const [currentPrice, setCurrentPrice] = useState(product.price);
   const { data: flavors } = useFlavors(product.id);
+
+  // Atualiza o preço quando as variantes ou flavor selecionado mudam
+  useEffect(() => {
+    if (flavors && flavors.length > 0) {
+      if (selectedFlavor) {
+        const flavor = flavors.find(f => f.name === selectedFlavor);
+        if (flavor) {
+          setCurrentPrice(flavor.price ? Number(flavor.price) : product.price);
+        }
+      } else {
+        // Define primeira variante como padrão
+        const firstFlavor = flavors[0];
+        setSelectedFlavor(firstFlavor.name);
+        setCurrentPrice(firstFlavor.price ? Number(firstFlavor.price) : product.price);
+      }
+    } else {
+      setCurrentPrice(product.price);
+    }
+  }, [flavors, selectedFlavor, product.price]);
   
   // Calculate only product individual discount (not global coupons)
   const discountValue = product.discount_value || 0;
   const discountType = product.discount_type || 'percent';
   
   const finalPrice = discountType === 'percent'
-    ? product.price * (1 - discountValue / 100)
-    : product.price - discountValue;
+    ? currentPrice * (1 - discountValue / 100)
+    : currentPrice - discountValue;
   
-  const hasDiscount = finalPrice < product.price;
+  const hasDiscount = finalPrice < currentPrice;
   const totalDiscountPercent = discountValue;
   
   // Determine if product is out of stock based on whether it has flavors
@@ -145,7 +165,7 @@ const ProductCard = ({ product, onAddToCart }: ProductCardProps) => {
           <div className="space-y-1">
             {hasDiscount && (
               <span className="text-sm text-muted-foreground line-through block">
-                R$ {product.price.toFixed(2)}
+                R$ {currentPrice.toFixed(2)}
               </span>
             )}
             <span className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent">
