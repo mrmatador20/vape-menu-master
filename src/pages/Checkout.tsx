@@ -11,12 +11,14 @@ import { toast } from 'sonner';
 import Header from '@/components/Header';
 import { supabase } from '@/integrations/supabase/client';
 import { z } from 'zod';
+import { useShippingRateByCep } from '@/hooks/useShippingRates';
 
 const checkoutSchema = z.object({
   rua: z.string().trim().min(1, 'Rua é obrigatória').max(100, 'Rua deve ter no máximo 100 caracteres'),
   numero: z.string().trim().min(1, 'Número é obrigatório').max(20, 'Número deve ter no máximo 20 caracteres'),
   bairro: z.string().trim().min(1, 'Bairro é obrigatório').max(100, 'Bairro deve ter no máximo 100 caracteres'),
   cidade: z.string().trim().min(1, 'Cidade é obrigatória').max(100, 'Cidade deve ter no máximo 100 caracteres'),
+  cep: z.string().trim().min(8, 'CEP é obrigatório').max(9, 'CEP inválido'),
   paymentMethod: z.enum(['pix', 'dinheiro']),
   changeAmount: z.string().optional(),
 });
@@ -39,10 +41,16 @@ const Checkout = () => {
     numero: '',
     bairro: '',
     cidade: '',
+    cep: '',
     paymentMethod: 'pix',
     changeAmount: '',
     discountCode: '',
   });
+
+  // Buscar taxa de entrega baseada no CEP
+  const cleanCep = formData.cep.replace(/\D/g, '');
+  const { data: shippingRate } = useShippingRateByCep(cleanCep);
+  const shippingCost = shippingRate?.price ? Number(shippingRate.price) : null;
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -180,9 +188,11 @@ const Checkout = () => {
     toast.info('Cupom removido');
   };
 
-  const finalTotal = appliedDiscount 
+  const subtotal = appliedDiscount 
     ? Math.max(0, totalPrice - appliedDiscount.discountAmount)
     : totalPrice;
+  
+  const finalTotal = shippingCost !== null ? subtotal + shippingCost : subtotal;
 
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -225,6 +235,8 @@ const Checkout = () => {
             neighborhood: validatedData.bairro,
             city: validatedData.cidade,
           },
+          cep: cleanCep,
+          shippingCost: shippingCost || 0,
           paymentMethod: validatedData.paymentMethod,
           changeAmount: validatedData.changeAmount,
           discountCode: appliedDiscount?.code || undefined,
@@ -251,7 +263,7 @@ const Checkout = () => {
         .join('\n');
       
       // Montando a mensagem para o WhatsApp
-      let message = `*Novo Pedido #${order.id}*\n\n*Itens:*\n${itemsList}\n\n*Total: R$ ${order.total.toFixed(2)}*\n\n*Endereço de Entrega:*\n${validatedData.rua}, ${validatedData.numero}\n${validatedData.bairro} - ${validatedData.cidade}\n\n*Forma de Pagamento:* ${validatedData.paymentMethod === 'pix' ? 'PIX' : 'Dinheiro'}`;
+      let message = `*Novo Pedido #${order.id}*\n\n*Itens:*\n${itemsList}\n\n*Subtotal: R$ ${subtotal.toFixed(2)}*\n*Taxa de Entrega (CEP ${validatedData.cep}): R$ ${(shippingCost || 0).toFixed(2)}*\n*Total: R$ ${order.total.toFixed(2)}*\n\n*Endereço de Entrega:*\n${validatedData.rua}, ${validatedData.numero}\n${validatedData.bairro} - ${validatedData.cidade}\nCEP: ${validatedData.cep}\n\n*Forma de Pagamento:* ${validatedData.paymentMethod === 'pix' ? 'PIX' : 'Dinheiro'}`;
 
       // Se o pagamento for em dinheiro e houver troco
       if (validatedData.paymentMethod === 'dinheiro' && validatedData.changeAmount) {
@@ -365,6 +377,37 @@ const Checkout = () => {
                   required
                   disabled={isSubmitting}
                 />
+              </div>
+
+              <div>
+                <Label htmlFor="cep">CEP</Label>
+                <Input
+                  id="cep"
+                  name="cep"
+                  value={formData.cep}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/\D/g, '');
+                    const formatted = value.length > 5 
+                      ? `${value.slice(0, 5)}-${value.slice(5, 8)}`
+                      : value;
+                    setFormData(prev => ({ ...prev, cep: formatted }));
+                  }}
+                  placeholder="00000-000"
+                  maxLength={9}
+                  required
+                  disabled={isSubmitting}
+                />
+                {cleanCep.length === 8 && (
+                  shippingCost !== null ? (
+                    <p className="text-sm text-green-600 mt-1">
+                      ✓ Taxa de entrega: R$ {shippingCost.toFixed(2)}
+                    </p>
+                  ) : (
+                    <p className="text-sm text-amber-600 mt-1">
+                      ⚠ CEP não cadastrado. Entre em contato via WhatsApp para negociar o valor da entrega.
+                    </p>
+                  )
+                )}
               </div>
 
               <div className="space-y-2">
@@ -493,19 +536,28 @@ const Checkout = () => {
               })}
 
               <div className="border-t pt-4 space-y-2">
+                <div className="flex justify-between text-muted-foreground">
+                  <span>Subtotal dos Produtos</span>
+                  <span>R$ {totalPrice.toFixed(2)}</span>
+                </div>
                 {appliedDiscount && (
-                  <>
-                    <div className="flex justify-between text-muted-foreground">
-                      <span>Subtotal</span>
-                      <span>R$ {totalPrice.toFixed(2)}</span>
-                    </div>
-                    <div className="flex justify-between text-green-600">
-                      <span>Desconto ({appliedDiscount.code})</span>
-                      <span>- R$ {appliedDiscount.discountAmount.toFixed(2)}</span>
-                    </div>
-                  </>
+                  <div className="flex justify-between text-green-600">
+                    <span>Desconto ({appliedDiscount.code})</span>
+                    <span>- R$ {appliedDiscount.discountAmount.toFixed(2)}</span>
+                  </div>
                 )}
-                <div className="flex justify-between font-bold text-xl">
+                {shippingCost !== null ? (
+                  <div className="flex justify-between">
+                    <span>Taxa de Entrega</span>
+                    <span>R$ {shippingCost.toFixed(2)}</span>
+                  </div>
+                ) : cleanCep.length === 8 && (
+                  <div className="flex justify-between text-amber-600 text-sm">
+                    <span>Taxa de Entrega</span>
+                    <span>A negociar</span>
+                  </div>
+                )}
+                <div className="flex justify-between font-bold text-xl border-t pt-2">
                   <span>Total</span>
                   <span>R$ {finalTotal.toFixed(2)}</span>
                 </div>
