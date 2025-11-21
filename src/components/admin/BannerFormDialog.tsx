@@ -6,11 +6,15 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Loader2, Upload, X } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { Plus, Loader2, Upload, X, CalendarIcon } from 'lucide-react';
 import { useCreateBanner, useUpdateBanner, Banner } from '@/hooks/useBanners';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 interface BannerFormDialogProps {
   banner?: Banner;
@@ -35,6 +39,10 @@ export function BannerFormDialog({ banner, trigger }: BannerFormDialogProps) {
   const [bannerType, setBannerType] = useState<'color' | 'full'>('color');
   const [previewAnimating, setPreviewAnimating] = useState(false);
   const [showPreview, setShowPreview] = useState(true);
+  const [scheduledStart, setScheduledStart] = useState<Date | undefined>();
+  const [scheduledEnd, setScheduledEnd] = useState<Date | undefined>();
+  const [startTime, setStartTime] = useState('00:00');
+  const [endTime, setEndTime] = useState('23:59');
 
   const createBanner = useCreateBanner();
   const updateBanner = useUpdateBanner();
@@ -56,6 +64,18 @@ export function BannerFormDialog({ banner, trigger }: BannerFormDialogProps) {
         setBannerType('full');
       } else {
         setBannerType('color');
+      }
+
+      if (banner.scheduled_start) {
+        const startDate = new Date(banner.scheduled_start);
+        setScheduledStart(startDate);
+        setStartTime(format(startDate, 'HH:mm'));
+      }
+      
+      if (banner.scheduled_end) {
+        const endDate = new Date(banner.scheduled_end);
+        setScheduledEnd(endDate);
+        setEndTime(format(endDate, 'HH:mm'));
       }
     }
   }, [banner]);
@@ -144,6 +164,13 @@ export function BannerFormDialog({ banner, trigger }: BannerFormDialogProps) {
     return publicUrl;
   };
 
+  const combineDateAndTime = (date: Date, time: string): string => {
+    const [hours, minutes] = time.split(':');
+    const combined = new Date(date);
+    combined.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+    return combined.toISOString();
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setUploading(true);
@@ -171,6 +198,8 @@ export function BannerFormDialog({ banner, trigger }: BannerFormDialogProps) {
         display_order: displayOrder,
         rotation_seconds: rotationSeconds,
         transition_type: transitionType,
+        scheduled_start: scheduledStart ? combineDateAndTime(scheduledStart, startTime) : null,
+        scheduled_end: scheduledEnd ? combineDateAndTime(scheduledEnd, endTime) : null,
       };
 
       if (banner) {
@@ -202,6 +231,10 @@ export function BannerFormDialog({ banner, trigger }: BannerFormDialogProps) {
     setFullBannerImageFile(null);
     setFullBannerImagePreview(null);
     setBannerType('color');
+    setScheduledStart(undefined);
+    setScheduledEnd(undefined);
+    setStartTime('00:00');
+    setEndTime('23:59');
   };
 
   return (
@@ -425,6 +458,106 @@ export function BannerFormDialog({ banner, trigger }: BannerFormDialogProps) {
               onCheckedChange={setIsActive}
             />
             <Label htmlFor="isActive">Banner Ativo</Label>
+          </div>
+
+          {/* Scheduling Section */}
+          <div className="space-y-4 border-t pt-4">
+            <div>
+              <h3 className="text-sm font-medium mb-1">Agendamento (Opcional)</h3>
+              <p className="text-xs text-muted-foreground">
+                Configure quando este banner deve ser exibido automaticamente
+              </p>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              {/* Start Date/Time */}
+              <div className="space-y-2">
+                <Label>Data/Hora de Início</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !scheduledStart && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {scheduledStart ? format(scheduledStart, "dd/MM/yyyy") : "Selecionar data"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={scheduledStart}
+                      onSelect={setScheduledStart}
+                      initialFocus
+                      className="p-3 pointer-events-auto"
+                    />
+                  </PopoverContent>
+                </Popover>
+                <Input
+                  type="time"
+                  value={startTime}
+                  onChange={(e) => setStartTime(e.target.value)}
+                  disabled={!scheduledStart}
+                />
+              </div>
+
+              {/* End Date/Time */}
+              <div className="space-y-2">
+                <Label>Data/Hora de Término</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !scheduledEnd && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {scheduledEnd ? format(scheduledEnd, "dd/MM/yyyy") : "Selecionar data"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={scheduledEnd}
+                      onSelect={setScheduledEnd}
+                      initialFocus
+                      className="p-3 pointer-events-auto"
+                    />
+                  </PopoverContent>
+                </Popover>
+                <Input
+                  type="time"
+                  value={endTime}
+                  onChange={(e) => setEndTime(e.target.value)}
+                  disabled={!scheduledEnd}
+                />
+              </div>
+            </div>
+
+            {scheduledStart && scheduledEnd && (
+              <p className="text-xs text-muted-foreground bg-muted p-2 rounded">
+                📅 Banner será exibido de <strong>{format(scheduledStart, "dd/MM/yyyy")}</strong> às <strong>{startTime}</strong> até <strong>{format(scheduledEnd, "dd/MM/yyyy")}</strong> às <strong>{endTime}</strong>
+              </p>
+            )}
+            
+            {scheduledStart && !scheduledEnd && (
+              <p className="text-xs text-muted-foreground bg-muted p-2 rounded">
+                📅 Banner será exibido a partir de <strong>{format(scheduledStart, "dd/MM/yyyy")}</strong> às <strong>{startTime}</strong>
+              </p>
+            )}
+            
+            {!scheduledStart && scheduledEnd && (
+              <p className="text-xs text-muted-foreground bg-muted p-2 rounded">
+                📅 Banner será exibido até <strong>{format(scheduledEnd, "dd/MM/yyyy")}</strong> às <strong>{endTime}</strong>
+              </p>
+            )}
           </div>
 
           {/* Animated Preview */}

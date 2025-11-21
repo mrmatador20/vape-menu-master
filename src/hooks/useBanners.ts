@@ -14,6 +14,8 @@ export interface Banner {
   display_order: number;
   rotation_seconds: number;
   transition_type: string;
+  scheduled_start: string | null;
+  scheduled_end: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -37,6 +39,7 @@ export const useActiveBanners = () => {
   return useQuery({
     queryKey: ['active-banners'],
     queryFn: async () => {
+      const now = new Date().toISOString();
       const { data, error } = await supabase
         .from('banners')
         .select('*')
@@ -44,7 +47,27 @@ export const useActiveBanners = () => {
         .order('display_order', { ascending: true });
 
       if (error) throw error;
-      return data as Banner[];
+      
+      // Filter banners based on scheduling
+      const filteredData = (data as Banner[]).filter(banner => {
+        // If no scheduling is set, show the banner
+        if (!banner.scheduled_start && !banner.scheduled_end) return true;
+        
+        // If only start date is set, show if current time is after start
+        if (banner.scheduled_start && !banner.scheduled_end) {
+          return now >= banner.scheduled_start;
+        }
+        
+        // If only end date is set, show if current time is before end
+        if (!banner.scheduled_start && banner.scheduled_end) {
+          return now <= banner.scheduled_end;
+        }
+        
+        // If both are set, show if current time is within range
+        return now >= banner.scheduled_start! && now <= banner.scheduled_end!;
+      });
+      
+      return filteredData;
     },
   });
 };
