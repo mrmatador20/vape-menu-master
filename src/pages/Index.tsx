@@ -87,7 +87,7 @@ const Index = () => {
             Bem-vindo à NebulaVape
           </h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-1000 delay-150">
-            Os melhores vapers com entrega rápida. Escolha entre nossas categorias V250 e V400.
+            Aqui você encontra uma variedade de produtos de tabacaria com entrega rápida. Explore nossas categorias de vapers, acessórios, tabacos e muito mais.
           </p>
         </div>
       </section>
