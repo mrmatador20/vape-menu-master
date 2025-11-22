@@ -1,0 +1,76 @@
+# .htaccess para Hostgator - React Router + Otimizações
+# Este arquivo deve ser colocado na pasta public_html do Hostgator
+# IMPORTANTE: Renomeie para .htaccess (remova .example)
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+  
+  # Se o arquivo ou diretório existir, servir diretamente
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  
+  # Caso contrário, redirecionar para index.html (React Router)
+  RewriteRule . /index.html [L]
+</IfModule>
+
+# Habilitar compressão Gzip (reduz tamanho dos arquivos)
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript application/javascript application/json
+</IfModule>
+
+# Cache de arquivos estáticos (melhora performance)
+<IfModule mod_expires.c>
+  ExpiresActive On
+  
+  # Imagens - cache por 1 ano
+  ExpiresByType image/jpg "access plus 1 year"
+  ExpiresByType image/jpeg "access plus 1 year"
+  ExpiresByType image/gif "access plus 1 year"
+  ExpiresByType image/png "access plus 1 year"
+  ExpiresByType image/webp "access plus 1 year"
+  ExpiresByType image/svg+xml "access plus 1 year"
+  ExpiresByType image/x-icon "access plus 1 year"
+  
+  # CSS e JavaScript - cache por 1 mês
+  ExpiresByType text/css "access plus 1 month"
+  ExpiresByType application/javascript "access plus 1 month"
+  ExpiresByType application/x-javascript "access plus 1 month"
+  
+  # Fontes - cache por 1 ano
+  ExpiresByType font/ttf "access plus 1 year"
+  ExpiresByType font/otf "access plus 1 year"
+  ExpiresByType font/woff "access plus 1 year"
+  ExpiresByType font/woff2 "access plus 1 year"
+  ExpiresByType application/font-woff "access plus 1 year"
+  
+  # HTML - sem cache (para atualizações rápidas)
+  ExpiresByType text/html "access plus 0 seconds"
+</IfModule>
+
+# Segurança adicional
+<IfModule mod_headers.c>
+  # Prevenir clickjacking
+  Header always set X-Frame-Options "SAMEORIGIN"
+  
+  # Prevenir MIME type sniffing
+  Header always set X-Content-Type-Options "nosniff"
+  
+  # XSS Protection
+  Header always set X-XSS-Protection "1; mode=block"
+  
+  # Referrer Policy
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+  
+  # Content Security Policy (opcional, ajuste conforme necessário)
+  # Header always set Content-Security-Policy "default-src 'self' https://bupbucfdisqedteazifs.supabase.co"
+</IfModule>
+
+# Desabilitar listagem de diretórios
+Options -Indexes
+
+# Proteger arquivos sensíveis
+<FilesMatch "\.(env|json|log|md)$">
+  Order allow,deny
+  Deny from all
+</FilesMatch>
