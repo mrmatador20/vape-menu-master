@@ -234,9 +234,9 @@ const Header = () => {
           )}
         </div>
 
-        {/* Menu Hambúrguer */}
+        {/* Mobile Menu */}
         <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
-          <SheetTrigger asChild>
+          <SheetTrigger asChild className="md:hidden">
             <Button
               variant="outline"
               size="sm"
