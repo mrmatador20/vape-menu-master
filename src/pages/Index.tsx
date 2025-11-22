@@ -26,6 +26,10 @@ const Index = () => {
     if (categoryParam) {
       setActiveCategory(categoryParam);
       setActiveSubcategory(subcategoryParam || 'all');
+    } else {
+      // Se não há parâmetro de categoria, mostra todos
+      setActiveCategory('all');
+      setActiveSubcategory('all');
     }
   }, [searchParams]);
 
