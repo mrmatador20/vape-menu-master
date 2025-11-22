@@ -1,4 +1,4 @@
-import { ShoppingCart, Settings, Package, LogOut, User } from 'lucide-react';
+import { ShoppingCart, Settings, Package, LogOut, User, Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCart } from '@/context/CartContext';
 import { useNavigate } from 'react-router-dom';
@@ -7,12 +7,20 @@ import { useUserRole } from '@/hooks/useUserRole';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useState, useEffect } from 'react';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '@/components/ui/sheet';
 
 const Header = () => {
   const { totalItems } = useCart();
   const navigate = useNavigate();
   const { data: role } = useUserRole();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   useEffect(() => {
     // Check current session
@@ -36,11 +44,17 @@ const Header = () => {
 
       toast.success('Logout realizado com sucesso!');
       navigate('/auth');
+      setIsMenuOpen(false);
     } catch (error: any) {
       toast.error('Erro ao fazer logout', {
         description: error.message
       });
     }
+  };
+
+  const handleNavigate = (path: string) => {
+    navigate(path);
+    setIsMenuOpen(false);
   };
 
   return (
@@ -56,7 +70,8 @@ const Header = () => {
           </span>
         </div>
         
-        <div className="flex items-center gap-3 md:gap-2">
+        {/* Desktop Navigation */}
+        <div className="hidden md:flex items-center gap-2">
           {role === 'admin' && (
             <Button
               variant="outline"
@@ -112,6 +127,80 @@ const Header = () => {
             </>
           )}
         </div>
+
+        {/* Mobile Menu */}
+        <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
+          <SheetTrigger asChild className="md:hidden">
+            <Button
+              variant="outline"
+              size="sm"
+              className="border-primary/50 hover:bg-primary/10"
+            >
+              <Menu className="h-5 w-5 text-primary" />
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="right" className="w-[280px] sm:w-[340px]">
+            <SheetHeader>
+              <SheetTitle>Menu</SheetTitle>
+            </SheetHeader>
+            <div className="flex flex-col gap-4 mt-6">
+              {role === 'admin' && (
+                <Button
+                  variant="outline"
+                  className="w-full justify-start gap-3 border-primary/50 hover:bg-primary/10"
+                  onClick={() => handleNavigate('/admin')}
+                >
+                  <Settings className="h-5 w-5 text-primary" />
+                  <span>Admin</span>
+                </Button>
+              )}
+              
+              <Button
+                variant="outline"
+                className="w-full justify-start gap-3 border-primary/50 hover:bg-primary/10"
+                onClick={() => handleNavigate('/my-orders')}
+              >
+                <Package className="h-5 w-5 text-primary" />
+                <span>Meus Pedidos</span>
+              </Button>
+              
+              <Button
+                variant="outline"
+                className="w-full justify-start gap-3 border-primary/50 hover:bg-primary/10 relative"
+                onClick={() => handleNavigate('/cart')}
+              >
+                <ShoppingCart className="h-5 w-5 text-primary" />
+                <span>Carrinho</span>
+                {totalItems > 0 && (
+                  <Badge className="ml-auto h-5 w-5 flex items-center justify-center p-0 bg-secondary text-secondary-foreground">
+                    {totalItems}
+                  </Badge>
+                )}
+              </Button>
+
+              {isLoggedIn && (
+                <>
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start gap-3 border-primary/50 hover:bg-primary/10"
+                    onClick={() => handleNavigate('/profile')}
+                  >
+                    <User className="h-5 w-5 text-primary" />
+                    <span>Perfil</span>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start gap-3 border-destructive/50 hover:bg-destructive/10"
+                    onClick={handleLogout}
+                  >
+                    <LogOut className="h-5 w-5 text-destructive" />
+                    <span>Sair</span>
+                  </Button>
+                </>
+              )}
+            </div>
+          </SheetContent>
+        </Sheet>
       </div>
     </header>
   );
