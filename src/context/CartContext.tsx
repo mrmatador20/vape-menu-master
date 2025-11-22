@@ -14,6 +14,7 @@ export interface Product {
   min_stock: number;
   discount_value?: number;
   discount_type?: 'percent' | 'fixed';
+  display_order?: number;
 }
 
 export interface CartItem extends Product {

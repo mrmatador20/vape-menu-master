@@ -41,12 +41,7 @@ export default function AdminProducts() {
   const filteredProducts = products?.filter((product) =>
     product.name.toLowerCase().includes(search.toLowerCase()) ||
     product.category.toLowerCase().includes(search.toLowerCase())
-  ).sort((a, b) => {
-    // Produtos com estoque primeiro, esgotados por último
-    if (a.stock > 0 && b.stock === 0) return -1;
-    if (a.stock === 0 && b.stock > 0) return 1;
-    return 0;
-  });
+  );
 
   const handleDelete = async () => {
     if (!deleteProductId) return;
@@ -107,6 +102,7 @@ export default function AdminProducts() {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead>Posição</TableHead>
               <TableHead>Imagem</TableHead>
               <TableHead>Nome</TableHead>
               <TableHead>Categoria</TableHead>
@@ -120,15 +116,16 @@ export default function AdminProducts() {
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={8} className="text-center">Carregando...</TableCell>
+                <TableCell colSpan={9} className="text-center">Carregando...</TableCell>
               </TableRow>
             ) : filteredProducts?.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="text-center">Nenhum produto encontrado</TableCell>
+                <TableCell colSpan={9} className="text-center">Nenhum produto encontrado</TableCell>
               </TableRow>
             ) : (
               filteredProducts?.map((product) => (
                 <TableRow key={product.id}>
+                  <TableCell className="font-medium">{(product as any).display_order || 0}</TableCell>
                   <TableCell>
                     <img
                       src={product.image || '/placeholder.svg'}
