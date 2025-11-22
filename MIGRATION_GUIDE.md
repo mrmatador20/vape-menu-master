@@ -161,6 +161,271 @@ for (const file of files) {
 
 5. Adicione variáveis de ambiente na console
 
+#### Opção D: Hostgator (Hospedagem Tradicional)
+
+> **🎯 OPÇÃO RECOMENDADA:** Se você já tem Hostgator, pode hospedar só o frontend lá e manter o backend no Lovable Cloud. Zero configuração de backend necessária!
+
+##### 1. Preparar Build Local
+
+```bash
+# Clone o repositório (se ainda não tiver)
+git clone https://github.com/seu-usuario/seu-repo.git
+cd seu-repo
+
+# Instalar dependências
+npm install
+
+# Criar arquivo .env.production na raiz do projeto
+touch .env.production
+```
+
+##### 2. Configurar Variáveis de Ambiente
+
+Edite o arquivo `.env.production`:
+
+```env
+VITE_SUPABASE_URL=https://bupbucfdisqedteazifs.supabase.co
+VITE_SUPABASE_PUBLISHABLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ1cGJ1Y2ZkaXNxZWR0ZWF6aWZzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI5NTkzOTUsImV4cCI6MjA3ODUzNTM5NX0.SiVZWcU8N5NaIvWA5REzkcjm5UzQvoP6LPpLwG4vBc8
+VITE_SUPABASE_PROJECT_ID=bupbucfdisqedteazifs
+```
+
+⚠️ **IMPORTANTE:** Mantenha essas credenciais do Lovable Cloud. O backend continua hospedado no Lovable!
+
+##### 3. Fazer Build do Projeto
+
+```bash
+# Build para produção
+npm run build
+
+# Isso vai criar a pasta 'dist' com arquivos otimizados
+```
+
+##### 4. Configurar .htaccess para React Router
+
+Crie um arquivo `.htaccess` dentro da pasta `dist`:
+
+```apache
+# dist/.htaccess
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+  
+  # Se o arquivo ou diretório existir, servir diretamente
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  
+  # Caso contrário, redirecionar para index.html
+  RewriteRule . /index.html [L]
+</IfModule>
+
+# Habilitar compressão Gzip
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript application/javascript application/json
+</IfModule>
+
+# Cache de arquivos estáticos
+<IfModule mod_expires.c>
+  ExpiresActive On
+  
+  # Imagens
+  ExpiresByType image/jpg "access plus 1 year"
+  ExpiresByType image/jpeg "access plus 1 year"
+  ExpiresByType image/gif "access plus 1 year"
+  ExpiresByType image/png "access plus 1 year"
+  ExpiresByType image/webp "access plus 1 year"
+  ExpiresByType image/svg+xml "access plus 1 year"
+  
+  # CSS e JavaScript
+  ExpiresByType text/css "access plus 1 month"
+  ExpiresByType application/javascript "access plus 1 month"
+  
+  # Fontes
+  ExpiresByType font/ttf "access plus 1 year"
+  ExpiresByType font/otf "access plus 1 year"
+  ExpiresByType font/woff "access plus 1 year"
+  ExpiresByType font/woff2 "access plus 1 year"
+  
+  # HTML (não fazer cache para ter atualizações rápidas)
+  ExpiresByType text/html "access plus 0 seconds"
+</IfModule>
+
+# Segurança adicional
+<IfModule mod_headers.c>
+  # Prevenir clickjacking
+  Header always set X-Frame-Options "SAMEORIGIN"
+  
+  # Prevenir MIME type sniffing
+  Header always set X-Content-Type-Options "nosniff"
+  
+  # XSS Protection
+  Header always set X-XSS-Protection "1; mode=block"
+  
+  # Referrer Policy
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>
+```
+
+##### 5. Upload via FTP/cPanel
+
+**Opção A: Via cPanel File Manager**
+
+1. Acesse cPanel do Hostgator
+2. Vá em **File Manager**
+3. Navegue até `public_html` (ou a pasta do seu domínio)
+4. **Delete tudo** que estiver lá (faça backup se houver algo importante)
+5. Clique em **Upload**
+6. Selecione **TODOS** os arquivos da pasta `dist` (incluindo o `.htaccess`)
+7. Aguarde o upload completar
+
+**Opção B: Via FTP (FileZilla)**
+
+1. Baixe e instale [FileZilla](https://filezilla-project.org/)
+2. Conecte ao Hostgator:
+   - Host: `ftp.seudominio.com.br` (ou IP fornecido pelo Hostgator)
+   - Usuário: (fornecido pelo Hostgator)
+   - Senha: (fornecido pelo Hostgator)
+   - Porta: 21 ou 22 (SFTP)
+
+3. Navegue até `public_html` (painel direito)
+4. **Delete tudo** que estiver lá (painel direito)
+5. Selecione todos os arquivos da pasta `dist` local (painel esquerdo)
+6. Arraste para `public_html` (painel direito)
+7. Aguarde a transferência
+
+##### 6. Configurar Domínio
+
+**Se for domínio principal (nebulavape.com.br):**
+- Já está configurado! Acesse `https://nebulavape.com.br`
+
+**Se for subdomínio (app.nebulavape.com.br):**
+1. cPanel → **Subdomains**
+2. **Create a Subdomain:** `app`
+3. Document Root: `/public_html/app` (ou pasta que preferir)
+4. Upload dos arquivos `dist` para essa pasta
+
+##### 7. Configurar SSL (HTTPS)
+
+1. cPanel → **SSL/TLS Status**
+2. Marque seu domínio
+3. Clique em **Run AutoSSL**
+4. Aguarde 1-2 minutos
+5. Verifique se o cadeado verde aparece no navegador
+
+**Ou via Let's Encrypt:**
+1. cPanel → **Let's Encrypt SSL**
+2. Selecione seu domínio
+3. Clique em **Issue**
+
+##### 8. Testar Tudo
+
+✅ **Checklist específico Hostgator:**
+- [ ] Site abre em `https://seudominio.com.br`
+- [ ] Todas as páginas funcionam (não dá erro 404)
+- [ ] Login funciona
+- [ ] Produtos aparecem com imagens
+- [ ] Carrinho funciona
+- [ ] Checkout funciona
+- [ ] Upload de avatar funciona
+- [ ] Painel admin funciona
+- [ ] Console não mostra erros (F12)
+
+##### 9. Script de Deploy Automatizado (Opcional)
+
+Crie um arquivo `deploy-hostgator.sh` na raiz do projeto:
+
+```bash
+#!/bin/bash
+
+# Script de deploy para Hostgator
+# Uso: ./deploy-hostgator.sh
+
+echo "🚀 Iniciando deploy para Hostgator..."
+
+# 1. Build do projeto
+echo "📦 Fazendo build..."
+npm run build
+
+# 2. Criar .htaccess na dist
+echo "⚙️  Criando .htaccess..."
+cat > dist/.htaccess << 'EOF'
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteRule . /index.html [L]
+</IfModule>
+EOF
+
+# 3. Compactar arquivos
+echo "📦 Compactando arquivos..."
+cd dist
+zip -r ../dist-deploy.zip .
+cd ..
+
+echo "✅ Build completo! Arquivo: dist-deploy.zip"
+echo ""
+echo "📤 Próximos passos:"
+echo "1. Acesse cPanel do Hostgator"
+echo "2. File Manager → public_html"
+echo "3. Upload do arquivo dist-deploy.zip"
+echo "4. Extrair o arquivo (Extract)"
+echo "5. Deletar o dist-deploy.zip"
+echo ""
+echo "Ou use FTP para enviar a pasta 'dist' completa"
+```
+
+Tornar executável:
+```bash
+chmod +x deploy-hostgator.sh
+```
+
+Usar:
+```bash
+./deploy-hostgator.sh
+```
+
+##### 10. Atualizações Futuras
+
+Quando precisar atualizar o site:
+
+```bash
+# 1. Fazer mudanças no código
+# 2. Build novamente
+npm run build
+
+# 3. Upload só dos arquivos alterados via FTP
+# Ou re-upload completo (mais seguro)
+```
+
+**💡 Dica:** Mantenha uma pasta local `producao-hostgator` com a última versão deployada para saber o que foi alterado.
+
+##### Troubleshooting Hostgator
+
+**Erro 500 Internal Server Error:**
+- Verifique se o `.htaccess` está correto
+- Verifique permissões: arquivos 644, pastas 755
+- cPanel → Error Log para ver detalhes
+
+**Site mostra erro 404 nas páginas internas:**
+- `.htaccess` não foi criado ou está incorreto
+- `mod_rewrite` não está habilitado (entre em contato com suporte)
+
+**Imagens não carregam:**
+- Verifique se a pasta `assets` foi enviada
+- Verifique permissões: 644 para arquivos
+
+**Backend não funciona (login, produtos, etc):**
+- Verifique as variáveis de ambiente no `.env.production` ANTES do build
+- Refaça o build: `npm run build`
+- Re-upload dos arquivos
+
+**Site muito lento:**
+- Verifique se o cache está habilitado no `.htaccess`
+- Considere usar CDN (Cloudflare)
+- Otimize imagens (já está sendo feito no build)
+
 ### Passo 3: Verificar Funcionamento
 
 ✅ **Checklist:**
