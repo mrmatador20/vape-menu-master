@@ -134,9 +134,14 @@ const Header = () => {
             <Button
               variant="outline"
               size="sm"
-              className="border-primary/50 hover:bg-primary/10"
+              className="relative border-primary/50 hover:bg-primary/10"
             >
               <Menu className="h-5 w-5 text-primary" />
+              {totalItems > 0 && (
+                <Badge className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 bg-secondary text-secondary-foreground">
+                  {totalItems}
+                </Badge>
+              )}
             </Button>
           </SheetTrigger>
           <SheetContent side="right" className="w-[280px] sm:w-[340px]">
