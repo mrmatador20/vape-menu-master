@@ -1,4 +1,4 @@
-import { ShoppingCart, Settings, Package, LogOut, User, Menu } from 'lucide-react';
+import { ShoppingCart, Settings, Package, LogOut, User, Menu, Sparkles, Droplet, Flame } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCart } from '@/context/CartContext';
 import { useNavigate } from 'react-router-dom';
@@ -14,13 +14,26 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet';
+import { Separator } from '@/components/ui/separator';
+import { useProducts } from '@/hooks/useProducts';
+
+const categoryIcons: Record<string, any> = {
+  v250: Sparkles,
+  v400: Flame,
+  seda: Package,
+  default: Droplet,
+};
 
 const Header = () => {
   const { totalItems } = useCart();
   const navigate = useNavigate();
   const { data: role } = useUserRole();
+  const { data: products } = useProducts();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  // Extrai categorias únicas dos produtos
+  const categories = Array.from(new Set(products?.map(p => p.category) || [])).sort();
 
   useEffect(() => {
     // Check current session
@@ -55,6 +68,10 @@ const Header = () => {
   const handleNavigate = (path: string) => {
     navigate(path);
     setIsMenuOpen(false);
+  };
+
+  const getCategoryIcon = (category: string) => {
+    return categoryIcons[category] || categoryIcons.default;
   };
 
   return (
@@ -144,16 +161,44 @@ const Header = () => {
               )}
             </Button>
           </SheetTrigger>
-          <SheetContent side="right" className="w-[280px] sm:w-[340px]">
+          <SheetContent side="right" className="w-[280px] sm:w-[340px] overflow-y-auto">
             <SheetHeader>
               <SheetTitle>Menu</SheetTitle>
             </SheetHeader>
-            <div className="flex flex-col gap-4 mt-6">
+            
+            {/* Categories Section */}
+            {categories.length > 0 && (
+              <>
+                <div className="mt-6">
+                  <h3 className="text-sm font-semibold text-muted-foreground mb-3 px-2">Categorias</h3>
+                  <div className="flex flex-col gap-2">
+                    {categories.map((category, index) => {
+                      const Icon = getCategoryIcon(category);
+                      return (
+                        <Button
+                          key={category}
+                          variant="ghost"
+                          className="w-full justify-start gap-3 hover:bg-primary/10 animate-fade-in"
+                          style={{ animationDelay: `${50 + index * 50}ms` }}
+                          onClick={() => handleNavigate(`/?category=${category}`)}
+                        >
+                          <Icon className="h-4 w-4 text-primary" />
+                          <span className="capitalize">{category}</span>
+                        </Button>
+                      );
+                    })}
+                  </div>
+                </div>
+                <Separator className="my-4" />
+              </>
+            )}
+
+            <div className="flex flex-col gap-4">
               {role === 'admin' && (
                 <Button
                   variant="outline"
                   className="w-full justify-start gap-3 border-primary/50 hover:bg-primary/10 animate-fade-in"
-                  style={{ animationDelay: '50ms' }}
+                  style={{ animationDelay: `${50 + categories.length * 50}ms` }}
                   onClick={() => handleNavigate('/admin')}
                 >
                   <Settings className="h-5 w-5 text-primary" />
@@ -164,7 +209,7 @@ const Header = () => {
               <Button
                 variant="outline"
                 className="w-full justify-start gap-3 border-primary/50 hover:bg-primary/10 animate-fade-in"
-                style={{ animationDelay: role === 'admin' ? '100ms' : '50ms' }}
+                style={{ animationDelay: `${(role === 'admin' ? 100 : 50) + categories.length * 50}ms` }}
                 onClick={() => handleNavigate('/my-orders')}
               >
                 <Package className="h-5 w-5 text-primary" />
@@ -174,7 +219,7 @@ const Header = () => {
               <Button
                 variant="outline"
                 className="w-full justify-start gap-3 border-primary/50 hover:bg-primary/10 relative animate-fade-in"
-                style={{ animationDelay: role === 'admin' ? '150ms' : '100ms' }}
+                style={{ animationDelay: `${(role === 'admin' ? 150 : 100) + categories.length * 50}ms` }}
                 onClick={() => handleNavigate('/cart')}
               >
                 <ShoppingCart className="h-5 w-5 text-primary" />
@@ -191,7 +236,7 @@ const Header = () => {
                   <Button
                     variant="outline"
                     className="w-full justify-start gap-3 border-primary/50 hover:bg-primary/10 animate-fade-in"
-                    style={{ animationDelay: role === 'admin' ? '200ms' : '150ms' }}
+                    style={{ animationDelay: `${(role === 'admin' ? 200 : 150) + categories.length * 50}ms` }}
                     onClick={() => handleNavigate('/profile')}
                   >
                     <User className="h-5 w-5 text-primary" />
@@ -200,7 +245,7 @@ const Header = () => {
                   <Button
                     variant="outline"
                     className="w-full justify-start gap-3 border-destructive/50 hover:bg-destructive/10 animate-fade-in"
-                    style={{ animationDelay: role === 'admin' ? '250ms' : '200ms' }}
+                    style={{ animationDelay: `${(role === 'admin' ? 250 : 200) + categories.length * 50}ms` }}
                     onClick={handleLogout}
                   >
                     <LogOut className="h-5 w-5 text-destructive" />
