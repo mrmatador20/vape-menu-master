@@ -1,4 +1,4 @@
-import { ShoppingCart, Settings, Package, LogOut, User, Menu, Sparkles, Droplet, Flame } from 'lucide-react';
+import { ShoppingCart, Settings, Package, LogOut, User, Menu, Sparkles, Droplet, Flame, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCart } from '@/context/CartContext';
 import { useNavigate } from 'react-router-dom';
@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { useUserRole } from '@/hooks/useUserRole';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   Sheet,
   SheetContent,
@@ -16,6 +16,12 @@ import {
 } from '@/components/ui/sheet';
 import { Separator } from '@/components/ui/separator';
 import { useProducts } from '@/hooks/useProducts';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
 
 const categoryIcons: Record<string, any> = {
   v250: Sparkles,
@@ -33,7 +39,19 @@ const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   // Extrai categorias únicas dos produtos
-  const categories = Array.from(new Set(products?.map(p => p.category) || [])).sort();
+  const categories = useMemo(() => 
+    Array.from(new Set(products?.map(p => p.category) || [])).sort(),
+    [products]
+  );
+
+  // Função para obter subcategorias de uma categoria
+  const getCategorySubcategories = (category: string) => {
+    if (!products) return [];
+    const subs = products
+      .filter(p => p.category === category && p.subcategory)
+      .map(p => p.subcategory as string);
+    return Array.from(new Set(subs)).sort();
+  };
 
   useEffect(() => {
     // Check current session
@@ -171,23 +189,51 @@ const Header = () => {
               <>
                 <div className="mt-6">
                   <h3 className="text-sm font-semibold text-muted-foreground mb-3 px-2">Categorias</h3>
-                  <div className="flex flex-col gap-2">
+                  <Accordion type="single" collapsible className="w-full space-y-2">
                     {categories.map((category, index) => {
                       const Icon = getCategoryIcon(category);
+                      const subcategories = getCategorySubcategories(category);
+                      
                       return (
-                        <Button
-                          key={category}
-                          variant="ghost"
-                          className="w-full justify-start gap-3 hover:bg-primary/10 animate-fade-in"
+                        <AccordionItem 
+                          key={category} 
+                          value={category} 
+                          className="border-none animate-fade-in"
                           style={{ animationDelay: `${50 + index * 50}ms` }}
-                          onClick={() => handleNavigate(`/?category=${category}`)}
                         >
-                          <Icon className="h-4 w-4 text-primary" />
-                          <span className="capitalize">{category}</span>
-                        </Button>
+                          <AccordionTrigger className="hover:bg-primary/5 px-3 py-2 rounded-md hover:no-underline">
+                            <div className="flex items-center gap-3">
+                              <Icon className="h-4 w-4 text-primary" />
+                              <span className="capitalize font-medium">{category}</span>
+                            </div>
+                          </AccordionTrigger>
+                          <AccordionContent className="pb-2 pt-1">
+                            <div className="flex flex-col gap-1 pl-4">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="w-full justify-start text-sm hover:bg-primary/10"
+                                onClick={() => handleNavigate(`/?category=${category}`)}
+                              >
+                                Ver Todos
+                              </Button>
+                              {subcategories.map((subcat) => (
+                                <Button
+                                  key={subcat}
+                                  variant="ghost"
+                                  size="sm"
+                                  className="w-full justify-start text-sm hover:bg-primary/10"
+                                  onClick={() => handleNavigate(`/?category=${category}&subcategory=${subcat}`)}
+                                >
+                                  <span className="capitalize">{subcat}</span>
+                                </Button>
+                              ))}
+                            </div>
+                          </AccordionContent>
+                        </AccordionItem>
                       );
                     })}
-                  </div>
+                  </Accordion>
                 </div>
                 <Separator className="my-4" />
               </>

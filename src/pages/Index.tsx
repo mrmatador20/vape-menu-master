@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useCart } from '@/context/CartContext';
 import { useProducts } from '@/hooks/useProducts';
 import ProductCard from '@/components/ProductCard';
@@ -8,13 +8,26 @@ import { CategorySidebar } from '@/components/CategorySidebar';
 import { CategoryCarousel } from '@/components/CategoryCarousel';
 import { BannerCarousel } from '@/components/BannerCarousel';
 import { Loader2 } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
 
 const Index = () => {
   const { addToCart } = useCart();
   const { data: products, isLoading } = useProducts();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [activeSubcategory, setActiveSubcategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
+
+  // Sincroniza estado com URL params
+  useEffect(() => {
+    const categoryParam = searchParams.get('category');
+    const subcategoryParam = searchParams.get('subcategory');
+    
+    if (categoryParam) {
+      setActiveCategory(categoryParam);
+      setActiveSubcategory(subcategoryParam || 'all');
+    }
+  }, [searchParams]);
 
   // Extrai categorias únicas dos produtos para fallback
   const productCategories = useMemo(() => {
