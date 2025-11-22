@@ -56,7 +56,7 @@ const Header = () => {
           </span>
         </div>
         
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3 md:gap-2">
           {role === 'admin' && (
             <Button
               variant="outline"
