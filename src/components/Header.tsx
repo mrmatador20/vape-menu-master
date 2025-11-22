@@ -1,4 +1,4 @@
-import { ShoppingCart, Settings, Package, LogOut, User, Menu, Sparkles, Droplet, Flame, ChevronDown } from 'lucide-react';
+import { ShoppingCart, Settings, Package, LogOut, User, Menu, Sparkles, Droplet, Flame, ChevronDown, Grid3x3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCart } from '@/context/CartContext';
 import { useNavigate } from 'react-router-dom';
@@ -22,6 +22,11 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 
 const categoryIcons: Record<string, any> = {
   v250: Sparkles,
@@ -37,6 +42,7 @@ const Header = () => {
   const { data: products } = useProducts();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isCategoriesOpen, setIsCategoriesOpen] = useState(false);
 
   // Extrai categorias únicas dos produtos
   const categories = useMemo(() => 
@@ -86,6 +92,7 @@ const Header = () => {
   const handleNavigate = (path: string) => {
     navigate(path);
     setIsMenuOpen(false);
+    setIsCategoriesOpen(false);
   };
 
   const getCategoryIcon = (category: string) => {
@@ -107,6 +114,70 @@ const Header = () => {
         
         {/* Desktop Navigation */}
         <div className="hidden md:flex items-center gap-2">
+          {/* Categories Dropdown */}
+          <Popover open={isCategoriesOpen} onOpenChange={setIsCategoriesOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                className="border-primary/50 hover:bg-primary/10 gap-2"
+              >
+                <Grid3x3 className="h-4 w-4 text-primary" />
+                <span>Categorias</span>
+                <ChevronDown className="h-3 w-3 text-primary" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-80 p-0" align="start">
+              <div className="p-4">
+                <h4 className="font-semibold mb-3">Todas as Categorias</h4>
+                <Accordion type="single" collapsible className="w-full space-y-2">
+                  {categories.map((category) => {
+                    const Icon = getCategoryIcon(category);
+                    const subcategories = getCategorySubcategories(category);
+                    
+                    return (
+                      <AccordionItem 
+                        key={category} 
+                        value={category} 
+                        className="border-none"
+                      >
+                        <AccordionTrigger className="hover:bg-primary/5 px-3 py-2 rounded-md hover:no-underline">
+                          <div className="flex items-center gap-3">
+                            <Icon className="h-4 w-4 text-primary" />
+                            <span className="capitalize font-medium">{category}</span>
+                          </div>
+                        </AccordionTrigger>
+                        <AccordionContent className="pb-2 pt-1">
+                          <div className="flex flex-col gap-1 pl-4">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="w-full justify-start text-sm hover:bg-primary/10"
+                              onClick={() => handleNavigate(`/?category=${category}`)}
+                            >
+                              Ver Todos
+                            </Button>
+                            {subcategories.map((subcat) => (
+                              <Button
+                                key={subcat}
+                                variant="ghost"
+                                size="sm"
+                                className="w-full justify-start text-sm hover:bg-primary/10"
+                                onClick={() => handleNavigate(`/?category=${category}&subcategory=${subcat}`)}
+                              >
+                                <span className="capitalize">{subcat}</span>
+                              </Button>
+                            ))}
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
+                    );
+                  })}
+                </Accordion>
+              </div>
+            </PopoverContent>
+          </Popover>
+
           {role === 'admin' && (
             <Button
               variant="outline"
