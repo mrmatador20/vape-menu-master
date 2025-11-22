@@ -40,7 +40,7 @@ export function CategorySidebar({
   onSubcategoryChange,
 }: CategorySidebarProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [isDesktopOpen, setIsDesktopOpen] = useState(true);
+  const [isDesktopOpen, setIsDesktopOpen] = useState(false);
 
   // Get subcategories for each category
   const getCategorySubcategories = (category: string) => {
@@ -162,25 +162,7 @@ export function CategorySidebar({
         </div>
       </aside>
 
-      {/* Overlay for mobile */}
-      {isOpen && (
-        <div
-          className="fixed inset-0 bg-background/80 backdrop-blur-sm z-30 md:hidden"
-          onClick={() => setIsOpen(false)}
-        />
-      )}
-
-      {/* Desktop toggle button - show when sidebar is closed */}
-      {!isDesktopOpen && (
-        <Button
-          variant="outline"
-          size="icon"
-          className="hidden md:flex fixed left-4 top-24 z-50 bg-primary text-primary-foreground shadow-glow hover:bg-primary/90 h-12 w-12"
-          onClick={() => setIsDesktopOpen(true)}
-        >
-          <Menu className="h-5 w-5" />
-        </Button>
-      )}
+    
     </>
   );
 }
