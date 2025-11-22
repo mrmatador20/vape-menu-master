@@ -52,6 +52,7 @@ const productSchema = z.object({
   price: z.string().min(1, "Preço é obrigatório"),
   stock: z.string().min(0, "Estoque é obrigatório"),
   min_stock: z.string().min(0, "Nível mínimo é obrigatório"),
+  display_order: z.string().min(0, "Posição é obrigatória"),
   discount_type: z.enum(['percent', 'fixed']).optional(),
   discount_value: z.string().optional(),
   image: z.string().url("URL inválida").optional().or(z.literal("")),
@@ -83,6 +84,7 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
       price: "",
       stock: "0",
       min_stock: "10",
+      display_order: "0",
       discount_type: "percent",
       discount_value: "0",
       image: "",
@@ -99,6 +101,7 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
         price: product.price.toString(),
         stock: product.stock.toString(),
         min_stock: product.min_stock?.toString() || "10",
+        display_order: ((product as any).display_order || 0).toString(),
         discount_type: ((product as any).discount_type || 'percent') as 'percent' | 'fixed',
         discount_value: ((product as any).discount_value || 0).toString(),
         image: product.image || "",
@@ -112,6 +115,7 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
         price: "",
         stock: "0",
         min_stock: "10",
+        display_order: "0",
         discount_type: "percent",
         discount_value: "0",
         image: "",
@@ -155,6 +159,7 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
       price: parseFloat(values.price),
       stock: parseInt(values.stock),
       min_stock: parseInt(values.min_stock),
+      display_order: parseInt(values.display_order),
       discount_type: values.discount_type || 'percent',
       discount_value: parseFloat(values.discount_value || "0"),
       image: values.image || null,
@@ -292,7 +297,7 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-4">
               <FormField
                 control={form.control}
                 name="min_stock"
@@ -304,6 +309,23 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
                     </FormControl>
                     <p className="text-xs text-muted-foreground">
                       Sistema alertará quando atingir este nível
+                    </p>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="display_order"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Posição de Exibição</FormLabel>
+                    <FormControl>
+                      <Input type="number" placeholder="0" {...field} />
+                    </FormControl>
+                    <p className="text-xs text-muted-foreground">
+                      Ordem em que aparece na lista
                     </p>
                     <FormMessage />
                   </FormItem>
