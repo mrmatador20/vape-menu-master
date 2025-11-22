@@ -130,6 +130,14 @@ const Header = () => {
             <PopoverContent className="w-80 p-0" align="start">
               <div className="p-4">
                 <h4 className="font-semibold mb-3">Todas as Categorias</h4>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full justify-start mb-3 border-primary/50 hover:bg-primary/10"
+                  onClick={() => handleNavigate('/')}
+                >
+                  Ver Todas as Categorias
+                </Button>
                 <Accordion type="single" collapsible className="w-full space-y-2">
                   {categories.map((category) => {
                     const Icon = getCategoryIcon(category);
@@ -261,6 +269,13 @@ const Header = () => {
               <>
                 <div className="mt-6">
                   <h3 className="text-sm font-semibold text-muted-foreground mb-3 px-2">Categorias</h3>
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start gap-3 mb-3 border-primary/50 hover:bg-primary/10"
+                    onClick={() => handleNavigate('/')}
+                  >
+                    Ver Todas as Categorias
+                  </Button>
                   <Accordion type="single" collapsible className="w-full space-y-2">
                     {categories.map((category, index) => {
                       const Icon = getCategoryIcon(category);
