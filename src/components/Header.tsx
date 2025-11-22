@@ -147,7 +147,8 @@ const Header = () => {
               {role === 'admin' && (
                 <Button
                   variant="outline"
-                  className="w-full justify-start gap-3 border-primary/50 hover:bg-primary/10"
+                  className="w-full justify-start gap-3 border-primary/50 hover:bg-primary/10 animate-fade-in"
+                  style={{ animationDelay: '50ms' }}
                   onClick={() => handleNavigate('/admin')}
                 >
                   <Settings className="h-5 w-5 text-primary" />
@@ -157,7 +158,8 @@ const Header = () => {
               
               <Button
                 variant="outline"
-                className="w-full justify-start gap-3 border-primary/50 hover:bg-primary/10"
+                className="w-full justify-start gap-3 border-primary/50 hover:bg-primary/10 animate-fade-in"
+                style={{ animationDelay: role === 'admin' ? '100ms' : '50ms' }}
                 onClick={() => handleNavigate('/my-orders')}
               >
                 <Package className="h-5 w-5 text-primary" />
@@ -166,7 +168,8 @@ const Header = () => {
               
               <Button
                 variant="outline"
-                className="w-full justify-start gap-3 border-primary/50 hover:bg-primary/10 relative"
+                className="w-full justify-start gap-3 border-primary/50 hover:bg-primary/10 relative animate-fade-in"
+                style={{ animationDelay: role === 'admin' ? '150ms' : '100ms' }}
                 onClick={() => handleNavigate('/cart')}
               >
                 <ShoppingCart className="h-5 w-5 text-primary" />
@@ -182,7 +185,8 @@ const Header = () => {
                 <>
                   <Button
                     variant="outline"
-                    className="w-full justify-start gap-3 border-primary/50 hover:bg-primary/10"
+                    className="w-full justify-start gap-3 border-primary/50 hover:bg-primary/10 animate-fade-in"
+                    style={{ animationDelay: role === 'admin' ? '200ms' : '150ms' }}
                     onClick={() => handleNavigate('/profile')}
                   >
                     <User className="h-5 w-5 text-primary" />
@@ -190,7 +194,8 @@ const Header = () => {
                   </Button>
                   <Button
                     variant="outline"
-                    className="w-full justify-start gap-3 border-destructive/50 hover:bg-destructive/10"
+                    className="w-full justify-start gap-3 border-destructive/50 hover:bg-destructive/10 animate-fade-in"
+                    style={{ animationDelay: role === 'admin' ? '250ms' : '200ms' }}
                     onClick={handleLogout}
                   >
                     <LogOut className="h-5 w-5 text-destructive" />
