@@ -235,8 +235,9 @@ const Header = () => {
         </div>
 
         {/* Mobile Menu */}
-        <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
-          <SheetTrigger asChild className="md:hidden">
+        <div className="md:hidden">
+          <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
+            <SheetTrigger asChild>
             <Button
               variant="outline"
               size="sm"
@@ -373,6 +374,7 @@ const Header = () => {
             </div>
           </SheetContent>
         </Sheet>
+        </div>
       </div>
     </header>
   );
