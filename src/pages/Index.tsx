@@ -4,7 +4,6 @@ import { useProducts } from '@/hooks/useProducts';
 import ProductCard from '@/components/ProductCard';
 import Header from '@/components/Header';
 import ProductSearch from '@/components/ProductSearch';
-import { CategorySidebar } from '@/components/CategorySidebar';
 import { CategoryCarousel } from '@/components/CategoryCarousel';
 import { BannerCarousel } from '@/components/BannerCarousel';
 import { Loader2 } from 'lucide-react';
@@ -111,16 +110,6 @@ const Index = () => {
             </div>
           ) : (
             <>
-              {/* Sidebar - provides layout structure */}
-              <CategorySidebar
-                categories={productCategories}
-                products={products || []}
-                activeCategory={activeCategory}
-                activeSubcategory={activeSubcategory}
-                onCategoryChange={handleCategoryChange}
-                onSubcategoryChange={setActiveSubcategory}
-              />
-
               {/* Products Grid - responsive margin */}
               <div className="transition-all duration-500">
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
