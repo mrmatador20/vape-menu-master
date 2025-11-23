@@ -207,13 +207,17 @@ const Checkout = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    console.log('[Checkout] Starting order submission');
+    
     if (!userId) {
+      console.error('[Checkout] No user ID found');
       toast.error('Você precisa estar logado para fazer um pedido');
       navigate('/auth');
       return;
     }
 
     if (items.length === 0) {
+      console.error('[Checkout] Cart is empty');
       toast.error('Seu carrinho está vazio');
       return;
     }
@@ -222,14 +226,18 @@ const Checkout = () => {
 
     try {
       const validatedData = checkoutSchema.parse(formData);
+      console.log('[Checkout] Form data validated');
 
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session) {
+        console.error('[Checkout] No active session');
         toast.error('Sessão expirada. Faça login novamente.');
         navigate('/auth');
         return;
       }
+      
+      console.log('[Checkout] Session found, calling edge function');
 
       const { data, error } = await supabase.functions.invoke('create-order', {
         body: {
@@ -251,18 +259,23 @@ const Checkout = () => {
           discountCode: appliedDiscount?.code || undefined,
         }
       });
+      
+      console.log('[Checkout] Edge function response:', { data, error });
 
       if (error) {
+        console.error('[Checkout] Edge function error:', error);
         toast.error('Erro ao processar pedido. Tente novamente.');
         return;
       }
 
       if (!data?.success) {
-        toast.error('Erro ao processar pedido. Tente novamente.');
+        console.error('[Checkout] Order creation failed:', data);
+        toast.error(data?.error || 'Erro ao processar pedido. Tente novamente.');
         return;
       }
 
       const order = data.order;
+      console.log('[Checkout] Order created successfully:', order.id);
 
       const itemsList = order.items
         .map((item: any) => {
