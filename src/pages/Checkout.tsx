@@ -284,6 +284,8 @@ const Checkout = () => {
         })
         .join('\n');
       
+      console.log('[Checkout] Building WhatsApp message');
+      
       // Montando a mensagem para o WhatsApp
       let message = `*Novo Pedido #${order.id}*\n\n*Itens:*\n${itemsList}\n\n*Subtotal: R$ ${subtotal.toFixed(2)}*\n*Taxa de Entrega (CEP ${validatedData.cep}): R$ ${(shippingCost || 0).toFixed(2)}*\n*Total: R$ ${order.total.toFixed(2)}*\n\n*Endereço de Entrega:*\n${validatedData.rua}, ${validatedData.numero}\n${validatedData.bairro} - ${validatedData.cidade}\nCEP: ${validatedData.cep}\n\n*Forma de Pagamento:* ${validatedData.paymentMethod === 'pix' ? 'PIX' : 'Dinheiro'}`;
 
@@ -298,10 +300,36 @@ const Checkout = () => {
       // Codificando a mensagem para ser passada na URL do WhatsApp
       const encodedMessage = encodeURIComponent(message);
       const whatsappUrl = `https://wa.me/5583996694806?text=${encodedMessage}`;
+      
+      console.log('[Checkout] WhatsApp URL:', whatsappUrl.substring(0, 100) + '...');
+      console.log('[Checkout] Opening WhatsApp...');
 
       clearCart();
       toast.success('Pedido realizado com sucesso!');
-      window.open(whatsappUrl, '_blank');
+      
+      // Tentar abrir o WhatsApp
+      try {
+        const whatsappWindow = window.open(whatsappUrl, '_blank');
+        
+        if (!whatsappWindow || whatsappWindow.closed || typeof whatsappWindow.closed === 'undefined') {
+          console.error('[Checkout] WhatsApp popup blocked by browser');
+          toast.error('Por favor, permita popups para abrir o WhatsApp automaticamente');
+          // Fallback: usar window.location
+          setTimeout(() => {
+            window.location.href = whatsappUrl;
+          }, 1000);
+        } else {
+          console.log('[Checkout] WhatsApp opened successfully');
+        }
+      } catch (error) {
+        console.error('[Checkout] Error opening WhatsApp:', error);
+        toast.error('Erro ao abrir WhatsApp. Redirecionando...');
+        // Fallback: usar window.location
+        setTimeout(() => {
+          window.location.href = whatsappUrl;
+        }, 1000);
+      }
+      
       navigate('/');
     } catch (error) {
       if (error instanceof z.ZodError) {
