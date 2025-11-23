@@ -276,61 +276,66 @@ const Checkout = () => {
 
       const order = data.order;
       console.log('[Checkout] Order created successfully:', order.id);
+      console.log('[Checkout] Order data:', JSON.stringify(order));
 
-      const itemsList = order.items
-        .map((item: any) => {
-          const flavorText = item.flavor ? ` (${item.flavor})` : '';
-          return `${item.quantity}x ${item.name}${flavorText} - R$ ${item.price.toFixed(2)}`;
-        })
-        .join('\n');
-      
-      console.log('[Checkout] Building WhatsApp message');
-      
-      // Montando a mensagem para o WhatsApp
-      let message = `*Novo Pedido #${order.id}*\n\n*Itens:*\n${itemsList}\n\n*Subtotal: R$ ${subtotal.toFixed(2)}*\n*Taxa de Entrega (CEP ${validatedData.cep}): R$ ${(shippingCost || 0).toFixed(2)}*\n*Total: R$ ${order.total.toFixed(2)}*\n\n*Endereço de Entrega:*\n${validatedData.rua}, ${validatedData.numero}\n${validatedData.bairro} - ${validatedData.cidade}\nCEP: ${validatedData.cep}\n\n*Forma de Pagamento:* ${validatedData.paymentMethod === 'pix' ? 'PIX' : 'Dinheiro'}`;
-
-      // Se o pagamento for em dinheiro e houver troco
-      if (validatedData.paymentMethod === 'dinheiro' && validatedData.changeAmount) {
-        const changeAmount = parseFloat(validatedData.changeAmount);
-        const changeToGive = changeAmount - order.total;
-
-        message += `\nTroco para: R$ ${changeAmount.toFixed(2)}\nTroco a ser pago: R$ ${changeToGive.toFixed(2)}`;
-      }
-
-      // Codificando a mensagem para ser passada na URL do WhatsApp
-      const encodedMessage = encodeURIComponent(message);
-      const whatsappUrl = `https://wa.me/5583996694806?text=${encodedMessage}`;
-      
-      console.log('[Checkout] WhatsApp URL:', whatsappUrl.substring(0, 100) + '...');
-      console.log('[Checkout] Opening WhatsApp...');
-
-      clearCart();
-      toast.success('Pedido realizado com sucesso!');
-      
-      // Tentar abrir o WhatsApp
       try {
+        console.log('[Checkout] Starting WhatsApp message construction');
+        
+        const itemsList = order.items
+          .map((item: any) => {
+            const flavorText = item.flavor ? ` (${item.flavor})` : '';
+            return `${item.quantity}x ${item.name}${flavorText} - R$ ${item.price.toFixed(2)}`;
+          })
+          .join('\n');
+        
+        console.log('[Checkout] Items list built:', itemsList);
+        
+        // Montando a mensagem para o WhatsApp
+        let message = `*Novo Pedido #${order.id}*\n\n*Itens:*\n${itemsList}\n\n*Subtotal: R$ ${subtotal.toFixed(2)}*\n*Taxa de Entrega (CEP ${validatedData.cep}): R$ ${(shippingCost || 0).toFixed(2)}*\n*Total: R$ ${order.total.toFixed(2)}*\n\n*Endereço de Entrega:*\n${validatedData.rua}, ${validatedData.numero}\n${validatedData.bairro} - ${validatedData.cidade}\nCEP: ${validatedData.cep}\n\n*Forma de Pagamento:* ${validatedData.paymentMethod === 'pix' ? 'PIX' : 'Dinheiro'}`;
+
+        // Se o pagamento for em dinheiro e houver troco
+        if (validatedData.paymentMethod === 'dinheiro' && validatedData.changeAmount) {
+          const changeAmount = parseFloat(validatedData.changeAmount);
+          const changeToGive = changeAmount - order.total;
+          message += `\nTroco para: R$ ${changeAmount.toFixed(2)}\nTroco a ser pago: R$ ${changeToGive.toFixed(2)}`;
+        }
+
+        console.log('[Checkout] Message built successfully');
+        console.log('[Checkout] Message preview:', message.substring(0, 100));
+
+        // Codificando a mensagem para ser passada na URL do WhatsApp
+        const encodedMessage = encodeURIComponent(message);
+        const whatsappUrl = `https://wa.me/5583996694806?text=${encodedMessage}`;
+        
+        console.log('[Checkout] WhatsApp URL constructed');
+        console.log('[Checkout] Opening WhatsApp...');
+
+        clearCart();
+        toast.success('Pedido realizado com sucesso! Abrindo WhatsApp...');
+        
+        // Tentar abrir o WhatsApp primeiro
         const whatsappWindow = window.open(whatsappUrl, '_blank');
         
         if (!whatsappWindow || whatsappWindow.closed || typeof whatsappWindow.closed === 'undefined') {
-          console.error('[Checkout] WhatsApp popup blocked by browser');
-          toast.error('Por favor, permita popups para abrir o WhatsApp automaticamente');
-          // Fallback: usar window.location
-          setTimeout(() => {
-            window.location.href = whatsappUrl;
-          }, 1000);
-        } else {
-          console.log('[Checkout] WhatsApp opened successfully');
-        }
-      } catch (error) {
-        console.error('[Checkout] Error opening WhatsApp:', error);
-        toast.error('Erro ao abrir WhatsApp. Redirecionando...');
-        // Fallback: usar window.location
-        setTimeout(() => {
+          console.warn('[Checkout] WhatsApp popup may be blocked, using location redirect');
           window.location.href = whatsappUrl;
-        }, 1000);
+        } else {
+          console.log('[Checkout] WhatsApp window opened successfully');
+          // Só navega após um delay para garantir que o WhatsApp abre
+          setTimeout(() => {
+            console.log('[Checkout] Navigating to home');
+            navigate('/');
+          }, 2000);
+        }
+      } catch (whatsappError) {
+        console.error('[Checkout] Critical error in WhatsApp flow:', whatsappError);
+        console.error('[Checkout] Error stack:', whatsappError instanceof Error ? whatsappError.stack : 'No stack');
+        toast.error('Erro ao abrir WhatsApp. Por favor, entre em contato diretamente.');
+        // Mesmo com erro, navega para home após delay
+        setTimeout(() => {
+          navigate('/');
+        }, 2000);
       }
-      
-      navigate('/');
     } catch (error) {
       if (error instanceof z.ZodError) {
         const firstError = error.errors[0];
