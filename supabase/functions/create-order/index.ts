@@ -65,6 +65,8 @@ interface OrderRequest {
 }
 
 serve(async (req) => {
+  console.log('[create-order] Function invoked');
+  
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -78,15 +80,26 @@ serve(async (req) => {
 
     // Get the authenticated user
     const authHeader = req.headers.get('Authorization')!;
+    if (!authHeader) {
+      console.error('[create-order] Missing Authorization header');
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized - Missing token' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
     const token = authHeader.replace('Bearer ', '');
     const { data: { user }, error: authError } = await supabaseClient.auth.getUser(token);
 
     if (authError || !user) {
+      console.error('[create-order] Auth error:', authError?.message || 'User not found');
       return new Response(
         JSON.stringify({ error: 'Unauthorized' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+    
+    console.log('[create-order] User authenticated:', user.id);
 
     // Rate limiting: Check recent orders
     const RATE_LIMIT_WINDOW = 60; // 1 minute in seconds
@@ -111,12 +124,15 @@ serve(async (req) => {
 
     // Parse and validate request body
     const rawData = await req.json();
+    console.log('[create-order] Request data received:', JSON.stringify(rawData).substring(0, 200));
     
     let orderData: OrderRequest;
     try {
       orderData = orderRequestSchema.parse(rawData);
+      console.log('[create-order] Data validation successful');
     } catch (error) {
       if (error instanceof z.ZodError) {
+        console.error('[create-order] Validation error:', error.errors);
         return new Response(
           JSON.stringify({ 
             error: 'Invalid request data', 
@@ -413,6 +429,7 @@ serve(async (req) => {
     }
 
     // Return the validated items with names for WhatsApp message
+    console.log('[create-order] Order created successfully:', order.id);
     return new Response(
       JSON.stringify({
         success: true,
@@ -426,9 +443,12 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('Error in create-order function:', error);
+    console.error('[create-order] Unhandled error:', error);
     return new Response(
-      JSON.stringify({ error: 'Internal server error' }),
+      JSON.stringify({ 
+        error: 'Internal server error',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
