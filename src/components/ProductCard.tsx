@@ -3,7 +3,7 @@ import { Product } from '@/context/CartContext';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { ShoppingCart, ChevronDown, ChevronUp } from 'lucide-react';
-import { Flavor } from '@/hooks/useProducts';
+import { useFlavors } from '@/hooks/useFlavors';
 import {
   Select,
   SelectContent,
@@ -21,15 +21,15 @@ import ProductReviews from './ProductReviews';
 
 interface ProductCardProps {
   product: Product;
-  flavors?: Flavor[];
   onAddToCart: (product: Product, flavor?: string) => void;
 }
 
-const ProductCard = ({ product, flavors = [], onAddToCart }: ProductCardProps) => {
+const ProductCard = ({ product, onAddToCart }: ProductCardProps) => {
   const [selectedFlavor, setSelectedFlavor] = useState<string | undefined>();
   const [isDescriptionOpen, setIsDescriptionOpen] = useState(false);
   const [showReviews, setShowReviews] = useState(false);
   const [currentPrice, setCurrentPrice] = useState(product.price);
+  const { data: flavors } = useFlavors(product.id);
 
   // Atualiza o preço quando as variantes ou flavor selecionado mudam
   useEffect(() => {

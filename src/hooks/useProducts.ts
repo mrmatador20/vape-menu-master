@@ -2,14 +2,6 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Product } from '@/context/CartContext';
 
-export interface Flavor {
-  id: string;
-  product_id: string;
-  name: string;
-  price: number | null;
-  stock: number;
-}
-
 export const useProducts = () => {
   return useQuery({
     queryKey: ['products'],
@@ -45,22 +37,6 @@ export const useProducts = () => {
         // Se ambos têm estoque ou ambos estão esgotados, ordena por preço
         return a.price - b.price;
       }) as Product[];
-    },
-  });
-};
-
-// Hook separado para buscar TODOS os flavors de uma vez
-export const useAllFlavors = () => {
-  return useQuery({
-    queryKey: ['all-flavors'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('flavors')
-        .select('*');
-
-      if (error) throw error;
-
-      return data as Flavor[];
     },
   });
 };
