@@ -86,46 +86,97 @@ export const ChangePasswordDialog = ({ open, onOpenChange }: ChangePasswordDialo
   };
 
   const handleChangePassword = async () => {
-    if (!validatePassword()) return;
+    console.log('=== PASSWORD CHANGE STARTED ===');
+    console.log('Step 1: Validating form...');
+    
+    if (!validatePassword()) {
+      console.log('Validation failed, stopping process');
+      return;
+    }
 
+    console.log('Step 2: Setting loading state to true');
     setIsChanging(true);
     
+    // Add timeout protection - max 30 seconds
+    const timeoutId = setTimeout(() => {
+      console.error('TIMEOUT: Password change took too long (30s)');
+      setIsChanging(false);
+      toast({
+        title: 'Tempo esgotado',
+        description: 'A operação demorou muito. Por favor, tente novamente.',
+        variant: 'destructive',
+      });
+    }, 30000);
+    
     try {
-      console.log('Starting password change...');
+      console.log('Step 3: Getting authenticated user...');
+      const { data: { user }, error: getUserError } = await supabase.auth.getUser();
+      console.log('User fetch result:', { 
+        userId: user?.id, 
+        email: user?.email,
+        error: getUserError 
+      });
       
-      const { data: { user } } = await supabase.auth.getUser();
+      if (getUserError) {
+        console.error('Error getting user:', getUserError);
+        throw getUserError;
+      }
+      
       if (!user?.email) {
+        console.error('No user or email found');
         throw new Error('Usuário não autenticado');
       }
 
-      console.log('User authenticated, updating password...');
+      console.log('Step 4: Checking current session and MFA status...');
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      console.log('Session info:', { 
+        hasSession: !!session,
+        userId: session?.user?.id,
+        error: sessionError
+      });
 
-      // Update password directly - Supabase will verify the session
-      // Note: This requires the user to be authenticated with their current password
-      const { error: updateError } = await supabase.auth.updateUser({
+      // For users with MFA, we need to verify current password first
+      console.log('Step 5: Verifying current password by re-authenticating...');
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+        email: user.email,
+        password: currentPassword,
+      });
+      
+      console.log('Sign-in verification result:', { 
+        success: !!signInData.session,
+        error: signInError?.message 
+      });
+
+      if (signInError) {
+        console.error('Current password verification failed:', signInError);
+        clearTimeout(timeoutId);
+        setIsChanging(false);
+        setErrors({ currentPassword: 'Senha atual incorreta' });
+        toast({
+          title: 'Senha atual incorreta',
+          description: 'Verifique sua senha atual e tente novamente.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      console.log('Step 6: Current password verified, now updating to new password...');
+      const { data: updateData, error: updateError } = await supabase.auth.updateUser({
         password: newPassword,
       });
 
-      console.log('Password update response:', { error: updateError });
+      console.log('Password update result:', { 
+        success: !!updateData.user,
+        error: updateError?.message,
+        errorStatus: updateError?.status 
+      });
 
       if (updateError) {
-        // If error is about authentication, it means current password verification failed
-        if (updateError.message.includes('Invalid') || updateError.message.includes('Authentication')) {
-          setIsChanging(false);
-          setErrors({ currentPassword: 'Senha atual incorreta' });
-          toast({
-            title: 'Senha atual incorreta',
-            description: 'Verifique sua senha atual e tente novamente.',
-            variant: 'destructive',
-          });
-          return;
-        }
+        console.error('Password update failed:', updateError);
         throw updateError;
       }
 
-      console.log('Password updated successfully, updating timestamp...');
-
-      // Update password_changed_at timestamp
+      console.log('Step 7: Password updated successfully, updating timestamp in profiles...');
       const { error: timestampError } = await supabase
         .from('profiles')
         .update({ password_changed_at: new Date().toISOString() })
@@ -133,12 +184,15 @@ export const ChangePasswordDialog = ({ open, onOpenChange }: ChangePasswordDialo
 
       if (timestampError) {
         console.error('Failed to update password timestamp:', timestampError);
+      } else {
+        console.log('Timestamp updated successfully');
       }
 
+      console.log('Step 8: Logging activity...');
       await logActivity('password_changed');
 
-      console.log('Password change completed successfully');
-
+      console.log('Step 9: Password change completed successfully!');
+      clearTimeout(timeoutId);
       setIsChanging(false);
 
       toast({
@@ -146,14 +200,25 @@ export const ChangePasswordDialog = ({ open, onOpenChange }: ChangePasswordDialo
         description: 'Sua senha foi atualizada. Use a nova senha no próximo login.',
       });
 
+      console.log('Step 10: Closing dialog...');
       handleClose();
+      
+      console.log('=== PASSWORD CHANGE COMPLETED ===');
     } catch (error: any) {
-      console.error('Password change error:', error);
+      console.error('=== PASSWORD CHANGE ERROR ===');
+      console.error('Error details:', {
+        message: error?.message,
+        status: error?.status,
+        code: error?.code,
+        fullError: error
+      });
+      
+      clearTimeout(timeoutId);
       setIsChanging(false);
       
       toast({
         title: 'Erro ao alterar senha',
-        description: error.message,
+        description: error.message || 'Ocorreu um erro inesperado',
         variant: 'destructive',
       });
     }
