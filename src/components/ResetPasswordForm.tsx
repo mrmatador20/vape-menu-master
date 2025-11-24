@@ -53,16 +53,8 @@ export const ResetPasswordForm = () => {
         const { data: { session } } = await supabase.auth.getSession();
         if (session) {
           setIsValidSession(true);
-          
-          // Check if user has MFA enabled
-          const { data } = await supabase.auth.mfa.listFactors();
-          const totpFactor = data?.totp?.find(f => f.status === 'verified');
-          
-          if (totpFactor) {
-            // User has MFA, need to verify before allowing password change
-            setNeedsMfa(true);
-            setMfaFactorId(totpFactor.id);
-          }
+          // During password recovery, the email link verification is sufficient
+          // No need to require MFA challenge as it's already a verified recovery flow
         }
       }
       setIsCheckingSession(false);
@@ -124,23 +116,41 @@ export const ResetPasswordForm = () => {
     }
 
     setIsVerifyingMfa(true);
+    
+    // Add timeout to prevent infinite loading
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Timeout')), 10000)
+    );
+
     try {
-      const { error } = await supabase.auth.mfa.challengeAndVerify({
+      const verifyPromise = supabase.auth.mfa.challengeAndVerify({
         factorId: mfaFactorId,
         code: mfaCode,
       });
+
+      const { error } = await Promise.race([verifyPromise, timeoutPromise]) as any;
 
       if (error) throw error;
 
       // MFA verified, session is now AAL2, can proceed with password reset
       setNeedsMfa(false);
+      setMfaCode('');
       toast.success('Código verificado!', {
         description: 'Agora você pode redefinir sua senha',
       });
     } catch (error: any) {
-      toast.error('Código incorreto', {
-        description: 'Verifique o código e tente novamente',
-      });
+      console.error('MFA verification error:', error);
+      
+      if (error.message === 'Timeout') {
+        toast.error('Tempo esgotado', {
+          description: 'A verificação demorou muito. Tente novamente.',
+        });
+      } else {
+        toast.error('Código incorreto', {
+          description: 'Verifique o código e tente novamente',
+        });
+      }
+      setMfaCode('');
     } finally {
       setIsVerifyingMfa(false);
     }
