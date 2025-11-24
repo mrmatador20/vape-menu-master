@@ -10,23 +10,57 @@ interface ProtectedRouteProps {
 export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [needsMFAVerification, setNeedsMFAVerification] = useState(false);
   const location = useLocation();
 
   useEffect(() => {
-    // Check current session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setIsAuthenticated(!!session);
-      setIsLoading(false);
-    });
+    checkAuth();
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      setIsAuthenticated(!!session);
-      setIsLoading(false);
+      checkAuth();
     });
 
     return () => subscription.unsubscribe();
   }, []);
+
+  const checkAuth = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        setIsAuthenticated(false);
+        setIsLoading(false);
+        return;
+      }
+
+      // Check if user has MFA enabled
+      const { data: factors } = await supabase.auth.mfa.listFactors();
+      const hasMFA = factors?.totp?.some((f: any) => f.status === 'verified') || false;
+
+      if (hasMFA) {
+        // Check AAL (Authenticator Assurance Level)
+        const { data: { session: currentSession } } = await supabase.auth.getSession();
+        const aal = (currentSession as any)?.aal;
+        
+        // If user has MFA but current AAL is not aal2, they need to verify
+        if (aal !== 'aal2') {
+          setNeedsMFAVerification(true);
+          setIsAuthenticated(false);
+          setIsLoading(false);
+          return;
+        }
+      }
+
+      setIsAuthenticated(true);
+      setNeedsMFAVerification(false);
+    } catch (error) {
+      console.error('Auth check error:', error);
+      setIsAuthenticated(false);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -36,7 +70,7 @@ export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
     );
   }
 
-  if (!isAuthenticated) {
+  if (!isAuthenticated || needsMFAVerification) {
     return <Navigate to="/auth" state={{ from: location }} replace />;
   }
 
