@@ -28,6 +28,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { useCepLookup } from '@/hooks/useCepLookup';
 
 const profileSchema = z.object({
   full_name: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres').max(100, 'Nome muito longo'),
@@ -53,6 +54,7 @@ const Profile = () => {
   const [showUnenrollDialog, setShowUnenrollDialog] = useState(false);
   const [selectedFactorId, setSelectedFactorId] = useState<string | null>(null);
   const [showChangePasswordDialog, setShowChangePasswordDialog] = useState(false);
+  const { isLoading: isLoadingCep, lookupCep } = useCepLookup();
 
   const form = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
@@ -120,6 +122,27 @@ const Profile = () => {
 
   const onSubmit = (data: ProfileFormData) => {
     updateProfile(data);
+  };
+
+  const handleCepChange = async (cep: string, onChange: (value: string) => void) => {
+    const cleanCep = cep.replace(/\D/g, '');
+    const formatted = cleanCep.length > 5 
+      ? `${cleanCep.slice(0, 5)}-${cleanCep.slice(5, 8)}`
+      : cleanCep;
+    
+    onChange(formatted);
+
+    // Consultar ViaCEP quando CEP tiver 8 dígitos
+    if (cleanCep.length === 8) {
+      const cepData = await lookupCep(cleanCep);
+      
+      if (cepData) {
+        form.setValue('address_street', cepData.logradouro || '');
+        form.setValue('address_neighborhood', cepData.bairro || '');
+        form.setValue('address_city', cepData.localidade || '');
+        form.setValue('address_state', cepData.uf || '');
+      }
+    }
   };
 
   if (isLoading) {
@@ -246,7 +269,13 @@ const Profile = () => {
                         <FormItem>
                           <FormLabel>CEP</FormLabel>
                           <FormControl>
-                            <Input placeholder="00000-000" {...field} />
+                            <Input 
+                              placeholder="00000-000" 
+                              maxLength={9}
+                              disabled={isLoadingCep}
+                              {...field}
+                              onChange={(e) => handleCepChange(e.target.value, field.onChange)}
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>

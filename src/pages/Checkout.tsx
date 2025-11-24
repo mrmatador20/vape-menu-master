@@ -13,6 +13,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { z } from 'zod';
 import { useShippingRateByCep } from '@/hooks/useShippingRates';
 import { useSettingByKey } from '@/hooks/useSettings';
+import { useCepLookup } from '@/hooks/useCepLookup';
 
 const checkoutSchema = z.object({
   rua: z.string().trim().min(1, 'Rua é obrigatória').max(100, 'Rua deve ter no máximo 100 caracteres'),
@@ -57,6 +58,9 @@ const Checkout = () => {
   const { data: freeShippingSetting } = useSettingByKey('free_shipping_min_value');
   const freeShippingMinValue = freeShippingSetting ? parseFloat(freeShippingSetting.value) : 0;
 
+  // Hook para consulta de CEP
+  const { isLoading: isLoadingCep, lookupCep } = useCepLookup();
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session) {
@@ -81,6 +85,29 @@ const Checkout = () => {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleCepChange = async (cep: string) => {
+    const cleanCep = cep.replace(/\D/g, '');
+    const formatted = cleanCep.length > 5 
+      ? `${cleanCep.slice(0, 5)}-${cleanCep.slice(5, 8)}`
+      : cleanCep;
+    
+    setFormData(prev => ({ ...prev, cep: formatted }));
+
+    // Consultar ViaCEP quando CEP tiver 8 dígitos
+    if (cleanCep.length === 8) {
+      const cepData = await lookupCep(cleanCep);
+      
+      if (cepData) {
+        setFormData(prev => ({
+          ...prev,
+          rua: cepData.logradouro || prev.rua,
+          bairro: cepData.bairro || prev.bairro,
+          cidade: cepData.localidade || prev.cidade,
+        }));
+      }
+    }
   };
 
   const handlePaymentChange = (value: string) => {
@@ -450,17 +477,11 @@ const Checkout = () => {
                   id="cep"
                   name="cep"
                   value={formData.cep}
-                  onChange={(e) => {
-                    const value = e.target.value.replace(/\D/g, '');
-                    const formatted = value.length > 5 
-                      ? `${value.slice(0, 5)}-${value.slice(5, 8)}`
-                      : value;
-                    setFormData(prev => ({ ...prev, cep: formatted }));
-                  }}
+                  onChange={(e) => handleCepChange(e.target.value)}
                   placeholder="00000-000"
                   maxLength={9}
                   required
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || isLoadingCep}
                 />
                 {cleanCep.length === 8 && (
                   baseShippingCost !== null ? (
