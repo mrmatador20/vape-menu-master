@@ -132,24 +132,42 @@ export const ResetPasswordForm = () => {
   };
 
   const handleVerifyMfa = async () => {
+    console.log('=== MFA VERIFICATION STARTED ===');
+    
     if (mfaCode.length !== 6) {
+      console.log('Invalid code length:', mfaCode.length);
       toast.error('Código inválido', {
         description: 'Digite um código de 6 dígitos',
       });
       return;
     }
 
+    console.log('Step 1: Setting verification state...');
     setIsVerifyingMfa(true);
     
+    // Add timeout protection - max 30 seconds
+    const timeoutId = setTimeout(() => {
+      console.error('TIMEOUT: MFA verification took too long (30s)');
+      setIsVerifyingMfa(false);
+      toast.error('Tempo esgotado', {
+        description: 'A verificação demorou muito. Tente novamente.',
+      });
+    }, 30000);
+    
     try {
-      console.log('Starting MFA verification...', { factorId: mfaFactorId });
+      console.log('Step 2: Starting MFA verification...', { factorId: mfaFactorId });
       
       // First create a challenge
+      console.log('Step 3: Creating challenge...');
       const { data: challengeData, error: challengeError } = await supabase.auth.mfa.challenge({
         factorId: mfaFactorId,
       });
 
-      console.log('Challenge response:', { challengeData, challengeError });
+      console.log('Challenge response:', { 
+        hasData: !!challengeData,
+        challengeId: challengeData?.id,
+        error: challengeError 
+      });
 
       if (challengeError) {
         console.error('Challenge error:', challengeError);
@@ -157,17 +175,22 @@ export const ResetPasswordForm = () => {
       }
 
       if (!challengeData?.id) {
+        console.error('No challenge ID returned');
         throw new Error('No challenge ID returned');
       }
 
       // Then verify the code
+      console.log('Step 4: Verifying code against challenge...');
       const { data: verifyData, error: verifyError } = await supabase.auth.mfa.verify({
         factorId: mfaFactorId,
         challengeId: challengeData.id,
         code: mfaCode,
       });
 
-      console.log('Verify response:', { verifyData, verifyError });
+      console.log('Verify response:', { 
+        hasData: !!verifyData,
+        error: verifyError 
+      });
 
       if (verifyError) {
         console.error('Verify error:', verifyError);
@@ -175,6 +198,7 @@ export const ResetPasswordForm = () => {
       }
 
       // Check the session after verification
+      console.log('Step 5: Checking session after MFA verification...');
       const { data: { session: updatedSession } } = await supabase.auth.getSession();
       console.log('Session after MFA verification:', {
         userId: updatedSession?.user?.id,
@@ -182,7 +206,9 @@ export const ResetPasswordForm = () => {
       });
 
       // MFA verified successfully - update state immediately
-      console.log('MFA verification successful, updating state...');
+      console.log('Step 6: MFA verification successful, updating state...');
+      
+      clearTimeout(timeoutId);
       
       // Update states to show password reset form
       setNeedsMfa(false);
@@ -192,14 +218,18 @@ export const ResetPasswordForm = () => {
         description: 'Agora você pode redefinir sua senha',
       });
       
-      return; // Exit early to prevent finally block from running
+      console.log('=== MFA VERIFICATION COMPLETED ===');
+      return;
     } catch (error: any) {
-      console.error('MFA verification error details:', {
+      console.error('=== MFA VERIFICATION ERROR ===');
+      console.error('Error details:', {
         message: error?.message,
         status: error?.status,
-        error: error
+        code: error?.code,
+        fullError: error
       });
       
+      clearTimeout(timeoutId);
       setIsVerifyingMfa(false);
       
       toast.error('Código incorreto', {
@@ -209,36 +239,79 @@ export const ResetPasswordForm = () => {
   };
 
   const handleResetPassword = async () => {
-    if (!validatePassword()) return;
+    console.log('=== PASSWORD RESET STARTED ===');
+    
+    if (!validatePassword()) {
+      console.log('Password validation failed');
+      return;
+    }
 
+    console.log('Step 1: Setting reset state...');
     setIsResetting(true);
+    
+    // Add timeout protection - max 30 seconds
+    const timeoutId = setTimeout(() => {
+      console.error('TIMEOUT: Password reset took too long (30s)');
+      setIsResetting(false);
+      toast.error('Tempo esgotado', {
+        description: 'A operação demorou muito. Tente novamente.',
+      });
+    }, 30000);
+    
     try {
+      console.log('Step 2: Updating user password...');
       const { error } = await supabase.auth.updateUser({
         password: newPassword,
       });
 
-      if (error) throw error;
+      console.log('Password update response:', { error });
+
+      if (error) {
+        console.error('Password update error:', error);
+        throw error;
+      }
 
       // Update password_changed_at timestamp
+      console.log('Step 3: Updating password timestamp...');
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        await supabase
+        const { error: timestampError } = await supabase
           .from('profiles')
           .update({ password_changed_at: new Date().toISOString() })
           .eq('id', user.id);
+        
+        if (timestampError) {
+          console.error('Timestamp update error:', timestampError);
+        } else {
+          console.log('Timestamp updated successfully');
+        }
       }
 
+      console.log('Step 4: Password reset completed!');
+      clearTimeout(timeoutId);
       setResetComplete(true);
       
       setTimeout(() => {
+        console.log('Redirecting to auth page...');
         navigate('/auth');
       }, 3000);
+      
+      console.log('=== PASSWORD RESET COMPLETED ===');
     } catch (error: any) {
+      console.error('=== PASSWORD RESET ERROR ===');
+      console.error('Error details:', {
+        message: error?.message,
+        status: error?.status,
+        code: error?.code,
+        fullError: error
+      });
+      
+      clearTimeout(timeoutId);
+      setIsResetting(false);
+      
       toast.error('Erro ao redefinir senha', {
         description: error.message,
       });
-    } finally {
-      setIsResetting(false);
     }
   };
 
