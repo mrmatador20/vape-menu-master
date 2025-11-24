@@ -141,21 +141,44 @@ export const ResetPasswordForm = () => {
 
     setIsVerifyingMfa(true);
     try {
+      console.log('Starting MFA verification...', { factorId: mfaFactorId });
+      
       // First create a challenge
       const { data: challengeData, error: challengeError } = await supabase.auth.mfa.challenge({
         factorId: mfaFactorId,
       });
 
-      if (challengeError) throw challengeError;
+      console.log('Challenge response:', { challengeData, challengeError });
+
+      if (challengeError) {
+        console.error('Challenge error:', challengeError);
+        throw challengeError;
+      }
+
+      if (!challengeData?.id) {
+        throw new Error('No challenge ID returned');
+      }
 
       // Then verify the code
-      const { error: verifyError } = await supabase.auth.mfa.verify({
+      const { data: verifyData, error: verifyError } = await supabase.auth.mfa.verify({
         factorId: mfaFactorId,
         challengeId: challengeData.id,
         code: mfaCode,
       });
 
-      if (verifyError) throw verifyError;
+      console.log('Verify response:', { verifyData, verifyError });
+
+      if (verifyError) {
+        console.error('Verify error:', verifyError);
+        throw verifyError;
+      }
+
+      // Check the session after verification
+      const { data: { session: updatedSession } } = await supabase.auth.getSession();
+      console.log('Session after MFA verification:', {
+        userId: updatedSession?.user?.id,
+        hasSession: !!updatedSession
+      });
 
       // MFA verified, session is now AAL2, can proceed with password reset
       setNeedsMfa(false);
@@ -163,9 +186,13 @@ export const ResetPasswordForm = () => {
         description: 'Agora você pode redefinir sua senha',
       });
     } catch (error: any) {
-      console.error('MFA verification error:', error);
+      console.error('MFA verification error details:', {
+        message: error?.message,
+        status: error?.status,
+        error: error
+      });
       toast.error('Código incorreto', {
-        description: 'Verifique o código e tente novamente',
+        description: error?.message || 'Verifique o código e tente novamente',
       });
     } finally {
       setIsVerifyingMfa(false);
