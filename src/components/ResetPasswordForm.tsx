@@ -47,6 +47,14 @@ export const ResetPasswordForm = () => {
   useEffect(() => {
     // Check if this is a password reset flow
     const checkSession = async () => {
+      // Set a maximum timeout for the entire check
+      const timeoutId = setTimeout(() => {
+        console.error('Session check timeout');
+        setIsValidSession(false);
+        setErrorMessage('O servidor demorou muito para responder. Por favor, tente novamente.');
+        setIsCheckingSession(false);
+      }, 5000);
+
       try {
         const resetMode = searchParams.get('reset');
         const errorParam = searchParams.get('error');
@@ -55,6 +63,7 @@ export const ResetPasswordForm = () => {
         
         // Check for errors in URL first
         if (errorParam || errorCode) {
+          clearTimeout(timeoutId);
           setIsCheckingSession(false);
           setIsValidSession(false);
           
@@ -69,7 +78,17 @@ export const ResetPasswordForm = () => {
         }
         
         if (resetMode === 'true') {
-          const { data: { session } } = await supabase.auth.getSession();
+          const { data: { session }, error } = await supabase.auth.getSession();
+          
+          clearTimeout(timeoutId);
+          
+          if (error) {
+            console.error('Session error:', error);
+            setIsValidSession(false);
+            setErrorMessage('Erro ao validar sessão. Por favor, solicite um novo link.');
+            setIsCheckingSession(false);
+            return;
+          }
           
           if (session) {
             setIsValidSession(true);
@@ -85,12 +104,17 @@ export const ResetPasswordForm = () => {
             }
           } else {
             setIsValidSession(false);
+            setErrorMessage('Sessão inválida. Por favor, solicite um novo link de recuperação.');
           }
+          setIsCheckingSession(false);
+        } else {
+          clearTimeout(timeoutId);
+          setIsCheckingSession(false);
         }
       } catch (error) {
         console.error('Error checking session:', error);
         setIsValidSession(false);
-      } finally {
+        setErrorMessage('Erro ao processar a recuperação. Por favor, tente novamente.');
         setIsCheckingSession(false);
       }
     };
