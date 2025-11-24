@@ -30,18 +30,11 @@ export const MFAEnrollDialog = ({ open, onOpenChange, onSuccess }: MFAEnrollDial
 
   const handleEnroll = async () => {
     try {
-      console.log('🎯 [Dialog] Iniciando enrollment...');
       const data = await enrollMFA();
-      console.log('🎯 [Dialog] Dados recebidos:', {
-        hasQrCode: !!data.qrCode,
-        hasSecret: !!data.secret,
-        factorId: data.factorId,
-      });
       setEnrollmentData(data);
       setStep('verify');
-      console.log('✅ [Dialog] Estado atualizado, mudando para step verify');
     } catch (error) {
-      console.error('❌ [Dialog] Erro no enrollment:', error);
+      console.error('Enrollment error:', error);
     }
   };
 
@@ -135,48 +128,70 @@ export const MFAEnrollDialog = ({ open, onOpenChange, onSuccess }: MFAEnrollDial
           <div className="space-y-4">
             {enrollmentData && (
               <>
-                <Tabs defaultValue="qrcode" className="w-full">
-                  <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="qrcode" className="gap-2">
-                      <QrCode className="h-4 w-4" />
-                      QR Code
-                    </TabsTrigger>
-                    <TabsTrigger value="manual" className="gap-2">
-                      <Smartphone className="h-4 w-4" />
-                      Código Manual
-                    </TabsTrigger>
-                  </TabsList>
+                {enrollmentData.qrCode ? (
+                  <Tabs defaultValue="qrcode" className="w-full">
+                    <TabsList className="grid w-full grid-cols-2">
+                      <TabsTrigger value="qrcode" className="gap-2">
+                        <QrCode className="h-4 w-4" />
+                        QR Code
+                      </TabsTrigger>
+                      <TabsTrigger value="manual" className="gap-2">
+                        <Smartphone className="h-4 w-4" />
+                        Código Manual
+                      </TabsTrigger>
+                    </TabsList>
                   
-                  <TabsContent value="qrcode" className="space-y-4 mt-4">
-                    {enrollmentData.qrCode ? (
+                    <TabsContent value="qrcode" className="space-y-4 mt-4">
                       <div className="flex flex-col items-center space-y-4">
                         <div className="p-3 bg-white rounded-lg">
                           <img 
                             src={enrollmentData.qrCode} 
                             alt="QR Code para 2FA"
                             className="w-32 h-32"
-                            onLoad={() => console.log('✅ [IMG] QR code carregado com sucesso!')}
-                            onError={(e) => console.error('❌ [IMG] Erro ao carregar QR code:', e)}
                           />
                         </div>
                         <p className="text-sm text-muted-foreground text-center">
                           Escaneie este código com seu aplicativo autenticador
                         </p>
                       </div>
-                    ) : (
+                    </TabsContent>
+                    
+                    <TabsContent value="manual" className="space-y-4 mt-4">
                       <Alert>
+                        <Smartphone className="h-4 w-4" />
                         <AlertDescription>
-                          Não foi possível gerar o QR Code. Use a aba "Código Manual" para configurar.
+                          Insira manualmente este código no seu aplicativo autenticador
                         </AlertDescription>
                       </Alert>
-                    )}
-                  </TabsContent>
-                  
-                  <TabsContent value="manual" className="space-y-4 mt-4">
+                      
+                      <div className="space-y-2">
+                        <Label>Código Secreto</Label>
+                        <div className="flex gap-2">
+                          <Input 
+                            value={enrollmentData.secret}
+                            readOnly
+                            className="font-mono text-sm"
+                          />
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={copySecret}
+                          >
+                            <Copy className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Abra seu aplicativo autenticador e adicione manualmente usando este código
+                        </p>
+                      </div>
+                    </TabsContent>
+                  </Tabs>
+                ) : (
+                  <div className="space-y-4">
                     <Alert>
                       <Smartphone className="h-4 w-4" />
                       <AlertDescription>
-                        Insira manualmente este código no seu aplicativo autenticador
+                        Configure usando o código manual abaixo
                       </AlertDescription>
                     </Alert>
                     
@@ -200,8 +215,8 @@ export const MFAEnrollDialog = ({ open, onOpenChange, onSuccess }: MFAEnrollDial
                         Abra seu aplicativo autenticador e adicione manualmente usando este código
                       </p>
                     </div>
-                  </TabsContent>
-                </Tabs>
+                  </div>
+                )}
 
                 <div className="space-y-2">
                   <Label htmlFor="code">Código de Verificação</Label>
