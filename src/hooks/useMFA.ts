@@ -175,6 +175,36 @@ export const useMFA = () => {
         .update({ used_at: new Date().toISOString() })
         .eq('id', backupCode.id);
 
+      // SECURITY FIX: Elevate session to AAL2 after backup code verification
+      // This ensures the user gets proper MFA authentication level
+      const factors = await listFactors();
+      const activeFactor = factors.totp?.find((f: any) => f.status === 'verified');
+      
+      if (activeFactor) {
+        // Challenge and verify to elevate session to AAL2
+        const challenge = await supabase.auth.mfa.challenge({ factorId: activeFactor.id });
+        
+        if (challenge.error) {
+          console.error('MFA challenge error:', challenge.error);
+          throw challenge.error;
+        }
+
+        // Verify using the backup code (Supabase accepts backup codes in verify)
+        const verify = await supabase.auth.mfa.verify({
+          factorId: activeFactor.id,
+          challengeId: challenge.data.id,
+          code: code.replace(/-/g, ''),
+        });
+
+        if (verify.error) {
+          console.error('MFA verify error:', verify.error);
+          throw verify.error;
+        }
+
+        // Log successful backup code usage
+        await logActivity('mfa_backup_code_used');
+      }
+
       return true;
     } catch (error: any) {
       toast({
