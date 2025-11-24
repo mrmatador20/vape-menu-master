@@ -5,3 +5,9 @@ verify_jwt = true
 
 [functions.send-security-alert]
 verify_jwt = true
+
+[functions.verify-recaptcha]
+verify_jwt = false
+
+[functions.check-device-trust]
+verify_jwt = true
