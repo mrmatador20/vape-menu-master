@@ -6,9 +6,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, Key, Eye, EyeOff, Check, X, CheckCircle2 } from 'lucide-react';
+import { Loader2, Key, Eye, EyeOff, Check, X, CheckCircle2, Shield } from 'lucide-react';
 import { toast } from 'sonner';
 import { z } from 'zod';
+import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 
 const passwordSchema = z.object({
   newPassword: z.string()
@@ -37,6 +38,10 @@ export const ResetPasswordForm = () => {
   const [isValidSession, setIsValidSession] = useState(false);
   const [isCheckingSession, setIsCheckingSession] = useState(true);
   const [resetComplete, setResetComplete] = useState(false);
+  const [needsMfa, setNeedsMfa] = useState(false);
+  const [mfaCode, setMfaCode] = useState('');
+  const [mfaFactorId, setMfaFactorId] = useState<string>('');
+  const [isVerifyingMfa, setIsVerifyingMfa] = useState(false);
 
   useEffect(() => {
     // Check if this is a password reset flow
@@ -48,6 +53,16 @@ export const ResetPasswordForm = () => {
         const { data: { session } } = await supabase.auth.getSession();
         if (session) {
           setIsValidSession(true);
+          
+          // Check if user has MFA enabled
+          const { data } = await supabase.auth.mfa.listFactors();
+          const totpFactor = data?.totp?.find(f => f.status === 'verified');
+          
+          if (totpFactor) {
+            // User has MFA, need to verify before allowing password change
+            setNeedsMfa(true);
+            setMfaFactorId(totpFactor.id);
+          }
         }
       }
       setIsCheckingSession(false);
@@ -97,6 +112,37 @@ export const ResetPasswordForm = () => {
         setErrors(newErrors);
       }
       return false;
+    }
+  };
+
+  const handleVerifyMfa = async () => {
+    if (mfaCode.length !== 6) {
+      toast.error('Código inválido', {
+        description: 'Digite um código de 6 dígitos',
+      });
+      return;
+    }
+
+    setIsVerifyingMfa(true);
+    try {
+      const { error } = await supabase.auth.mfa.challengeAndVerify({
+        factorId: mfaFactorId,
+        code: mfaCode,
+      });
+
+      if (error) throw error;
+
+      // MFA verified, session is now AAL2, can proceed with password reset
+      setNeedsMfa(false);
+      toast.success('Código verificado!', {
+        description: 'Agora você pode redefinir sua senha',
+      });
+    } catch (error: any) {
+      toast.error('Código incorreto', {
+        description: 'Verifique o código e tente novamente',
+      });
+    } finally {
+      setIsVerifyingMfa(false);
     }
   };
 
@@ -181,6 +227,73 @@ export const ResetPasswordForm = () => {
               </p>
             </div>
           </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (needsMfa) {
+    return (
+      <Card className="w-full max-w-md mx-auto">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Shield className="h-5 w-5 text-primary" />
+            Verificação 2FA
+          </CardTitle>
+          <CardDescription>
+            Digite o código do seu autenticador para continuar
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <Alert>
+            <AlertDescription>
+              Sua conta tem autenticação de dois fatores habilitada. Por segurança, você precisa verificar sua identidade antes de redefinir a senha.
+            </AlertDescription>
+          </Alert>
+
+          <div className="space-y-2">
+            <Label htmlFor="mfa-code">Código 2FA</Label>
+            <InputOTP
+              maxLength={6}
+              value={mfaCode}
+              onChange={setMfaCode}
+            >
+              <InputOTPGroup>
+                <InputOTPSlot index={0} />
+                <InputOTPSlot index={1} />
+                <InputOTPSlot index={2} />
+                <InputOTPSlot index={3} />
+                <InputOTPSlot index={4} />
+                <InputOTPSlot index={5} />
+              </InputOTPGroup>
+            </InputOTP>
+            <p className="text-xs text-muted-foreground">
+              Abra seu aplicativo autenticador e digite o código de 6 dígitos
+            </p>
+          </div>
+
+          <Button
+            onClick={handleVerifyMfa}
+            disabled={isVerifyingMfa || mfaCode.length !== 6}
+            className="w-full"
+          >
+            {isVerifyingMfa ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Verificando...
+              </>
+            ) : (
+              'Verificar Código'
+            )}
+          </Button>
+
+          <Button
+            variant="outline"
+            onClick={() => navigate('/auth')}
+            className="w-full"
+          >
+            Cancelar
+          </Button>
         </CardContent>
       </Card>
     );
