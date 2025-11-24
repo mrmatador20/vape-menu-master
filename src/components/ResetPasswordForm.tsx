@@ -42,81 +42,30 @@ export const ResetPasswordForm = () => {
   const [mfaCode, setMfaCode] = useState('');
   const [mfaFactorId, setMfaFactorId] = useState<string>('');
   const [isVerifyingMfa, setIsVerifyingMfa] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string>('');
 
   useEffect(() => {
     // Check if this is a password reset flow
     const checkSession = async () => {
-      // Set a maximum timeout for the entire check
-      const timeoutId = setTimeout(() => {
-        console.error('Session check timeout');
-        setIsValidSession(false);
-        setErrorMessage('O servidor demorou muito para responder. Por favor, tente novamente.');
-        setIsCheckingSession(false);
-      }, 5000);
-
-      try {
-        const resetMode = searchParams.get('reset');
-        const errorParam = searchParams.get('error');
-        const errorCode = searchParams.get('error_code');
-        const errorDescription = searchParams.get('error_description');
-        
-        // Check for errors in URL first
-        if (errorParam || errorCode) {
-          clearTimeout(timeoutId);
-          setIsCheckingSession(false);
-          setIsValidSession(false);
+      const resetMode = searchParams.get('reset');
+      
+      if (resetMode === 'true') {
+        // Check if user has a valid session from the reset link
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          setIsValidSession(true);
           
-          if (errorCode === 'otp_expired') {
-            setErrorMessage('Este link de recuperação expirou. Por favor, solicite um novo link de recuperação.');
-          } else if (errorDescription) {
-            setErrorMessage(decodeURIComponent(errorDescription));
-          } else {
-            setErrorMessage('Link inválido. Por favor, solicite um novo link de recuperação.');
+          // Check if user has MFA enabled
+          const { data } = await supabase.auth.mfa.listFactors();
+          const totpFactor = data?.totp?.find(f => f.status === 'verified');
+          
+          if (totpFactor) {
+            // User has MFA, need to verify before allowing password change
+            setNeedsMfa(true);
+            setMfaFactorId(totpFactor.id);
           }
-          return;
         }
-        
-        if (resetMode === 'true') {
-          const { data: { session }, error } = await supabase.auth.getSession();
-          
-          clearTimeout(timeoutId);
-          
-          if (error) {
-            console.error('Session error:', error);
-            setIsValidSession(false);
-            setErrorMessage('Erro ao validar sessão. Por favor, solicite um novo link.');
-            setIsCheckingSession(false);
-            return;
-          }
-          
-          if (session) {
-            setIsValidSession(true);
-            
-            // Check if user has MFA enabled
-            const { data: mfaData } = await supabase.auth.mfa.listFactors();
-            const totpFactor = mfaData?.all?.find(f => f.factor_type === 'totp' && f.status === 'verified');
-            
-            if (totpFactor) {
-              // User has MFA enabled, require verification before password reset
-              setNeedsMfa(true);
-              setMfaFactorId(totpFactor.id);
-            }
-          } else {
-            setIsValidSession(false);
-            setErrorMessage('Sessão inválida. Por favor, solicite um novo link de recuperação.');
-          }
-          setIsCheckingSession(false);
-        } else {
-          clearTimeout(timeoutId);
-          setIsCheckingSession(false);
-        }
-      } catch (error) {
-        console.error('Error checking session:', error);
-        setIsValidSession(false);
-        setErrorMessage('Erro ao processar a recuperação. Por favor, tente novamente.');
-        setIsCheckingSession(false);
       }
+      setIsCheckingSession(false);
     };
 
     checkSession();
@@ -175,7 +124,6 @@ export const ResetPasswordForm = () => {
     }
 
     setIsVerifyingMfa(true);
-    
     try {
       const { error } = await supabase.auth.mfa.challengeAndVerify({
         factorId: mfaFactorId,
@@ -186,16 +134,13 @@ export const ResetPasswordForm = () => {
 
       // MFA verified, session is now AAL2, can proceed with password reset
       setNeedsMfa(false);
-      setMfaCode('');
-      toast.success('Código verificado com sucesso!', {
+      toast.success('Código verificado!', {
         description: 'Agora você pode redefinir sua senha',
       });
     } catch (error: any) {
-      console.error('MFA verification error:', error);
       toast.error('Código incorreto', {
-        description: 'Verifique o código no seu autenticador e tente novamente',
+        description: 'Verifique o código e tente novamente',
       });
-      setMfaCode('');
     } finally {
       setIsVerifyingMfa(false);
     }
@@ -257,17 +202,12 @@ export const ResetPasswordForm = () => {
         <CardHeader>
           <CardTitle>Link Inválido ou Expirado</CardTitle>
           <CardDescription>
-            {errorMessage || 'Este link de recuperação de senha é inválido ou já expirou.'}
+            Este link de recuperação de senha é inválido ou já expirou.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <Alert>
-            <AlertDescription>
-              Para sua segurança, os links de recuperação expiram após um curto período de tempo. Solicite um novo link para continuar.
-            </AlertDescription>
-          </Alert>
+        <CardContent>
           <Button onClick={() => navigate('/auth')} className="w-full">
-            Voltar ao Login e Solicitar Novo Link
+            Voltar ao Login
           </Button>
         </CardContent>
       </Card>
@@ -298,36 +238,21 @@ export const ResetPasswordForm = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Shield className="h-5 w-5 text-primary" />
-            Autenticação de Dois Fatores - Segurança Extra
+            Verificação 2FA
           </CardTitle>
           <CardDescription>
-            Reautenticação necessária para atualização de senha
+            Digite o código do seu autenticador para continuar
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-4">
           <Alert>
-            <Shield className="h-4 w-4" />
-            <AlertDescription className="space-y-3">
-              <p className="font-medium">
-                Para garantir a segurança da sua conta, é necessário realizar uma reautenticação com autenticação de dois fatores (MFA) antes de poder atualizar sua senha.
-              </p>
-              
-              <div className="space-y-2 text-sm">
-                <p className="font-medium">Passos para continuar:</p>
-                <ol className="list-decimal list-inside space-y-1 ml-2">
-                  <li>Insira o código de verificação enviado pelo seu aplicativo de autenticação (Google Authenticator, Authy, etc.).</li>
-                  <li>Após a verificação, você poderá continuar com a atualização da sua senha.</li>
-                </ol>
-              </div>
-
-              <p className="text-xs text-muted-foreground pt-2 border-t">
-                <strong>Importante:</strong> A autenticação de dois fatores é uma medida de segurança para proteger sua conta contra acessos não autorizados. Certifique-se de que o código inserido seja válido e recente.
-              </p>
+            <AlertDescription>
+              Sua conta tem autenticação de dois fatores habilitada. Por segurança, você precisa verificar sua identidade antes de redefinir a senha.
             </AlertDescription>
           </Alert>
 
           <div className="space-y-2">
-            <Label htmlFor="mfa-code">Digite o Código 2FA</Label>
+            <Label htmlFor="mfa-code">Código 2FA</Label>
             <InputOTP
               maxLength={6}
               value={mfaCode}
@@ -343,42 +268,32 @@ export const ResetPasswordForm = () => {
               </InputOTPGroup>
             </InputOTP>
             <p className="text-xs text-muted-foreground">
-              Abra seu aplicativo autenticador (Google Authenticator, Authy, etc.) e digite o código de 6 dígitos
+              Abra seu aplicativo autenticador e digite o código de 6 dígitos
             </p>
           </div>
 
-          <div className="space-y-2">
-            <Button
-              onClick={handleVerifyMfa}
-              disabled={isVerifyingMfa || mfaCode.length !== 6}
-              className="w-full"
-            >
-              {isVerifyingMfa ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Verificando...
-                </>
-              ) : (
-                'Confirmar Código MFA'
-              )}
-            </Button>
+          <Button
+            onClick={handleVerifyMfa}
+            disabled={isVerifyingMfa || mfaCode.length !== 6}
+            className="w-full"
+          >
+            {isVerifyingMfa ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Verificando...
+              </>
+            ) : (
+              'Verificar Código'
+            )}
+          </Button>
 
-            <Button
-              variant="outline"
-              onClick={() => window.open('https://support.google.com/accounts/answer/1066447', '_blank')}
-              className="w-full"
-            >
-              Precisa de ajuda com a autenticação de dois fatores?
-            </Button>
-
-            <Button
-              variant="ghost"
-              onClick={() => navigate('/auth')}
-              className="w-full"
-            >
-              Cancelar
-            </Button>
-          </div>
+          <Button
+            variant="outline"
+            onClick={() => navigate('/auth')}
+            className="w-full"
+          >
+            Cancelar
+          </Button>
         </CardContent>
       </Card>
     );
