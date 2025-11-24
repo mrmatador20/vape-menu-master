@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useCart } from '@/context/CartContext';
-import { useProducts } from '@/hooks/useProducts';
+import { useProducts, useAllFlavors } from '@/hooks/useProducts';
 import ProductCard from '@/components/ProductCard';
 import Header from '@/components/Header';
 import ProductSearch from '@/components/ProductSearch';
@@ -12,11 +12,14 @@ import { useSearchParams } from 'react-router-dom';
 
 const Index = () => {
   const { addToCart } = useCart();
-  const { data: products, isLoading } = useProducts();
+  const { data: products, isLoading: isLoadingProducts } = useProducts();
+  const { data: allFlavors, isLoading: isLoadingFlavors } = useAllFlavors();
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [activeSubcategory, setActiveSubcategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
+
+  const isLoading = isLoadingProducts || isLoadingFlavors;
 
   // Sincroniza estado com URL params
   useEffect(() => {
@@ -128,13 +131,17 @@ const Index = () => {
               {/* Products Grid - responsive margin */}
               <div className="transition-all duration-500">
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-                  {filteredProducts.map((product) => (
-                    <ProductCard
-                      key={product.id}
-                      product={product}
-                      onAddToCart={addToCart}
-                    />
-                  ))}
+                  {filteredProducts.map((product) => {
+                    const productFlavors = allFlavors?.filter(f => f.product_id === product.id) || [];
+                    return (
+                      <ProductCard
+                        key={product.id}
+                        product={product}
+                        flavors={productFlavors}
+                        onAddToCart={addToCart}
+                      />
+                    );
+                  })}
                 </div>
                 {filteredProducts.length === 0 && (
                   <div className="text-center py-20">
