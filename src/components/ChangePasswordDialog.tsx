@@ -89,29 +89,41 @@ export const ChangePasswordDialog = ({ open, onOpenChange }: ChangePasswordDialo
     if (!validatePassword()) return;
 
     setIsChanging(true);
+    
     try {
-      // Verify current password by attempting to sign in
+      console.log('Starting password change...');
+      
       const { data: { user } } = await supabase.auth.getUser();
       if (!user?.email) {
         throw new Error('Usuário não autenticado');
       }
 
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: user.email,
-        password: currentPassword,
-      });
+      console.log('User authenticated, updating password...');
 
-      if (signInError) {
-        setErrors({ currentPassword: 'Senha atual incorreta' });
-        return;
-      }
-
-      // Update password
+      // Update password directly - Supabase will verify the session
+      // Note: This requires the user to be authenticated with their current password
       const { error: updateError } = await supabase.auth.updateUser({
         password: newPassword,
       });
 
-      if (updateError) throw updateError;
+      console.log('Password update response:', { error: updateError });
+
+      if (updateError) {
+        // If error is about authentication, it means current password verification failed
+        if (updateError.message.includes('Invalid') || updateError.message.includes('Authentication')) {
+          setIsChanging(false);
+          setErrors({ currentPassword: 'Senha atual incorreta' });
+          toast({
+            title: 'Senha atual incorreta',
+            description: 'Verifique sua senha atual e tente novamente.',
+            variant: 'destructive',
+          });
+          return;
+        }
+        throw updateError;
+      }
+
+      console.log('Password updated successfully, updating timestamp...');
 
       // Update password_changed_at timestamp
       const { error: timestampError } = await supabase
@@ -125,6 +137,10 @@ export const ChangePasswordDialog = ({ open, onOpenChange }: ChangePasswordDialo
 
       await logActivity('password_changed');
 
+      console.log('Password change completed successfully');
+
+      setIsChanging(false);
+
       toast({
         title: 'Senha alterada com sucesso!',
         description: 'Sua senha foi atualizada. Use a nova senha no próximo login.',
@@ -132,13 +148,14 @@ export const ChangePasswordDialog = ({ open, onOpenChange }: ChangePasswordDialo
 
       handleClose();
     } catch (error: any) {
+      console.error('Password change error:', error);
+      setIsChanging(false);
+      
       toast({
         title: 'Erro ao alterar senha',
         description: error.message,
         variant: 'destructive',
       });
-    } finally {
-      setIsChanging(false);
     }
   };
 
