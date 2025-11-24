@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useMFA } from '@/hooks/useMFA';
 import { logActivity } from '@/hooks/useActivityLogs';
+import { useDeviceCheck } from '@/hooks/useDeviceCheck';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -15,6 +16,7 @@ import { MFAVerifyDialog } from '@/components/MFAVerifyDialog';
 const Auth = () => {
   const navigate = useNavigate();
   const { listFactors } = useMFA();
+  const { checkDevice } = useDeviceCheck();
   const [isLoading, setIsLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
   const [showMFADialog, setShowMFADialog] = useState(false);
@@ -133,7 +135,27 @@ const Auth = () => {
 
   const handleMFASuccess = async () => {
     setAwaitingMFAVerification(false);
-    await logActivity('login', { method: '2FA' });
+    
+    // Check device trust
+    try {
+      const deviceCheckResult = await checkDevice();
+      
+      if (deviceCheckResult.isNewDevice) {
+        toast.info('Novo dispositivo detectado', {
+          description: 'Um email de confirmação foi enviado para você.',
+        });
+      }
+      
+      await logActivity('login', { 
+        method: '2FA',
+        deviceFingerprint: deviceCheckResult.deviceFingerprint,
+        isNewDevice: deviceCheckResult.isNewDevice,
+      });
+    } catch (error) {
+      console.error('Device check failed:', error);
+      // Continue with login even if device check fails
+    }
+    
     toast.success('Login realizado com sucesso!');
     navigate('/');
   };
