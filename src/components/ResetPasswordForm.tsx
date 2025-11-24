@@ -140,6 +140,7 @@ export const ResetPasswordForm = () => {
     }
 
     setIsVerifyingMfa(true);
+    
     try {
       console.log('Starting MFA verification...', { factorId: mfaFactorId });
       
@@ -180,22 +181,30 @@ export const ResetPasswordForm = () => {
         hasSession: !!updatedSession
       });
 
-      // MFA verified, session is now AAL2, can proceed with password reset
+      // MFA verified successfully - update state immediately
+      console.log('MFA verification successful, updating state...');
+      
+      // Update states to show password reset form
       setNeedsMfa(false);
+      setIsVerifyingMfa(false);
+      
       toast.success('Código verificado!', {
         description: 'Agora você pode redefinir sua senha',
       });
+      
+      return; // Exit early to prevent finally block from running
     } catch (error: any) {
       console.error('MFA verification error details:', {
         message: error?.message,
         status: error?.status,
         error: error
       });
+      
+      setIsVerifyingMfa(false);
+      
       toast.error('Código incorreto', {
         description: error?.message || 'Verifique o código e tente novamente',
       });
-    } finally {
-      setIsVerifyingMfa(false);
     }
   };
 
