@@ -49,20 +49,36 @@ export const ResetPasswordForm = () => {
       const resetMode = searchParams.get('reset');
       
       if (resetMode === 'true') {
-        // Check if user has a valid session from the reset link
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session) {
-          setIsValidSession(true);
+        try {
+          // Add 5 second timeout to prevent infinite loading
+          const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Session check timeout')), 5000)
+          );
           
-          // Check if user has MFA enabled
-          const { data } = await supabase.auth.mfa.listFactors();
-          const totpFactor = data?.totp?.find(f => f.status === 'verified');
+          const sessionPromise = supabase.auth.getSession();
           
-          if (totpFactor) {
-            // User has MFA, need to verify before allowing password change
-            setNeedsMfa(true);
-            setMfaFactorId(totpFactor.id);
+          // Race between session check and timeout
+          const { data: { session } } = await Promise.race([
+            sessionPromise,
+            timeoutPromise
+          ]) as any;
+          
+          if (session) {
+            setIsValidSession(true);
+            
+            // Check if user has MFA enabled
+            const { data } = await supabase.auth.mfa.listFactors();
+            const totpFactor = data?.totp?.find(f => f.status === 'verified');
+            
+            if (totpFactor) {
+              // User has MFA, need to verify before allowing password change
+              setNeedsMfa(true);
+              setMfaFactorId(totpFactor.id);
+            }
           }
+        } catch (error) {
+          console.error('Session check failed:', error);
+          setIsValidSession(false);
         }
       }
       setIsCheckingSession(false);
