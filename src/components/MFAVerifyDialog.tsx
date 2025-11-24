@@ -50,19 +50,52 @@ export const MFAVerifyDialog = ({ open, onOpenChange, factorId, onSuccess }: MFA
 
     setIsVerifying(true);
     try {
+      // First verify the MFA code
       if (useBackupCode) {
         const isValid = await verifyBackupCode(code);
-        if (isValid) {
-          onSuccess();
-          handleClose();
-        } else {
+        if (!isValid) {
           handleFailedAttempt();
+          return;
         }
       } else {
         await verifyMFACode(factorId, code);
-        onSuccess();
-        handleClose();
       }
+
+      // Then verify reCAPTCHA
+      try {
+        const recaptchaToken = await (window as any).grecaptcha.execute(
+          import.meta.env.VITE_RECAPTCHA_SITE_KEY,
+          { action: 'verify_2fa' }
+        );
+
+        const { data: recaptchaResult, error: recaptchaError } = await supabase.functions.invoke(
+          'verify-recaptcha',
+          {
+            body: { token: recaptchaToken },
+          }
+        );
+
+        if (recaptchaError || !recaptchaResult?.success) {
+          toast({
+            title: 'Verificação de segurança falhou',
+            description: 'Por favor, tente novamente.',
+            variant: 'destructive',
+          });
+          return;
+        }
+      } catch (recaptchaError) {
+        console.error('reCAPTCHA verification failed:', recaptchaError);
+        toast({
+          title: 'Erro na verificação de segurança',
+          description: 'Por favor, tente novamente.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      // If both verifications passed, proceed
+      onSuccess();
+      handleClose();
     } catch (error) {
       console.error('Verification error:', error);
       handleFailedAttempt();
