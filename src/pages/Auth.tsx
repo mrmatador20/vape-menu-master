@@ -19,27 +19,58 @@ const Auth = () => {
   const [isSignUp, setIsSignUp] = useState(false);
   const [showMFADialog, setShowMFADialog] = useState(false);
   const [mfaFactorId, setMfaFactorId] = useState<string | null>(null);
+  const [awaitingMFAVerification, setAwaitingMFAVerification] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
   });
 
   useEffect(() => {
-    // Check if user is already logged in
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        navigate('/');
+    // Check if user is already logged in with proper AAL level
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (session && !awaitingMFAVerification) {
+        // Check if user has MFA enabled
+        const factors = await listFactors();
+        const hasMFA = factors.totp && factors.totp.length > 0;
+        
+        if (hasMFA) {
+          // User has MFA, verify current AAL level
+          const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+          if (aal?.currentLevel === 'aal2') {
+            // Properly authenticated with 2FA
+            navigate('/');
+          }
+          // If AAL1, user needs to verify 2FA - don't redirect
+        } else {
+          // No MFA, can proceed
+          navigate('/');
+        }
       }
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (session) {
-        navigate('/');
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session && !awaitingMFAVerification) {
+        // Check if user has MFA enabled
+        const factors = await listFactors();
+        const hasMFA = factors.totp && factors.totp.length > 0;
+        
+        if (hasMFA) {
+          // User has MFA, verify current AAL level
+          const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+          if (aal?.currentLevel === 'aal2') {
+            // Properly authenticated with 2FA
+            navigate('/');
+          }
+          // If AAL1, user needs to verify 2FA - don't redirect
+        } else {
+          // No MFA, can proceed
+          navigate('/');
+        }
       }
     });
 
     return () => subscription.unsubscribe();
-  }, [navigate]);
+  }, [navigate, awaitingMFAVerification, listFactors]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -78,6 +109,7 @@ const Auth = () => {
             const activeFactor = factors.totp.find((f: any) => f.status === 'verified');
             if (activeFactor) {
               setMfaFactorId(activeFactor.id);
+              setAwaitingMFAVerification(true);
               setShowMFADialog(true);
               setIsLoading(false);
               return;
@@ -100,6 +132,7 @@ const Auth = () => {
   };
 
   const handleMFASuccess = async () => {
+    setAwaitingMFAVerification(false);
     await logActivity('login', { method: '2FA' });
     toast.success('Login realizado com sucesso!');
     navigate('/');
