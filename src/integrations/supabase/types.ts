@@ -667,10 +667,47 @@ export type Database = {
         }
         Relationships: []
       }
+      trusted_devices: {
+        Row: {
+          created_at: string
+          device_fingerprint: string
+          device_name: string | null
+          id: string
+          ip_address: string | null
+          is_trusted: boolean
+          last_used_at: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          device_fingerprint: string
+          device_name?: string | null
+          id?: string
+          ip_address?: string | null
+          is_trusted?: boolean
+          last_used_at?: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          device_fingerprint?: string
+          device_name?: string | null
+          id?: string
+          ip_address?: string | null
+          is_trusted?: boolean
+          last_used_at?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_activity_logs: {
         Row: {
           activity_type: string
           created_at: string
+          device_fingerprint: string | null
           id: string
           ip_address: string | null
           metadata: Json | null
@@ -680,6 +717,7 @@ export type Database = {
         Insert: {
           activity_type: string
           created_at?: string
+          device_fingerprint?: string | null
           id?: string
           ip_address?: string | null
           metadata?: Json | null
@@ -689,6 +727,7 @@ export type Database = {
         Update: {
           activity_type?: string
           created_at?: string
+          device_fingerprint?: string | null
           id?: string
           ip_address?: string | null
           metadata?: Json | null
