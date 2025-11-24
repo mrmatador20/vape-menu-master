@@ -26,12 +26,16 @@ const Auth = () => {
   });
 
   useEffect(() => {
-    // Check if user is already logged in
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session && !mfaPending) {
-        navigate('/');
-      }
-    });
+    // Only redirect if not waiting for MFA verification
+    const checkAndRedirect = () => {
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session && !mfaPending) {
+          navigate('/');
+        }
+      });
+    };
+
+    checkAndRedirect();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (session && !mfaPending) {
@@ -71,29 +75,24 @@ const Auth = () => {
 
         // If sign in was successful, check if MFA is required
         if (!signInError && signInData.user) {
-          console.log('✅ Login successful, checking for MFA...');
-          
           // Check if user has MFA enabled
           const factors = await listFactors();
-          console.log('🔐 MFA Factors:', factors);
           
           if (factors.totp && factors.totp.length > 0) {
             // MFA is enabled, show verification dialog
             const activeFactor = factors.totp.find((f: any) => f.status === 'verified');
-            console.log('🔐 Active MFA Factor:', activeFactor);
             
             if (activeFactor) {
-              console.log('🚨 MFA Required! Showing dialog...');
+              // Block automatic navigation and show MFA dialog
               setMfaPending(true);
               setMfaFactorId(activeFactor.id);
               setShowMFADialog(true);
               setIsLoading(false);
-              return;
+              return; // CRITICAL: Exit here to prevent automatic redirect
             }
           }
           
           // No MFA or not required, proceed with login
-          console.log('✅ No MFA required, proceeding with login');
           await logActivity('login');
           toast.success('Login realizado com sucesso!');
         } else if (signInError) {
@@ -110,14 +109,16 @@ const Auth = () => {
 
   const handleMFASuccess = async () => {
     setMfaPending(false);
+    setShowMFADialog(false);
     await logActivity('login', { method: '2FA' });
-    toast.success('Login realizado com sucesso!');
-    navigate('/');
+    toast.success('Login realizado com sucesso com 2FA!');
+    // Navigation will happen automatically via useEffect
   };
 
   const handleMFACancel = async () => {
     setMfaPending(false);
     setShowMFADialog(false);
+    setMfaFactorId(null);
     await supabase.auth.signOut();
     toast.info('Login cancelado. Por favor, faça login novamente.');
   };
