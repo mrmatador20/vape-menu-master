@@ -19,6 +19,7 @@ const Auth = () => {
   const [isSignUp, setIsSignUp] = useState(false);
   const [showMFADialog, setShowMFADialog] = useState(false);
   const [mfaFactorId, setMfaFactorId] = useState<string | null>(null);
+  const [mfaPending, setMfaPending] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -27,19 +28,19 @@ const Auth = () => {
   useEffect(() => {
     // Check if user is already logged in
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
+      if (session && !mfaPending) {
         navigate('/');
       }
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (session) {
+      if (session && !mfaPending) {
         navigate('/');
       }
     });
 
     return () => subscription.unsubscribe();
-  }, [navigate]);
+  }, [navigate, mfaPending]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -77,6 +78,7 @@ const Auth = () => {
             // MFA is enabled, show verification dialog
             const activeFactor = factors.totp.find((f: any) => f.status === 'verified');
             if (activeFactor) {
+              setMfaPending(true);
               setMfaFactorId(activeFactor.id);
               setShowMFADialog(true);
               setIsLoading(false);
@@ -100,9 +102,17 @@ const Auth = () => {
   };
 
   const handleMFASuccess = async () => {
+    setMfaPending(false);
     await logActivity('login', { method: '2FA' });
     toast.success('Login realizado com sucesso!');
     navigate('/');
+  };
+
+  const handleMFACancel = async () => {
+    setMfaPending(false);
+    setShowMFADialog(false);
+    await supabase.auth.signOut();
+    toast.info('Login cancelado. Por favor, faça login novamente.');
   };
 
   return (
@@ -182,7 +192,11 @@ const Auth = () => {
         {mfaFactorId && (
           <MFAVerifyDialog
             open={showMFADialog}
-            onOpenChange={setShowMFADialog}
+            onOpenChange={(open) => {
+              if (!open) {
+                handleMFACancel();
+              }
+            }}
             factorId={mfaFactorId}
             onSuccess={handleMFASuccess}
           />
