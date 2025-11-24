@@ -23,6 +23,7 @@ import AdminReviews from "./pages/admin/Reviews";
 import AdminShippingRates from "./pages/admin/ShippingRates";
 import AdminSettings from "./pages/admin/Settings";
 import AdminBanners from "./pages/admin/Banners";
+import { DevMFADebugger } from "./components/DevMFADebugger";
 
 const queryClient = new QueryClient();
 
@@ -32,6 +33,7 @@ const App = () => (
       <CartProvider>
         <Toaster />
         <Sonner />
+        <DevMFADebugger />
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Index />} />
