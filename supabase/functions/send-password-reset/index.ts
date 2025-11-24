@@ -26,12 +26,13 @@ const handler = async (req: Request): Promise<Response> => {
 
     const {
       user,
-      email_data: { token_hash, redirect_to, email_action_type },
+      email_data: { token, token_hash, redirect_to, email_action_type },
     } = wh.verify(payload, headers) as {
       user: {
         email: string;
       };
       email_data: {
+        token: string;
         token_hash: string;
         redirect_to: string;
         email_action_type: string;
@@ -39,7 +40,7 @@ const handler = async (req: Request): Promise<Response> => {
     };
 
     const displayName = user.email.split('@')[0];
-    const resetLink = `${Deno.env.get('SUPABASE_URL')}/auth/v1/verify?token=${token_hash}&type=${email_action_type}&redirect_to=${redirect_to}`;
+    const resetLink = `${Deno.env.get('SUPABASE_URL')}/auth/v1/verify?token=${token_hash}&type=${email_action_type}&redirect_to=${encodeURIComponent(redirect_to)}`;
 
     console.log('Sending password reset email to:', user.email);
 
