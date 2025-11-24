@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useMFA } from '@/hooks/useMFA';
 import { logActivity } from '@/hooks/useActivityLogs';
 import { useDeviceCheck } from '@/hooks/useDeviceCheck';
+import { usePasswordPolicy } from '@/hooks/usePasswordPolicy';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,14 +13,17 @@ import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 import Header from '@/components/Header';
 import { MFAVerifyDialog } from '@/components/MFAVerifyDialog';
+import { ForcedPasswordChangeDialog } from '@/components/ForcedPasswordChangeDialog';
 
 const Auth = () => {
   const navigate = useNavigate();
   const { listFactors } = useMFA();
   const { checkDevice } = useDeviceCheck();
+  const { needsPasswordChange, daysSinceChange, checkPasswordPolicy, updatePasswordTimestamp } = usePasswordPolicy();
   const [isLoading, setIsLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
   const [showMFADialog, setShowMFADialog] = useState(false);
+  const [showPasswordChangeDialog, setShowPasswordChangeDialog] = useState(false);
   const [mfaFactorId, setMfaFactorId] = useState<string | null>(null);
   const [awaitingMFAVerification, setAwaitingMFAVerification] = useState(false);
   const [formData, setFormData] = useState({
@@ -156,6 +160,23 @@ const Auth = () => {
       // Continue with login even if device check fails
     }
     
+    // Check if password change is required
+    const passwordChangeRequired = await checkPasswordPolicy();
+    
+    if (passwordChangeRequired) {
+      setShowPasswordChangeDialog(true);
+      toast.info('Alteração de senha necessária', {
+        description: 'Sua senha expirou. Por favor, crie uma nova senha.',
+      });
+    } else {
+      toast.success('Login realizado com sucesso!');
+      navigate('/');
+    }
+  };
+
+  const handlePasswordChanged = async () => {
+    await updatePasswordTimestamp();
+    setShowPasswordChangeDialog(false);
     toast.success('Login realizado com sucesso!');
     navigate('/');
   };
@@ -249,6 +270,13 @@ const Auth = () => {
             onSuccess={handleMFASuccess}
           />
         )}
+
+        {/* Forced Password Change Dialog */}
+        <ForcedPasswordChangeDialog
+          open={showPasswordChangeDialog}
+          daysSinceChange={daysSinceChange}
+          onPasswordChanged={handlePasswordChanged}
+        />
       </div>
     </>
   );
