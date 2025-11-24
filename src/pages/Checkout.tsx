@@ -14,6 +14,10 @@ import { z } from 'zod';
 import { useShippingRateByCep } from '@/hooks/useShippingRates';
 import { useSettingByKey } from '@/hooks/useSettings';
 import { useCepLookup } from '@/hooks/useCepLookup';
+import { useSavedAddresses } from '@/hooks/useSavedAddresses';
+import { SavedAddressSelector } from '@/components/SavedAddressSelector';
+import { Tables } from '@/integrations/supabase/types';
+import { Checkbox } from '@/components/ui/checkbox';
 
 const checkoutSchema = z.object({
   rua: z.string().trim().min(1, 'Rua é obrigatória').max(100, 'Rua deve ter no máximo 100 caracteres'),
@@ -37,6 +41,9 @@ const Checkout = () => {
     discountAmount: number;
   } | null>(null);
   const [isValidatingCode, setIsValidatingCode] = useState(false);
+  const [selectedSavedAddress, setSelectedSavedAddress] = useState<Tables<'saved_addresses'> | null>(null);
+  const [saveAddress, setSaveAddress] = useState(false);
+  const [addressLabel, setAddressLabel] = useState('');
 
   const [formData, setFormData] = useState({
     rua: '',
@@ -48,6 +55,8 @@ const Checkout = () => {
     changeAmount: '',
     discountCode: '',
   });
+
+  const { createAddress } = useSavedAddresses();
 
   // Buscar taxa de entrega baseada no CEP
   const cleanCep = formData.cep.replace(/\D/g, '');
@@ -85,6 +94,31 @@ const Checkout = () => {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSavedAddressSelect = (address: Tables<'saved_addresses'> | null) => {
+    setSelectedSavedAddress(address);
+    if (address) {
+      setFormData(prev => ({
+        ...prev,
+        rua: address.street,
+        numero: address.number,
+        bairro: address.neighborhood,
+        cidade: address.city,
+        cep: address.cep,
+      }));
+      setSaveAddress(false); // Não precisa salvar se já está usando um endereço salvo
+    } else {
+      // Limpar formulário ao selecionar "Novo Endereço"
+      setFormData(prev => ({
+        ...prev,
+        rua: '',
+        numero: '',
+        bairro: '',
+        cidade: '',
+        cep: '',
+      }));
+    }
   };
 
   const handleCepChange = async (cep: string) => {
@@ -340,6 +374,20 @@ const Checkout = () => {
         clearCart();
         toast.success('Pedido realizado com sucesso! Abrindo WhatsApp...');
         
+        // Salvar endereço se solicitado e não for um endereço salvo
+        if (saveAddress && !selectedSavedAddress && addressLabel.trim()) {
+          createAddress({
+            label: addressLabel.trim(),
+            street: validatedData.rua,
+            number: validatedData.numero,
+            neighborhood: validatedData.bairro,
+            city: validatedData.cidade,
+            cep: validatedData.cep,
+            state: undefined,
+            is_default: false,
+          });
+        }
+        
         // Navegar para página de confirmação com os dados do pedido
         navigate('/order-confirmation', {
           state: {
@@ -422,6 +470,15 @@ const Checkout = () => {
         <div className="grid md:grid-cols-2 gap-8">
           <Card className="p-6">
             <h2 className="text-2xl font-bold mb-6">Informações de Entrega</h2>
+            
+            {/* Seletor de Endereços Salvos */}
+            <div className="mb-6">
+              <SavedAddressSelector
+                onSelect={handleSavedAddressSelect}
+                selectedAddressId={selectedSavedAddress?.id}
+              />
+            </div>
+
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <Label htmlFor="rua">Rua</Label>
@@ -506,6 +563,41 @@ const Checkout = () => {
                   )
                 )}
               </div>
+
+              {/* Opção para salvar endereço */}
+              {!selectedSavedAddress && (
+                <div className="space-y-3 p-4 border rounded-lg bg-muted/50">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="saveAddress"
+                      checked={saveAddress}
+                      onCheckedChange={(checked) => setSaveAddress(checked as boolean)}
+                      disabled={isSubmitting}
+                    />
+                    <Label
+                      htmlFor="saveAddress"
+                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                    >
+                      Salvar este endereço para próximos pedidos
+                    </Label>
+                  </div>
+                  
+                  {saveAddress && (
+                    <div>
+                      <Label htmlFor="addressLabel" className="text-sm">Nome do endereço (ex: Casa, Trabalho)</Label>
+                      <Input
+                        id="addressLabel"
+                        value={addressLabel}
+                        onChange={(e) => setAddressLabel(e.target.value)}
+                        placeholder="Ex: Casa, Trabalho, Apartamento"
+                        maxLength={50}
+                        disabled={isSubmitting}
+                        className="mt-1"
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
 
               <div className="space-y-2">
                 <Label>Forma de Pagamento</Label>

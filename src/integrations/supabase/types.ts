@@ -532,6 +532,51 @@ export type Database = {
           },
         ]
       }
+      saved_addresses: {
+        Row: {
+          cep: string
+          city: string
+          created_at: string
+          id: string
+          is_default: boolean
+          label: string
+          neighborhood: string
+          number: string
+          state: string | null
+          street: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          cep: string
+          city: string
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          label: string
+          neighborhood: string
+          number: string
+          state?: string | null
+          street: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          cep?: string
+          city?: string
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          label?: string
+          neighborhood?: string
+          number?: string
+          state?: string | null
+          street?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       security_questions: {
         Row: {
           answer_1_hash: string
