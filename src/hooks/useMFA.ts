@@ -49,24 +49,30 @@ export const useMFA = () => {
 
       if (error) throw error;
 
-      // Try to generate QR code - will fail if URI is too long
+      // Get current user email for the URI
+      const { data: { user } } = await supabase.auth.getUser();
+      const userIdentifier = user?.email || 'user';
+
+      // Create a shorter custom TOTP URI instead of using the long Supabase one
+      const customUri = `otpauth://totp/App:${userIdentifier}?secret=${data.totp.secret}&issuer=App`;
+
+      // Generate QR code with the shorter custom URI
       let qrCodeUrl = null;
       try {
-        qrCodeUrl = await QRCode.toDataURL(data.totp.qr_code, {
+        qrCodeUrl = await QRCode.toDataURL(customUri, {
           errorCorrectionLevel: 'L',
           margin: 1,
           width: 200,
-          scale: 3,
         });
       } catch (qrError) {
-        console.log('QR code generation skipped - URI too long, will use manual code');
+        console.error('QR code generation failed:', qrError);
       }
 
       return {
         factorId: data.id,
         qrCode: qrCodeUrl,
         secret: data.totp.secret,
-        uri: data.totp.qr_code,
+        uri: customUri,
       };
     } catch (error: any) {
       toast({
