@@ -141,12 +141,21 @@ export const ResetPasswordForm = () => {
 
     setIsVerifyingMfa(true);
     try {
-      const { error } = await supabase.auth.mfa.challengeAndVerify({
+      // First create a challenge
+      const { data: challengeData, error: challengeError } = await supabase.auth.mfa.challenge({
         factorId: mfaFactorId,
+      });
+
+      if (challengeError) throw challengeError;
+
+      // Then verify the code
+      const { error: verifyError } = await supabase.auth.mfa.verify({
+        factorId: mfaFactorId,
+        challengeId: challengeData.id,
         code: mfaCode,
       });
 
-      if (error) throw error;
+      if (verifyError) throw verifyError;
 
       // MFA verified, session is now AAL2, can proceed with password reset
       setNeedsMfa(false);
@@ -154,6 +163,7 @@ export const ResetPasswordForm = () => {
         description: 'Agora você pode redefinir sua senha',
       });
     } catch (error: any) {
+      console.error('MFA verification error:', error);
       toast.error('Código incorreto', {
         description: 'Verifique o código e tente novamente',
       });
