@@ -427,6 +427,7 @@ export type Database = {
           created_at: string
           full_name: string | null
           id: string
+          password_changed_at: string | null
           phone: string | null
           updated_at: string
         }
@@ -442,6 +443,7 @@ export type Database = {
           created_at?: string
           full_name?: string | null
           id: string
+          password_changed_at?: string | null
           phone?: string | null
           updated_at?: string
         }
@@ -457,6 +459,7 @@ export type Database = {
           created_at?: string
           full_name?: string | null
           id?: string
+          password_changed_at?: string | null
           phone?: string | null
           updated_at?: string
         }
@@ -767,6 +770,10 @@ export type Database = {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
+        Returns: boolean
+      }
+      is_password_change_required: {
+        Args: { user_profile_id: string }
         Returns: boolean
       }
       validate_discount_code: {

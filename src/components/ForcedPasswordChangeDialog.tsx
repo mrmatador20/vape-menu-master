@@ -4,15 +4,16 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, Key, Eye, EyeOff, Check, X } from 'lucide-react';
+import { Loader2, Key, Eye, EyeOff, Check, X, ShieldAlert } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { logActivity } from '@/hooks/useActivityLogs';
 import { z } from 'zod';
 
-interface ChangePasswordDialogProps {
+interface ForcedPasswordChangeDialogProps {
   open: boolean;
-  onOpenChange: (open: boolean) => void;
+  daysSinceChange: number | null;
+  onPasswordChanged: () => void;
 }
 
 const passwordSchema = z.object({
@@ -31,7 +32,11 @@ const passwordSchema = z.object({
 
 type PasswordStrength = 'weak' | 'medium' | 'strong';
 
-export const ChangePasswordDialog = ({ open, onOpenChange }: ChangePasswordDialogProps) => {
+export const ForcedPasswordChangeDialog = ({ 
+  open, 
+  daysSinceChange,
+  onPasswordChanged 
+}: ForcedPasswordChangeDialogProps) => {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -90,7 +95,7 @@ export const ChangePasswordDialog = ({ open, onOpenChange }: ChangePasswordDialo
 
     setIsChanging(true);
     try {
-      // Verify current password by attempting to sign in
+      // Verify current password
       const { data: { user } } = await supabase.auth.getUser();
       if (!user?.email) {
         throw new Error('Usuário não autenticado');
@@ -113,24 +118,14 @@ export const ChangePasswordDialog = ({ open, onOpenChange }: ChangePasswordDialo
 
       if (updateError) throw updateError;
 
-      // Update password_changed_at timestamp
-      const { error: timestampError } = await supabase
-        .from('profiles')
-        .update({ password_changed_at: new Date().toISOString() })
-        .eq('id', user.id);
-
-      if (timestampError) {
-        console.error('Failed to update password timestamp:', timestampError);
-      }
-
-      await logActivity('password_changed');
+      await logActivity('password_changed', { reason: 'forced_90day_policy' });
 
       toast({
         title: 'Senha alterada com sucesso!',
-        description: 'Sua senha foi atualizada. Use a nova senha no próximo login.',
+        description: 'Sua senha foi atualizada por política de segurança.',
       });
 
-      handleClose();
+      onPasswordChanged();
     } catch (error: any) {
       toast({
         title: 'Erro ao alterar senha',
@@ -142,17 +137,6 @@ export const ChangePasswordDialog = ({ open, onOpenChange }: ChangePasswordDialo
     }
   };
 
-  const handleClose = () => {
-    setCurrentPassword('');
-    setNewPassword('');
-    setConfirmPassword('');
-    setShowCurrentPassword(false);
-    setShowNewPassword(false);
-    setShowConfirmPassword(false);
-    setErrors({});
-    onOpenChange(false);
-  };
-
   const passwordRequirements = [
     { label: 'Mínimo 8 caracteres', met: newPassword.length >= 8 },
     { label: 'Uma letra maiúscula', met: /[A-Z]/.test(newPassword) },
@@ -162,17 +146,29 @@ export const ChangePasswordDialog = ({ open, onOpenChange }: ChangePasswordDialo
   ];
 
   return (
-    <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-md">
+    <Dialog open={open} onOpenChange={() => {}} modal>
+      <DialogContent 
+        className="sm:max-w-md" 
+        onPointerDownOutside={(e) => e.preventDefault()}
+        onInteractOutside={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Key className="h-5 w-5 text-primary" />
-            Alterar Senha
+            <ShieldAlert className="h-5 w-5 text-destructive" />
+            Alteração de Senha Obrigatória
           </DialogTitle>
           <DialogDescription>
-            Digite sua senha atual e escolha uma nova senha forte
+            Por política de segurança, é necessário alterar sua senha a cada 90 dias
           </DialogDescription>
         </DialogHeader>
+
+        <Alert variant="destructive">
+          <ShieldAlert className="h-4 w-4" />
+          <AlertDescription>
+            <strong>Atenção:</strong> Sua senha não é alterada há {daysSinceChange || 90} dias. 
+            Por medida de segurança, você precisa criar uma nova senha antes de continuar.
+          </AlertDescription>
+        </Alert>
 
         <div className="space-y-4">
           <div className="space-y-2">
@@ -282,29 +278,20 @@ export const ChangePasswordDialog = ({ open, onOpenChange }: ChangePasswordDialo
             </Alert>
           )}
 
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              onClick={handleClose}
-              className="flex-1"
-            >
-              Cancelar
-            </Button>
-            <Button
-              onClick={handleChangePassword}
-              disabled={isChanging || !currentPassword || !newPassword || !confirmPassword}
-              className="flex-1"
-            >
-              {isChanging ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Alterando...
-                </>
-              ) : (
-                'Alterar Senha'
-              )}
-            </Button>
-          </div>
+          <Button
+            onClick={handleChangePassword}
+            disabled={isChanging || !currentPassword || !newPassword || !confirmPassword}
+            className="w-full"
+          >
+            {isChanging ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Alterando...
+              </>
+            ) : (
+              'Alterar Senha e Continuar'
+            )}
+          </Button>
         </div>
       </DialogContent>
     </Dialog>
