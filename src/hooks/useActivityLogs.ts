@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
-export type ActivityType = 'login' | 'login_failed' | 'password_changed' | 'mfa_enabled' | 'mfa_disabled' | 'mfa_backup_code_used' | 'logout';
+export type ActivityType = 'login' | 'login_failed' | 'password_changed' | 'mfa_enabled' | 'mfa_disabled' | 'logout';
 
 export interface ActivityLog {
   id: string;

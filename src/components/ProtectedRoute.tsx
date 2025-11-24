@@ -10,56 +10,23 @@ interface ProtectedRouteProps {
 export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [needsMFAVerification, setNeedsMFAVerification] = useState(false);
   const location = useLocation();
 
   useEffect(() => {
-    checkAuth();
+    // Check current session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setIsAuthenticated(!!session);
+      setIsLoading(false);
+    });
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      checkAuth();
+      setIsAuthenticated(!!session);
+      setIsLoading(false);
     });
 
     return () => subscription.unsubscribe();
   }, []);
-
-  const checkAuth = async () => {
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
-        setIsAuthenticated(false);
-        setIsLoading(false);
-        return;
-      }
-
-      // Check if user has MFA enabled
-      const { data: factors } = await supabase.auth.mfa.listFactors();
-      const hasMFA = factors?.totp?.some((f: any) => f.status === 'verified') || false;
-
-      if (hasMFA) {
-        // Check AAL (Authenticator Assurance Level)
-        const aal = (session as any)?.aal;
-        
-        // If user has MFA but current AAL is not aal2, block access
-        if (aal !== 'aal2') {
-          setNeedsMFAVerification(true);
-          setIsAuthenticated(false);
-          setIsLoading(false);
-          return;
-        }
-      }
-
-      setIsAuthenticated(true);
-      setNeedsMFAVerification(false);
-    } catch (error) {
-      console.error('Auth check error:', error);
-      setIsAuthenticated(false);
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   if (isLoading) {
     return (
@@ -69,7 +36,7 @@ export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
     );
   }
 
-  if (!isAuthenticated || needsMFAVerification) {
+  if (!isAuthenticated) {
     return <Navigate to="/auth" state={{ from: location }} replace />;
   }
 
