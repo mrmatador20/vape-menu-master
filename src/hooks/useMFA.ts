@@ -31,70 +31,44 @@ export const useMFA = () => {
   const enrollMFA = async () => {
     setIsEnrolling(true);
     try {
-      console.log('🔐 [MFA] Iniciando enrollment...');
-      
       // Check for existing unverified factors and remove them
       const factors = await listFactors();
-      console.log('🔐 [MFA] Fatores existentes:', factors);
-      
       const unverifiedFactors = factors.all?.filter(f => f.status === 'unverified') || [];
-      console.log('🔐 [MFA] Fatores não verificados:', unverifiedFactors.length);
       
       for (const factor of unverifiedFactors) {
         try {
-          console.log('🔐 [MFA] Removendo fator não verificado:', factor.id);
           await supabase.auth.mfa.unenroll({ factorId: factor.id });
         } catch (e) {
-          console.error('❌ [MFA] Erro ao remover fator:', e);
+          console.error('Error removing unverified factor:', e);
         }
       }
 
-      console.log('🔐 [MFA] Criando novo fator TOTP...');
       const { data, error } = await supabase.auth.mfa.enroll({
         factorType: 'totp',
       });
 
-      if (error) {
-        console.error('❌ [MFA] Erro no enrollment:', error);
-        throw error;
-      }
+      if (error) throw error;
 
-      console.log('✅ [MFA] Fator criado com sucesso!');
-      console.log('🔐 [MFA] URI length:', data.totp.qr_code.length);
-      console.log('🔐 [MFA] URI:', data.totp.qr_code);
-      console.log('🔐 [MFA] Secret:', data.totp.secret);
-
-      // Generate QR code with optimized settings
+      // Try to generate QR code - will fail if URI is too long
       let qrCodeUrl = null;
       try {
-        console.log('📷 [QR] Gerando QR code...');
         qrCodeUrl = await QRCode.toDataURL(data.totp.qr_code, {
           errorCorrectionLevel: 'L',
           margin: 1,
           width: 200,
           scale: 3,
         });
-        console.log('✅ [QR] QR code gerado! Length:', qrCodeUrl?.length);
       } catch (qrError) {
-        console.error('❌ [QR] Falha ao gerar QR code:', qrError);
+        console.log('QR code generation skipped - URI too long, will use manual code');
       }
 
-      const result = {
+      return {
         factorId: data.id,
         qrCode: qrCodeUrl,
         secret: data.totp.secret,
         uri: data.totp.qr_code,
       };
-      
-      console.log('📦 [MFA] Retornando resultado:', {
-        factorId: result.factorId,
-        hasQrCode: !!result.qrCode,
-        secret: result.secret,
-      });
-
-      return result;
     } catch (error: any) {
-      console.error('❌ [MFA] Erro geral:', error);
       toast({
         title: 'Erro ao configurar 2FA',
         description: error.message,
