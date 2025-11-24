@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useMFA } from '@/hooks/useMFA';
@@ -19,7 +19,7 @@ const Auth = () => {
   const [isSignUp, setIsSignUp] = useState(false);
   const [showMFADialog, setShowMFADialog] = useState(false);
   const [mfaFactorId, setMfaFactorId] = useState<string | null>(null);
-  const [mfaPending, setMfaPending] = useState(false);
+  const mfaPendingRef = useRef(false); // Use ref for synchronous check
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -28,8 +28,17 @@ const Auth = () => {
   useEffect(() => {
     // Only redirect if not waiting for MFA verification
     const checkAndRedirect = () => {
+      console.log('Checking auth state, mfaPending:', mfaPendingRef.current);
+      
+      if (mfaPendingRef.current) {
+        console.log('MFA pending, blocking redirect');
+        return;
+      }
+      
       supabase.auth.getSession().then(({ data: { session } }) => {
-        if (session && !mfaPending) {
+        console.log('Session check:', !!session);
+        if (session) {
+          console.log('Redirecting to home');
           navigate('/');
         }
       });
@@ -38,13 +47,16 @@ const Auth = () => {
     checkAndRedirect();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (session && !mfaPending) {
+      console.log('Auth state change:', event, !!session, 'mfaPending:', mfaPendingRef.current);
+      
+      if (session && !mfaPendingRef.current) {
+        console.log('Redirecting to home from onAuthStateChange');
         navigate('/');
       }
     });
 
     return () => subscription.unsubscribe();
-  }, [navigate, mfaPending]);
+  }, [navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -75,24 +87,34 @@ const Auth = () => {
 
         // If sign in was successful, check if MFA is required
         if (!signInError && signInData.user) {
+          console.log('Login successful, checking MFA...');
+          
           // Check if user has MFA enabled
           const factors = await listFactors();
+          console.log('Factors:', factors);
           
           if (factors.totp && factors.totp.length > 0) {
             // MFA is enabled, show verification dialog
             const activeFactor = factors.totp.find((f: any) => f.status === 'verified');
+            console.log('Active factor:', activeFactor);
             
             if (activeFactor) {
-              // Block automatic navigation and show MFA dialog
-              setMfaPending(true);
+              console.log('MFA required! Showing dialog...');
+              
+              // CRITICAL: Set ref FIRST before any async operations
+              mfaPendingRef.current = true;
+              
+              // Now show MFA dialog
               setMfaFactorId(activeFactor.id);
               setShowMFADialog(true);
               setIsLoading(false);
-              return; // CRITICAL: Exit here to prevent automatic redirect
+              
+              return;
             }
           }
           
           // No MFA or not required, proceed with login
+          console.log('No MFA required');
           await logActivity('login');
           toast.success('Login realizado com sucesso!');
         } else if (signInError) {
@@ -108,7 +130,8 @@ const Auth = () => {
   };
 
   const handleMFASuccess = async () => {
-    setMfaPending(false);
+    console.log('MFA Success!');
+    mfaPendingRef.current = false;
     setShowMFADialog(false);
     await logActivity('login', { method: '2FA' });
     toast.success('Login realizado com sucesso com 2FA!');
@@ -116,11 +139,12 @@ const Auth = () => {
   };
 
   const handleMFACancel = async () => {
-    setMfaPending(false);
+    console.log('MFA Cancelled');
+    mfaPendingRef.current = false;
     setShowMFADialog(false);
     setMfaFactorId(null);
     await supabase.auth.signOut();
-    toast.info('Login cancelado. Por favor, faça login novamente.');
+    toast.info('Login cancelado.');
   };
 
   return (
