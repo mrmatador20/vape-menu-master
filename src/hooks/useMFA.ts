@@ -31,9 +31,21 @@ export const useMFA = () => {
   const enrollMFA = async () => {
     setIsEnrolling(true);
     try {
+      // Check for existing unverified factors and remove them
+      const factors = await listFactors();
+      const unverifiedFactors = factors.all?.filter(f => f.status === 'unverified') || [];
+      
+      for (const factor of unverifiedFactors) {
+        try {
+          await supabase.auth.mfa.unenroll({ factorId: factor.id });
+        } catch (e) {
+          console.error('Error removing unverified factor:', e);
+        }
+      }
+
       const { data, error } = await supabase.auth.mfa.enroll({
         factorType: 'totp',
-        issuer: 'NebulaVape',
+        friendlyName: 'Autenticador',
       });
 
       if (error) throw error;
