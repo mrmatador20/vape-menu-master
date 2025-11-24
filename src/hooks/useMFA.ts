@@ -203,8 +203,8 @@ export const useMFA = () => {
       return verify.data;
     } catch (error: any) {
       toast({
-        title: 'Código incorreto',
-        description: 'Tente novamente.',
+        title: 'Código inválido',
+        description: error.message,
         variant: 'destructive',
       });
       throw error;

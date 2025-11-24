@@ -60,12 +60,12 @@ export const MFAVerifyDialog = ({ open, onOpenChange, factorId, onSuccess }: MFA
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Shield className="h-5 w-5 text-primary" />
-            Autenticação de 2 Fatores
+            Verificação de Dois Fatores
           </DialogTitle>
           <DialogDescription>
             {useBackupCode 
               ? 'Digite um dos seus códigos de backup de 8 caracteres'
-              : 'Para proteger sua conta, por favor insira o código de autenticação de 2 fatores enviado para o seu dispositivo.'
+              : 'Digite o código de 6 dígitos do seu aplicativo autenticador'
             }
           </DialogDescription>
         </DialogHeader>
@@ -86,7 +86,7 @@ export const MFAVerifyDialog = ({ open, onOpenChange, factorId, onSuccess }: MFA
 
           <div className="space-y-2">
             <Label htmlFor="mfa-code">
-              {useBackupCode ? 'Código de Backup' : 'Código 2FA'}
+              {useBackupCode ? 'Código de Backup' : 'Código de Verificação'}
             </Label>
             <Input
               id="mfa-code"
@@ -136,7 +136,7 @@ export const MFAVerifyDialog = ({ open, onOpenChange, factorId, onSuccess }: MFA
                   Verificando...
                 </>
               ) : (
-                'Verificar Código'
+                'Verificar'
               )}
             </Button>
           </div>
