@@ -42,12 +42,31 @@ export const ResetPasswordForm = () => {
   const [mfaCode, setMfaCode] = useState('');
   const [mfaFactorId, setMfaFactorId] = useState<string>('');
   const [isVerifyingMfa, setIsVerifyingMfa] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string>('');
 
   useEffect(() => {
     // Check if this is a password reset flow
     const checkSession = async () => {
       try {
         const resetMode = searchParams.get('reset');
+        const errorParam = searchParams.get('error');
+        const errorCode = searchParams.get('error_code');
+        const errorDescription = searchParams.get('error_description');
+        
+        // Check for errors in URL first
+        if (errorParam || errorCode) {
+          setIsCheckingSession(false);
+          setIsValidSession(false);
+          
+          if (errorCode === 'otp_expired') {
+            setErrorMessage('Este link de recuperação expirou. Por favor, solicite um novo link de recuperação.');
+          } else if (errorDescription) {
+            setErrorMessage(decodeURIComponent(errorDescription));
+          } else {
+            setErrorMessage('Link inválido. Por favor, solicite um novo link de recuperação.');
+          }
+          return;
+        }
         
         if (resetMode === 'true') {
           const { data: { session } } = await supabase.auth.getSession();
@@ -64,6 +83,8 @@ export const ResetPasswordForm = () => {
               setNeedsMfa(true);
               setMfaFactorId(totpFactor.id);
             }
+          } else {
+            setIsValidSession(false);
           }
         }
       } catch (error) {
@@ -212,12 +233,17 @@ export const ResetPasswordForm = () => {
         <CardHeader>
           <CardTitle>Link Inválido ou Expirado</CardTitle>
           <CardDescription>
-            Este link de recuperação de senha é inválido ou já expirou.
+            {errorMessage || 'Este link de recuperação de senha é inválido ou já expirou.'}
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
+          <Alert>
+            <AlertDescription>
+              Para sua segurança, os links de recuperação expiram após um curto período de tempo. Solicite um novo link para continuar.
+            </AlertDescription>
+          </Alert>
           <Button onClick={() => navigate('/auth')} className="w-full">
-            Voltar ao Login
+            Voltar ao Login e Solicitar Novo Link
           </Button>
         </CardContent>
       </Card>
