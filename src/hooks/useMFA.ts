@@ -49,20 +49,34 @@ export const useMFA = () => {
 
       if (error) throw error;
 
-      // Generate QR code with minimal settings to reduce data size
-      const qrCodeUrl = await QRCode.toDataURL(data.totp.qr_code, {
-        errorCorrectionLevel: 'L', // Lowest error correction = smallest QR code
-        margin: 1,
-        width: 200, // Smaller width
-        type: 'image/png',
-      });
+      console.log('TOTP URI length:', data.totp.qr_code.length);
+      console.log('TOTP URI:', data.totp.qr_code);
 
-      return {
-        factorId: data.id,
-        qrCode: qrCodeUrl,
-        secret: data.totp.secret,
-        uri: data.totp.qr_code,
-      };
+      // Try to generate QR code with the smallest possible settings
+      try {
+        const qrCodeUrl = await QRCode.toDataURL(data.totp.qr_code, {
+          errorCorrectionLevel: 'L',
+          margin: 1,
+          width: 150,
+          version: 10, // Force larger version to accommodate more data
+        });
+
+        return {
+          factorId: data.id,
+          qrCode: qrCodeUrl,
+          secret: data.totp.secret,
+          uri: data.totp.qr_code,
+        };
+      } catch (qrError) {
+        console.error('QR Code generation failed, returning secret only:', qrError);
+        // Return without QR code if it fails
+        return {
+          factorId: data.id,
+          qrCode: null,
+          secret: data.totp.secret,
+          uri: data.totp.qr_code,
+        };
+      }
     } catch (error: any) {
       toast({
         title: 'Erro ao configurar 2FA',

@@ -127,35 +127,67 @@ export const MFAEnrollDialog = ({ open, onOpenChange, onSuccess }: MFAEnrollDial
           <div className="space-y-4">
             {enrollmentData && (
               <>
-                <div className="flex flex-col items-center space-y-4">
-                  <div className="p-4 bg-white rounded-lg">
-                    <img 
-                      src={enrollmentData.qrCode} 
-                      alt="QR Code para 2FA"
-                      className="w-48 h-48"
-                    />
-                  </div>
-                  
-                  <div className="w-full space-y-2">
-                    <Label className="text-xs text-muted-foreground">
-                      Ou insira manualmente este código:
-                    </Label>
-                    <div className="flex gap-2">
-                      <Input 
-                        value={enrollmentData.secret}
-                        readOnly
-                        className="font-mono text-sm"
+                {enrollmentData.qrCode ? (
+                  <div className="flex flex-col items-center space-y-4">
+                    <div className="p-4 bg-white rounded-lg">
+                      <img 
+                        src={enrollmentData.qrCode} 
+                        alt="QR Code para 2FA"
+                        className="w-48 h-48"
                       />
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={copySecret}
-                      >
-                        <Copy className="h-4 w-4" />
-                      </Button>
+                    </div>
+                    
+                    <div className="w-full space-y-2">
+                      <Label className="text-xs text-muted-foreground">
+                        Ou insira manualmente este código:
+                      </Label>
+                      <div className="flex gap-2">
+                        <Input 
+                          value={enrollmentData.secret}
+                          readOnly
+                          className="font-mono text-sm"
+                        />
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={copySecret}
+                        >
+                          <Copy className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
                   </div>
-                </div>
+                ) : (
+                  <div className="flex flex-col items-center space-y-4">
+                    <Alert>
+                      <Smartphone className="h-4 w-4" />
+                      <AlertDescription>
+                        Insira manualmente este código no seu aplicativo autenticador:
+                      </AlertDescription>
+                    </Alert>
+                    
+                    <div className="w-full space-y-2">
+                      <Label>Código Secreto</Label>
+                      <div className="flex gap-2">
+                        <Input 
+                          value={enrollmentData.secret}
+                          readOnly
+                          className="font-mono text-sm"
+                        />
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={copySecret}
+                        >
+                          <Copy className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Abra seu aplicativo autenticador e adicione manualmente usando este código
+                      </p>
+                    </div>
+                  </div>
+                )}
 
                 <div className="space-y-2">
                   <Label htmlFor="code">Código de Verificação</Label>
