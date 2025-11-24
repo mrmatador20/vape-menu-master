@@ -23,6 +23,7 @@ import AdminReviews from "./pages/admin/Reviews";
 import AdminShippingRates from "./pages/admin/ShippingRates";
 import AdminSettings from "./pages/admin/Settings";
 import AdminBanners from "./pages/admin/Banners";
+import TrustedDevices from "./pages/TrustedDevices";
 
 const queryClient = new QueryClient();
 
@@ -59,6 +60,11 @@ const App = () => (
             <Route path="/profile" element={
               <ProtectedRoute>
                 <Profile />
+              </ProtectedRoute>
+            } />
+            <Route path="/trusted-devices" element={
+              <ProtectedRoute>
+                <TrustedDevices />
               </ProtectedRoute>
             } />
             <Route path="/admin" element={<AdminLayout />}>

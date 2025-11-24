@@ -7,7 +7,7 @@ import { usePasswordPolicy } from '@/hooks/usePasswordPolicy';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Loader2, User, MapPin, Phone, Calendar, Package, Shield, ShieldCheck, ShieldOff, Key, AlertTriangle } from 'lucide-react';
+import { Loader2, User, MapPin, Phone, Calendar, Package, Shield, ShieldCheck, ShieldOff, Key, AlertTriangle, Smartphone } from 'lucide-react';
 import Header from '@/components/Header';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -534,6 +534,47 @@ const Profile = () => {
                   </ul>
                 </div>
               )}
+            </CardContent>
+          </Card>
+
+          {/* Trusted Devices */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Smartphone className="h-5 w-5" />
+                Dispositivos Confiáveis
+              </CardTitle>
+              <CardDescription>
+                Gerencie os dispositivos que têm acesso à sua conta
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-start justify-between p-4 border rounded-lg">
+                <div className="flex-1 space-y-2">
+                  <h4 className="font-medium">Dispositivos Registrados</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Visualize e gerencie todos os dispositivos que acessaram sua conta. 
+                    Remova dispositivos que você não reconhece para manter sua conta segura.
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigate('/trusted-devices')}
+                >
+                  Gerenciar
+                </Button>
+              </div>
+
+              <div className="bg-muted/50 p-4 rounded-lg space-y-2">
+                <h5 className="font-medium text-sm">O que você pode fazer:</h5>
+                <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
+                  <li>Ver endereço IP e localização de cada dispositivo</li>
+                  <li>Verificar quando cada dispositivo foi usado pela última vez</li>
+                  <li>Remover dispositivos que você não reconhece</li>
+                  <li>Receber alertas quando um novo dispositivo faz login</li>
+                </ul>
+              </div>
             </CardContent>
           </Card>
 
