@@ -180,11 +180,11 @@ const OrderConfirmation = () => {
                 <p className="text-sm font-medium">
                   {getPaymentMethodLabel(orderData.paymentMethod)}
                 </p>
-                {orderData.changeAmount && orderData.changeAmount > 0 && (
+                {orderData.changeAmount && Number(orderData.changeAmount) > 0 && (
                   <p className="text-sm text-muted-foreground mt-2">
-                    Troco para: R$ {orderData.changeAmount.toFixed(2)}
+                    Troco para: R$ {Number(orderData.changeAmount).toFixed(2)}
                     <br />
-                    Troco a ser pago: R$ {(orderData.changeAmount - orderData.totalAmount).toFixed(2)}
+                    Troco a ser pago: R$ {(Number(orderData.changeAmount) - orderData.totalAmount).toFixed(2)}
                   </p>
                 )}
               </CardContent>
