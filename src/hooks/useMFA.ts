@@ -33,12 +33,17 @@ export const useMFA = () => {
     try {
       const { data, error } = await supabase.auth.mfa.enroll({
         factorType: 'totp',
+        issuer: 'NebulaVape',
       });
 
       if (error) throw error;
 
-      // Generate QR code from the URI
-      const qrCodeUrl = await QRCode.toDataURL(data.totp.qr_code);
+      // Generate QR code from the URI with optimized settings for smaller size
+      const qrCodeUrl = await QRCode.toDataURL(data.totp.qr_code, {
+        errorCorrectionLevel: 'M',
+        margin: 1,
+        width: 256,
+      });
 
       return {
         factorId: data.id,
