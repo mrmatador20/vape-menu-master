@@ -45,16 +45,16 @@ export const useMFA = () => {
 
       const { data, error } = await supabase.auth.mfa.enroll({
         factorType: 'totp',
-        friendlyName: 'Autenticador',
       });
 
       if (error) throw error;
 
-      // Generate QR code from the URI with optimized settings for smaller size
+      // Generate QR code with minimal settings to reduce data size
       const qrCodeUrl = await QRCode.toDataURL(data.totp.qr_code, {
-        errorCorrectionLevel: 'M',
+        errorCorrectionLevel: 'L', // Lowest error correction = smallest QR code
         margin: 1,
-        width: 256,
+        width: 200, // Smaller width
+        type: 'image/png',
       });
 
       return {
