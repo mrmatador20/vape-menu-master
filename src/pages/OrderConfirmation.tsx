@@ -5,30 +5,36 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { CheckCircle2, MessageCircle, Package, MapPin, CreditCard, Home } from 'lucide-react';
 import Header from '@/components/Header';
+import { z } from 'zod';
+import { toast } from 'sonner';
 
-interface OrderItem {
-  name: string;
-  quantity: number;
-  price: number;
-  flavor?: string;
-}
+const orderItemSchema = z.object({
+  name: z.string().min(1, 'Nome do produto é obrigatório'),
+  quantity: z.number().int().positive('Quantidade deve ser maior que zero'),
+  price: z.number().nonnegative('Preço deve ser não negativo'),
+  flavor: z.string().optional(),
+});
 
-interface OrderData {
-  orderId: string;
-  items: OrderItem[];
-  totalAmount: number;
-  shippingCost: number;
-  address: {
-    rua: string;
-    numero: string;
-    bairro: string;
-    cidade: string;
-    cep?: string;
-  };
-  paymentMethod: string;
-  changeAmount?: number;
-  whatsappMessage: string;
-}
+const orderDataSchema = z.object({
+  orderId: z.string().uuid('ID do pedido inválido'),
+  items: z.array(orderItemSchema).min(1, 'Pedido deve ter pelo menos um item'),
+  totalAmount: z.number().positive('Valor total deve ser maior que zero'),
+  shippingCost: z.number().nonnegative('Custo de frete deve ser não negativo'),
+  address: z.object({
+    rua: z.string().min(1, 'Rua é obrigatória'),
+    numero: z.string().min(1, 'Número é obrigatório'),
+    bairro: z.string().min(1, 'Bairro é obrigatório'),
+    cidade: z.string().min(1, 'Cidade é obrigatória'),
+    cep: z.string().optional(),
+  }),
+  paymentMethod: z.enum(['credit', 'debit', 'pix', 'cash'], {
+    errorMap: () => ({ message: 'Método de pagamento inválido' }),
+  }),
+  changeAmount: z.number().nonnegative('Valor de troco deve ser não negativo').optional(),
+  whatsappMessage: z.string().min(1, 'Mensagem do WhatsApp é obrigatória'),
+});
+
+type OrderData = z.infer<typeof orderDataSchema>;
 
 const OrderConfirmation = () => {
   const location = useLocation();
@@ -36,12 +42,28 @@ const OrderConfirmation = () => {
   const [orderData, setOrderData] = useState<OrderData | null>(null);
 
   useEffect(() => {
-    const data = location.state as OrderData;
-    if (!data || !data.orderId) {
+    const data = location.state;
+    
+    // Validate data exists
+    if (!data) {
+      console.error('[OrderConfirmation] No data provided in navigation state');
+      toast.error('Dados do pedido não encontrados');
       navigate('/');
       return;
     }
-    setOrderData(data);
+
+    // Validate data format
+    const validationResult = orderDataSchema.safeParse(data);
+    
+    if (!validationResult.success) {
+      console.error('[OrderConfirmation] Invalid order data format:', validationResult.error.errors);
+      toast.error('Formato de dados do pedido inválido. Por favor, tente novamente.');
+      navigate('/');
+      return;
+    }
+
+    console.log('[OrderConfirmation] Data validated successfully');
+    setOrderData(validationResult.data);
   }, [location.state, navigate]);
 
   if (!orderData) {
