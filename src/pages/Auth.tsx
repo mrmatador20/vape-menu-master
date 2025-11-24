@@ -71,13 +71,19 @@ const Auth = () => {
 
         // If sign in was successful, check if MFA is required
         if (!signInError && signInData.user) {
+          console.log('✅ Login successful, checking for MFA...');
+          
           // Check if user has MFA enabled
           const factors = await listFactors();
+          console.log('🔐 MFA Factors:', factors);
           
           if (factors.totp && factors.totp.length > 0) {
             // MFA is enabled, show verification dialog
             const activeFactor = factors.totp.find((f: any) => f.status === 'verified');
+            console.log('🔐 Active MFA Factor:', activeFactor);
+            
             if (activeFactor) {
+              console.log('🚨 MFA Required! Showing dialog...');
               setMfaPending(true);
               setMfaFactorId(activeFactor.id);
               setShowMFADialog(true);
@@ -87,6 +93,7 @@ const Auth = () => {
           }
           
           // No MFA or not required, proceed with login
+          console.log('✅ No MFA required, proceeding with login');
           await logActivity('login');
           toast.success('Login realizado com sucesso!');
         } else if (signInError) {
