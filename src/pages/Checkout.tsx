@@ -313,20 +313,30 @@ const Checkout = () => {
         clearCart();
         toast.success('Pedido realizado com sucesso! Abrindo WhatsApp...');
         
-        // Tentar abrir o WhatsApp primeiro
-        const whatsappWindow = window.open(whatsappUrl, '_blank');
-        
-        if (!whatsappWindow || whatsappWindow.closed || typeof whatsappWindow.closed === 'undefined') {
-          console.warn('[Checkout] WhatsApp popup may be blocked, using location redirect');
-          window.location.href = whatsappUrl;
-        } else {
-          console.log('[Checkout] WhatsApp window opened successfully');
-          // Só navega após um delay para garantir que o WhatsApp abre
-          setTimeout(() => {
-            console.log('[Checkout] Navigating to home');
-            navigate('/');
-          }, 2000);
-        }
+        // Navegar para página de confirmação com os dados do pedido
+        navigate('/order-confirmation', {
+          state: {
+            orderId: order.id,
+            items: items.map(item => ({
+              name: item.name,
+              quantity: item.quantity,
+              price: item.price,
+              flavor: item.flavor
+            })),
+            totalAmount: order.total,
+            shippingCost: shippingCost || 0,
+            address: {
+              rua: formData.rua,
+              numero: formData.numero,
+              bairro: formData.bairro,
+              cidade: formData.cidade,
+              cep: formData.cep
+            },
+            paymentMethod: formData.paymentMethod,
+            changeAmount: validatedData.changeAmount,
+            whatsappMessage: message
+          }
+        });
       } catch (whatsappError) {
         console.error('[Checkout] Critical error in WhatsApp flow:', whatsappError);
         console.error('[Checkout] Error stack:', whatsappError instanceof Error ? whatsappError.stack : 'No stack');
