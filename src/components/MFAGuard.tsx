@@ -1,12 +1,18 @@
 import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 export const MFAGuard = () => {
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
+    // Don't run on auth page - let the Auth component handle MFA flow
+    if (location.pathname === '/auth') {
+      return;
+    }
+
     const checkMFAStatus = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
@@ -23,7 +29,8 @@ export const MFAGuard = () => {
           console.log('🔐 MFA Guard Check:', { 
             hasMFA, 
             currentAAL: aal,
-            shouldBeAAL2: true 
+            shouldBeAAL2: true,
+            currentPath: location.pathname
           });
           
           // If user has MFA enabled but session is only AAL1, force logout
@@ -39,15 +46,23 @@ export const MFAGuard = () => {
       }
     };
 
-    checkMFAStatus();
+    // Small delay to allow Auth page to show MFA dialog first
+    const timeoutId = setTimeout(() => {
+      checkMFAStatus();
+    }, 500);
 
     // Also check when auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {
-      checkMFAStatus();
+      setTimeout(() => {
+        checkMFAStatus();
+      }, 500);
     });
 
-    return () => subscription.unsubscribe();
-  }, [navigate]);
+    return () => {
+      clearTimeout(timeoutId);
+      subscription.unsubscribe();
+    };
+  }, [navigate, location.pathname]);
 
   return null;
 };
