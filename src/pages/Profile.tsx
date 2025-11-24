@@ -125,6 +125,27 @@ const Profile = () => {
     updateProfile(data);
   };
 
+  const handlePhoneChange = (phone: string, onChange: (value: string) => void) => {
+    const cleanPhone = phone.replace(/\D/g, '');
+    let formatted = cleanPhone;
+
+    if (cleanPhone.length <= 10) {
+      // Formato: (00) 0000-0000
+      formatted = cleanPhone.replace(/(\d{2})(\d{0,4})(\d{0,4})/, (_, ddd, p1, p2) => {
+        let result = '';
+        if (ddd) result = `(${ddd}`;
+        if (p1) result += `) ${p1}`;
+        if (p2) result += `-${p2}`;
+        return result;
+      });
+    } else {
+      // Formato: (00) 00000-0000
+      formatted = cleanPhone.slice(0, 11).replace(/(\d{2})(\d{5})(\d{0,4})/, '($1) $2-$3');
+    }
+
+    onChange(formatted);
+  };
+
   const handleCepChange = async (cep: string, onChange: (value: string) => void) => {
     const cleanCep = cep.replace(/\D/g, '');
     const formatted = cleanCep.length > 5 
@@ -222,7 +243,12 @@ const Profile = () => {
                         <FormItem>
                           <FormLabel>Telefone</FormLabel>
                           <FormControl>
-                            <Input placeholder="(00) 00000-0000" {...field} />
+                            <Input 
+                              placeholder="(00) 00000-0000" 
+                              maxLength={15}
+                              {...field}
+                              onChange={(e) => handlePhoneChange(e.target.value, field.onChange)}
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
