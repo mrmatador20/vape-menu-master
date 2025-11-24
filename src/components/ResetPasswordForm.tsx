@@ -132,7 +132,12 @@ export const ResetPasswordForm = () => {
   };
 
   const handleVerifyMfa = async () => {
-    console.log('=== MFA VERIFICATION STARTED ===');
+    console.log('=== MFA VERIFICATION STARTED (RESET PASSWORD) ===');
+    console.log('Current state:', { 
+      mfaCodeLength: mfaCode.length,
+      mfaFactorId,
+      isVerifyingMfa 
+    });
     
     if (mfaCode.length !== 6) {
       console.log('Invalid code length:', mfaCode.length);
@@ -142,12 +147,14 @@ export const ResetPasswordForm = () => {
       return;
     }
 
-    console.log('Step 1: Setting verification state...');
+    console.log('Step 1: Setting verification state to TRUE...');
     setIsVerifyingMfa(true);
     
     // Add timeout protection - max 30 seconds
+    let timeoutTriggered = false;
     const timeoutId = setTimeout(() => {
       console.error('TIMEOUT: MFA verification took too long (30s)');
+      timeoutTriggered = true;
       setIsVerifyingMfa(false);
       toast.error('Tempo esgotado', {
         description: 'A verificação demorou muito. Tente novamente.',
@@ -159,15 +166,24 @@ export const ResetPasswordForm = () => {
       
       // First create a challenge
       console.log('Step 3: Creating challenge...');
-      const { data: challengeData, error: challengeError } = await supabase.auth.mfa.challenge({
+      const challengePromise = supabase.auth.mfa.challenge({
         factorId: mfaFactorId,
       });
+      
+      console.log('Waiting for challenge response...');
+      const { data: challengeData, error: challengeError } = await challengePromise;
 
-      console.log('Challenge response:', { 
+      console.log('Challenge response received:', { 
         hasData: !!challengeData,
         challengeId: challengeData?.id,
-        error: challengeError 
+        hasError: !!challengeError,
+        errorMessage: challengeError?.message
       });
+
+      if (timeoutTriggered) {
+        console.log('Timeout already triggered, aborting...');
+        return;
+      }
 
       if (challengeError) {
         console.error('Challenge error:', challengeError);
@@ -181,16 +197,25 @@ export const ResetPasswordForm = () => {
 
       // Then verify the code
       console.log('Step 4: Verifying code against challenge...');
-      const { data: verifyData, error: verifyError } = await supabase.auth.mfa.verify({
+      const verifyPromise = supabase.auth.mfa.verify({
         factorId: mfaFactorId,
         challengeId: challengeData.id,
         code: mfaCode,
       });
 
-      console.log('Verify response:', { 
+      console.log('Waiting for verify response...');
+      const { data: verifyData, error: verifyError } = await verifyPromise;
+
+      console.log('Verify response received:', { 
         hasData: !!verifyData,
-        error: verifyError 
+        hasError: !!verifyError,
+        errorMessage: verifyError?.message
       });
+
+      if (timeoutTriggered) {
+        console.log('Timeout already triggered after verify, aborting...');
+        return;
+      }
 
       if (verifyError) {
         console.error('Verify error:', verifyError);
@@ -206,7 +231,7 @@ export const ResetPasswordForm = () => {
       });
 
       // MFA verified successfully - update state immediately
-      console.log('Step 6: MFA verification successful, updating state...');
+      console.log('Step 6: MFA verification successful, updating state to FALSE...');
       
       clearTimeout(timeoutId);
       
@@ -214,27 +239,40 @@ export const ResetPasswordForm = () => {
       setNeedsMfa(false);
       setIsVerifyingMfa(false);
       
+      console.log('Step 7: Showing success toast...');
       toast.success('Código verificado!', {
         description: 'Agora você pode redefinir sua senha',
       });
       
-      console.log('=== MFA VERIFICATION COMPLETED ===');
-      return;
+      console.log('=== MFA VERIFICATION COMPLETED SUCCESSFULLY ===');
     } catch (error: any) {
       console.error('=== MFA VERIFICATION ERROR ===');
       console.error('Error details:', {
         message: error?.message,
         status: error?.status,
         code: error?.code,
+        name: error?.name,
         fullError: error
       });
       
-      clearTimeout(timeoutId);
-      setIsVerifyingMfa(false);
-      
-      toast.error('Código incorreto', {
-        description: error?.message || 'Verifique o código e tente novamente',
-      });
+      if (!timeoutTriggered) {
+        clearTimeout(timeoutId);
+        console.log('Setting isVerifyingMfa to FALSE due to error...');
+        setIsVerifyingMfa(false);
+        
+        toast.error('Código incorreto', {
+          description: error?.message || 'Verifique o código e tente novamente',
+        });
+      }
+    } finally {
+      // GARANTIA ABSOLUTA que o loading será desativado
+      console.log('Finally block - ensuring isVerifyingMfa is FALSE...');
+      if (!timeoutTriggered) {
+        setTimeout(() => {
+          console.log('Final safety check - setting isVerifyingMfa to FALSE');
+          setIsVerifyingMfa(false);
+        }, 100);
+      }
     }
   };
 

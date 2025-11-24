@@ -139,7 +139,10 @@ export const ChangePasswordDialog = ({ open, onOpenChange }: ChangePasswordDialo
   };
 
   const handleVerifyMfaForPasswordChange = async () => {
+    console.log('=== MFA VERIFICATION FOR PASSWORD CHANGE STARTED ===');
+    
     if (mfaCode.length !== 6) {
+      console.log('Invalid code length:', mfaCode.length);
       toast({
         title: 'Código inválido',
         description: 'Digite um código de 6 dígitos',
@@ -148,28 +151,65 @@ export const ChangePasswordDialog = ({ open, onOpenChange }: ChangePasswordDialo
       return;
     }
 
+    console.log('Step 1: Setting verification state to true...');
     setIsVerifyingMfa(true);
+    
+    // Add timeout protection - max 30 seconds
+    const timeoutId = setTimeout(() => {
+      console.error('TIMEOUT: MFA verification took too long (30s)');
+      setIsVerifyingMfa(false);
+      toast({
+        title: 'Tempo esgotado',
+        description: 'A verificação demorou muito. Tente novamente.',
+        variant: 'destructive',
+      });
+    }, 30000);
 
     try {
-      console.log('Starting MFA verification for password change...');
+      console.log('Step 2: Starting MFA verification for password change...', { factorId: mfaFactorId });
       
       // Create challenge
+      console.log('Step 3: Creating MFA challenge...');
       const { data: challengeData, error: challengeError } = await supabase.auth.mfa.challenge({
         factorId: mfaFactorId,
       });
 
-      if (challengeError) throw challengeError;
+      console.log('Challenge result:', {
+        hasData: !!challengeData,
+        challengeId: challengeData?.id,
+        error: challengeError?.message
+      });
+
+      if (challengeError) {
+        console.error('Challenge error:', challengeError);
+        throw challengeError;
+      }
+
+      if (!challengeData?.id) {
+        console.error('No challenge ID in response');
+        throw new Error('No challenge ID returned');
+      }
 
       // Verify code
-      const { error: verifyError } = await supabase.auth.mfa.verify({
+      console.log('Step 4: Verifying MFA code...', { challengeId: challengeData.id });
+      const { data: verifyData, error: verifyError } = await supabase.auth.mfa.verify({
         factorId: mfaFactorId,
         challengeId: challengeData.id,
         code: mfaCode,
       });
 
-      if (verifyError) throw verifyError;
+      console.log('Verify result:', {
+        hasData: !!verifyData,
+        error: verifyError?.message
+      });
 
-      console.log('MFA verified - session elevated to AAL2');
+      if (verifyError) {
+        console.error('Verify error:', verifyError);
+        throw verifyError;
+      }
+
+      console.log('Step 5: MFA verified successfully - session elevated to AAL2');
+      clearTimeout(timeoutId);
       setIsVerifyingMfa(false);
       setNeedsMfaVerification(false);
       
@@ -178,28 +218,42 @@ export const ChangePasswordDialog = ({ open, onOpenChange }: ChangePasswordDialo
         description: 'Alterando sua senha...',
       });
 
+      console.log('Step 6: Proceeding to password change...');
       // Now perform password change with elevated session
       await performPasswordChange();
+      
+      console.log('=== MFA VERIFICATION FOR PASSWORD CHANGE COMPLETED ===');
 
     } catch (error: any) {
-      console.error('MFA verification error:', error);
+      console.error('=== MFA VERIFICATION ERROR ===');
+      console.error('Error details:', {
+        message: error?.message,
+        status: error?.status,
+        code: error?.code,
+        fullError: error
+      });
+      
+      clearTimeout(timeoutId);
       setIsVerifyingMfa(false);
       
       toast({
         title: 'Código incorreto',
-        description: 'Verifique o código e tente novamente',
+        description: error?.message || 'Verifique o código e tente novamente',
         variant: 'destructive',
       });
     }
   };
 
   const performPasswordChange = async () => {
-    console.log('Step 3: Setting loading state to true');
+    console.log('=== PERFORMING PASSWORD CHANGE ===');
+    console.log('Step 1: Setting loading state to TRUE');
     setIsChanging(true);
     
     // Add timeout protection - max 30 seconds
+    let timeoutTriggered = false;
     const timeoutId = setTimeout(() => {
       console.error('TIMEOUT: Password change took too long (30s)');
+      timeoutTriggered = true;
       setIsChanging(false);
       toast({
         title: 'Tempo esgotado',
@@ -209,13 +263,18 @@ export const ChangePasswordDialog = ({ open, onOpenChange }: ChangePasswordDialo
     }, 30000);
     
     try {
-      console.log('Step 4: Getting authenticated user...');
+      console.log('Step 2: Getting authenticated user...');
       const { data: { user }, error: getUserError } = await supabase.auth.getUser();
       console.log('User fetch result:', { 
         userId: user?.id, 
         email: user?.email,
         error: getUserError 
       });
+      
+      if (timeoutTriggered) {
+        console.log('Timeout triggered, aborting...');
+        return;
+      }
       
       if (getUserError) {
         console.error('Error getting user:', getUserError);
@@ -227,7 +286,7 @@ export const ChangePasswordDialog = ({ open, onOpenChange }: ChangePasswordDialo
         throw new Error('Usuário não autenticado');
       }
 
-      console.log('Step 5: Updating password...');
+      console.log('Step 3: Updating password...');
       const { data: updateData, error: updateError } = await supabase.auth.updateUser({
         password: newPassword,
       });
@@ -238,12 +297,17 @@ export const ChangePasswordDialog = ({ open, onOpenChange }: ChangePasswordDialo
         errorStatus: updateError?.status 
       });
 
+      if (timeoutTriggered) {
+        console.log('Timeout triggered after update, aborting...');
+        return;
+      }
+
       if (updateError) {
         console.error('Password update failed:', updateError);
         throw updateError;
       }
 
-      console.log('Step 6: Password updated successfully, updating timestamp in profiles...');
+      console.log('Step 4: Password updated successfully, updating timestamp...');
       const { error: timestampError } = await supabase
         .from('profiles')
         .update({ password_changed_at: new Date().toISOString() })
@@ -255,10 +319,10 @@ export const ChangePasswordDialog = ({ open, onOpenChange }: ChangePasswordDialo
         console.log('Timestamp updated successfully');
       }
 
-      console.log('Step 7: Logging activity...');
+      console.log('Step 5: Logging activity...');
       await logActivity('password_changed');
 
-      console.log('Step 8: Password change completed successfully!');
+      console.log('Step 6: Password change completed successfully!');
       clearTimeout(timeoutId);
       setIsChanging(false);
 
@@ -267,7 +331,7 @@ export const ChangePasswordDialog = ({ open, onOpenChange }: ChangePasswordDialo
         description: 'Sua senha foi atualizada. Use a nova senha no próximo login.',
       });
 
-      console.log('Step 9: Closing dialog...');
+      console.log('Step 7: Closing dialog...');
       handleClose();
       
       console.log('=== PASSWORD CHANGE COMPLETED ===');
@@ -280,14 +344,25 @@ export const ChangePasswordDialog = ({ open, onOpenChange }: ChangePasswordDialo
         fullError: error
       });
       
-      clearTimeout(timeoutId);
-      setIsChanging(false);
-      
-      toast({
-        title: 'Erro ao alterar senha',
-        description: error.message || 'Ocorreu um erro inesperado',
-        variant: 'destructive',
-      });
+      if (!timeoutTriggered) {
+        clearTimeout(timeoutId);
+        setIsChanging(false);
+        
+        toast({
+          title: 'Erro ao alterar senha',
+          description: error.message || 'Ocorreu um erro inesperado',
+          variant: 'destructive',
+        });
+      }
+    } finally {
+      // GARANTIA ABSOLUTA que o loading será desativado
+      console.log('Finally block - ensuring isChanging is FALSE...');
+      if (!timeoutTriggered) {
+        setTimeout(() => {
+          console.log('Final safety check - setting isChanging to FALSE');
+          setIsChanging(false);
+        }, 100);
+      }
     }
   };
 
