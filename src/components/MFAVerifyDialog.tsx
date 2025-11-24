@@ -1,11 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Loader2, Shield } from 'lucide-react';
+import { Loader2, Shield, AlertTriangle } from 'lucide-react';
 import { useMFA } from '@/hooks/useMFA';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { toast } from '@/hooks/use-toast';
 
 interface MFAVerifyDialogProps {
   open: boolean;
@@ -19,11 +20,32 @@ export const MFAVerifyDialog = ({ open, onOpenChange, factorId, onSuccess }: MFA
   const [code, setCode] = useState('');
   const [isVerifying, setIsVerifying] = useState(false);
   const [useBackupCode, setUseBackupCode] = useState(false);
+  const [attempts, setAttempts] = useState(0);
+  const [isBlocked, setIsBlocked] = useState(false);
+  const [blockTimeRemaining, setBlockTimeRemaining] = useState(0);
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (isBlocked && blockTimeRemaining > 0) {
+      timer = setInterval(() => {
+        setBlockTimeRemaining((prev) => {
+          if (prev <= 1) {
+            setIsBlocked(false);
+            setAttempts(0);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    return () => clearInterval(timer);
+  }, [isBlocked, blockTimeRemaining]);
 
   const handleVerify = async () => {
     if (!code) return;
     if (!useBackupCode && code.length !== 6) return;
     if (useBackupCode && code.length < 8) return;
+    if (isBlocked) return;
 
     setIsVerifying(true);
     try {
@@ -33,7 +55,7 @@ export const MFAVerifyDialog = ({ open, onOpenChange, factorId, onSuccess }: MFA
           onSuccess();
           handleClose();
         } else {
-          setCode('');
+          handleFailedAttempt();
         }
       } else {
         await verifyMFACode(factorId, code);
@@ -42,16 +64,60 @@ export const MFAVerifyDialog = ({ open, onOpenChange, factorId, onSuccess }: MFA
       }
     } catch (error) {
       console.error('Verification error:', error);
-      setCode('');
+      handleFailedAttempt();
     } finally {
       setIsVerifying(false);
     }
   };
 
-  const handleClose = () => {
+  const handleFailedAttempt = () => {
     setCode('');
-    setUseBackupCode(false);
-    onOpenChange(false);
+    const newAttempts = attempts + 1;
+    setAttempts(newAttempts);
+
+    if (newAttempts >= 5) {
+      setIsBlocked(true);
+      setBlockTimeRemaining(900); // 15 minutos
+      toast({
+        title: 'Conta bloqueada',
+        description: 'Você atingiu o limite de tentativas de login. Para sua segurança, sua conta será bloqueada por 15 minutos.',
+        variant: 'destructive',
+      });
+    } else if (newAttempts >= 3) {
+      toast({
+        title: 'Atenção',
+        description: `Código incorreto. Você tem ${5 - newAttempts} tentativas restantes antes do bloqueio.`,
+        variant: 'destructive',
+      });
+    } else {
+      toast({
+        title: 'Código incorreto',
+        description: 'Verifique o código e tente novamente.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleResendCode = () => {
+    toast({
+      title: 'Código reenviado',
+      description: 'Verifique seu aplicativo autenticador para o novo código.',
+    });
+  };
+
+  const handleClose = () => {
+    if (!isBlocked) {
+      setCode('');
+      setUseBackupCode(false);
+      setAttempts(0);
+      onOpenChange(false);
+    }
+  };
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
   return (
@@ -60,33 +126,53 @@ export const MFAVerifyDialog = ({ open, onOpenChange, factorId, onSuccess }: MFA
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Shield className="h-5 w-5 text-primary" />
-            Verificação de Dois Fatores
+            Autenticação de 2 Fatores - Segurança Extra
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-sm">
             {useBackupCode 
               ? 'Digite um dos seus códigos de backup de 8 caracteres'
-              : 'Digite o código de 6 dígitos do seu aplicativo autenticador'
+              : 'Para garantir que é você quem está acessando sua conta, por favor insira o código de autenticação de 2 fatores enviado para o seu dispositivo.'
             }
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
-          <Alert>
-            <Shield className="h-4 w-4" />
-            <AlertDescription>
-              Perdeu acesso ao seu dispositivo?{' '}
-              <button
-                onClick={() => setUseBackupCode(!useBackupCode)}
-                className="underline font-medium"
-              >
-                {useBackupCode ? 'Usar código do app' : 'Usar código de backup'}
-              </button>
-            </AlertDescription>
-          </Alert>
+          {isBlocked && (
+            <Alert variant="destructive">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>
+                Você atingiu o limite de tentativas de login. Para sua segurança, sua conta está bloqueada por {formatTime(blockTimeRemaining)}. Se precisar de ajuda, entre em contato com o suporte.
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {!useBackupCode && !isBlocked && (
+            <Alert>
+              <Shield className="h-4 w-4" />
+              <AlertDescription className="text-xs">
+                Caso não tenha recebido o código ou tenha problemas para acessá-lo, verifique o aplicativo de autenticação (Google Authenticator, Authy, etc.).
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {!isBlocked && (
+            <Alert>
+              <Shield className="h-4 w-4" />
+              <AlertDescription>
+                Perdeu acesso ao seu dispositivo?{' '}
+                <button
+                  onClick={() => setUseBackupCode(!useBackupCode)}
+                  className="underline font-medium"
+                >
+                  {useBackupCode ? 'Usar código do app' : 'Usar código de backup'}
+                </button>
+              </AlertDescription>
+            </Alert>
+          )}
 
           <div className="space-y-2">
             <Label htmlFor="mfa-code">
-              {useBackupCode ? 'Código de Backup' : 'Código de Verificação'}
+              {useBackupCode ? 'Código de Backup' : 'Digite o Código 2FA'}
             </Label>
             <Input
               id="mfa-code"
@@ -100,7 +186,7 @@ export const MFAVerifyDialog = ({ open, onOpenChange, factorId, onSuccess }: MFA
                 }
               }}
               onKeyDown={(e) => {
-                if (e.key === 'Enter') {
+                if (e.key === 'Enter' && !isBlocked) {
                   if (useBackupCode && code.length >= 8) {
                     handleVerify();
                   } else if (!useBackupCode && code.length === 6) {
@@ -110,21 +196,35 @@ export const MFAVerifyDialog = ({ open, onOpenChange, factorId, onSuccess }: MFA
               }}
               maxLength={useBackupCode ? 9 : 6}
               autoFocus
+              disabled={isBlocked}
               className="text-center text-2xl tracking-widest font-mono"
             />
           </div>
+
+          {!useBackupCode && !isBlocked && (
+            <div className="text-center">
+              <button
+                onClick={handleResendCode}
+                className="text-sm text-primary hover:underline"
+              >
+                Não recebeu o código? Clique aqui para reenviar.
+              </button>
+            </div>
+          )}
 
           <div className="flex gap-2">
             <Button
               variant="outline"
               onClick={handleClose}
               className="flex-1"
+              disabled={isBlocked}
             >
               Cancelar
             </Button>
             <Button
               onClick={handleVerify}
               disabled={
+                isBlocked ||
                 isVerifying || 
                 (useBackupCode ? code.length < 8 : code.length !== 6)
               }
@@ -136,7 +236,7 @@ export const MFAVerifyDialog = ({ open, onOpenChange, factorId, onSuccess }: MFA
                   Verificando...
                 </>
               ) : (
-                'Verificar'
+                'Verificar Código'
               )}
             </Button>
           </div>
