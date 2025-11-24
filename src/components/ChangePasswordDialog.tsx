@@ -4,15 +4,21 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, Key, Eye, EyeOff, Check, X } from 'lucide-react';
+import { Loader2, Key, Eye, EyeOff, Check, X, Shield } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { logActivity } from '@/hooks/useActivityLogs';
 import { z } from 'zod';
+import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 
 interface ChangePasswordDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+}
+
+interface MFAFactor {
+  id: string;
+  status: string;
 }
 
 const passwordSchema = z.object({
@@ -40,6 +46,12 @@ export const ChangePasswordDialog = ({ open, onOpenChange }: ChangePasswordDialo
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isChanging, setIsChanging] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  
+  // MFA verification states
+  const [needsMfaVerification, setNeedsMfaVerification] = useState(false);
+  const [mfaCode, setMfaCode] = useState('');
+  const [mfaFactorId, setMfaFactorId] = useState('');
+  const [isVerifyingMfa, setIsVerifyingMfa] = useState(false);
 
   const getPasswordStrength = (password: string): PasswordStrength => {
     let strength = 0;
@@ -94,7 +106,95 @@ export const ChangePasswordDialog = ({ open, onOpenChange }: ChangePasswordDialo
       return;
     }
 
-    console.log('Step 2: Setting loading state to true');
+    console.log('Step 2: Checking if user has MFA enabled...');
+    
+    try {
+      const { data } = await supabase.auth.mfa.listFactors();
+      const totpFactor = data?.totp?.find((f: MFAFactor) => f.status === 'verified');
+      
+      console.log('MFA check result:', { 
+        hasMFA: !!totpFactor,
+        factorId: totpFactor?.id 
+      });
+      
+      if (totpFactor) {
+        console.log('User has MFA - requiring verification before password change');
+        setMfaFactorId(totpFactor.id);
+        setNeedsMfaVerification(true);
+        return; // Stop here and wait for MFA verification
+      }
+      
+      // No MFA - proceed directly to password change
+      console.log('No MFA detected - proceeding with password change');
+      await performPasswordChange();
+      
+    } catch (error: any) {
+      console.error('Error checking MFA status:', error);
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível verificar o status do MFA',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleVerifyMfaForPasswordChange = async () => {
+    if (mfaCode.length !== 6) {
+      toast({
+        title: 'Código inválido',
+        description: 'Digite um código de 6 dígitos',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsVerifyingMfa(true);
+
+    try {
+      console.log('Starting MFA verification for password change...');
+      
+      // Create challenge
+      const { data: challengeData, error: challengeError } = await supabase.auth.mfa.challenge({
+        factorId: mfaFactorId,
+      });
+
+      if (challengeError) throw challengeError;
+
+      // Verify code
+      const { error: verifyError } = await supabase.auth.mfa.verify({
+        factorId: mfaFactorId,
+        challengeId: challengeData.id,
+        code: mfaCode,
+      });
+
+      if (verifyError) throw verifyError;
+
+      console.log('MFA verified - session elevated to AAL2');
+      setIsVerifyingMfa(false);
+      setNeedsMfaVerification(false);
+      
+      toast({
+        title: 'Código verificado!',
+        description: 'Alterando sua senha...',
+      });
+
+      // Now perform password change with elevated session
+      await performPasswordChange();
+
+    } catch (error: any) {
+      console.error('MFA verification error:', error);
+      setIsVerifyingMfa(false);
+      
+      toast({
+        title: 'Código incorreto',
+        description: 'Verifique o código e tente novamente',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const performPasswordChange = async () => {
+    console.log('Step 3: Setting loading state to true');
     setIsChanging(true);
     
     // Add timeout protection - max 30 seconds
@@ -109,7 +209,7 @@ export const ChangePasswordDialog = ({ open, onOpenChange }: ChangePasswordDialo
     }, 30000);
     
     try {
-      console.log('Step 3: Getting authenticated user...');
+      console.log('Step 4: Getting authenticated user...');
       const { data: { user }, error: getUserError } = await supabase.auth.getUser();
       console.log('User fetch result:', { 
         userId: user?.id, 
@@ -127,40 +227,7 @@ export const ChangePasswordDialog = ({ open, onOpenChange }: ChangePasswordDialo
         throw new Error('Usuário não autenticado');
       }
 
-      console.log('Step 4: Checking current session and MFA status...');
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      console.log('Session info:', { 
-        hasSession: !!session,
-        userId: session?.user?.id,
-        error: sessionError
-      });
-
-      // For users with MFA, we need to verify current password first
-      console.log('Step 5: Verifying current password by re-authenticating...');
-      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-        email: user.email,
-        password: currentPassword,
-      });
-      
-      console.log('Sign-in verification result:', { 
-        success: !!signInData.session,
-        error: signInError?.message 
-      });
-
-      if (signInError) {
-        console.error('Current password verification failed:', signInError);
-        clearTimeout(timeoutId);
-        setIsChanging(false);
-        setErrors({ currentPassword: 'Senha atual incorreta' });
-        toast({
-          title: 'Senha atual incorreta',
-          description: 'Verifique sua senha atual e tente novamente.',
-          variant: 'destructive',
-        });
-        return;
-      }
-
-      console.log('Step 6: Current password verified, now updating to new password...');
+      console.log('Step 5: Updating password...');
       const { data: updateData, error: updateError } = await supabase.auth.updateUser({
         password: newPassword,
       });
@@ -176,7 +243,7 @@ export const ChangePasswordDialog = ({ open, onOpenChange }: ChangePasswordDialo
         throw updateError;
       }
 
-      console.log('Step 7: Password updated successfully, updating timestamp in profiles...');
+      console.log('Step 6: Password updated successfully, updating timestamp in profiles...');
       const { error: timestampError } = await supabase
         .from('profiles')
         .update({ password_changed_at: new Date().toISOString() })
@@ -188,10 +255,10 @@ export const ChangePasswordDialog = ({ open, onOpenChange }: ChangePasswordDialo
         console.log('Timestamp updated successfully');
       }
 
-      console.log('Step 8: Logging activity...');
+      console.log('Step 7: Logging activity...');
       await logActivity('password_changed');
 
-      console.log('Step 9: Password change completed successfully!');
+      console.log('Step 8: Password change completed successfully!');
       clearTimeout(timeoutId);
       setIsChanging(false);
 
@@ -200,7 +267,7 @@ export const ChangePasswordDialog = ({ open, onOpenChange }: ChangePasswordDialo
         description: 'Sua senha foi atualizada. Use a nova senha no próximo login.',
       });
 
-      console.log('Step 10: Closing dialog...');
+      console.log('Step 9: Closing dialog...');
       handleClose();
       
       console.log('=== PASSWORD CHANGE COMPLETED ===');
@@ -232,6 +299,10 @@ export const ChangePasswordDialog = ({ open, onOpenChange }: ChangePasswordDialo
     setShowNewPassword(false);
     setShowConfirmPassword(false);
     setErrors({});
+    setNeedsMfaVerification(false);
+    setMfaCode('');
+    setMfaFactorId('');
+    setIsVerifyingMfa(false);
     onOpenChange(false);
   };
 
@@ -248,146 +319,216 @@ export const ChangePasswordDialog = ({ open, onOpenChange }: ChangePasswordDialo
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Key className="h-5 w-5 text-primary" />
-            Alterar Senha
+            {needsMfaVerification ? (
+              <>
+                <Shield className="h-5 w-5 text-primary" />
+                Verificação 2FA
+              </>
+            ) : (
+              <>
+                <Key className="h-5 w-5 text-primary" />
+                Alterar Senha
+              </>
+            )}
           </DialogTitle>
           <DialogDescription>
-            Digite sua senha atual e escolha uma nova senha forte
+            {needsMfaVerification 
+              ? 'Para garantir a segurança da sua conta, digite o código do seu autenticador'
+              : 'Digite sua senha atual e escolha uma nova senha forte'
+            }
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="current-password">Senha Atual</Label>
-            <div className="relative">
-              <Input
-                id="current-password"
-                type={showCurrentPassword ? 'text' : 'password'}
-                value={currentPassword}
-                onChange={(e) => setCurrentPassword(e.target.value)}
-                className={errors.currentPassword ? 'border-destructive' : ''}
-              />
-              <button
-                type="button"
-                onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-              >
-                {showCurrentPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </button>
-            </div>
-            {errors.currentPassword && (
-              <p className="text-xs text-destructive">{errors.currentPassword}</p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="new-password">Nova Senha</Label>
-            <div className="relative">
-              <Input
-                id="new-password"
-                type={showNewPassword ? 'text' : 'password'}
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                className={errors.newPassword ? 'border-destructive' : ''}
-              />
-              <button
-                type="button"
-                onClick={() => setShowNewPassword(!showNewPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-              >
-                {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </button>
-            </div>
-            {errors.newPassword && (
-              <p className="text-xs text-destructive">{errors.newPassword}</p>
-            )}
-            
-            {newPassword && (
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
-                    <div 
-                      className={`h-full transition-all ${getStrengthColor(passwordStrength)}`}
-                      style={{ width: passwordStrength === 'weak' ? '33%' : passwordStrength === 'medium' ? '66%' : '100%' }}
-                    />
-                  </div>
-                  <span className="text-xs font-medium capitalize">
-                    {passwordStrength === 'weak' ? 'Fraca' : passwordStrength === 'medium' ? 'Média' : 'Forte'}
-                  </span>
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="confirm-password">Confirmar Nova Senha</Label>
-            <div className="relative">
-              <Input
-                id="confirm-password"
-                type={showConfirmPassword ? 'text' : 'password'}
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                className={errors.confirmPassword ? 'border-destructive' : ''}
-              />
-              <button
-                type="button"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-              >
-                {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </button>
-            </div>
-            {errors.confirmPassword && (
-              <p className="text-xs text-destructive">{errors.confirmPassword}</p>
-            )}
-          </div>
-
-          {newPassword && (
+        {needsMfaVerification ? (
+          // MFA Verification Screen
+          <div className="space-y-4">
             <Alert>
+              <Shield className="h-4 w-4" />
               <AlertDescription>
-                <div className="space-y-1">
-                  <p className="text-xs font-medium mb-2">Requisitos da senha:</p>
-                  {passwordRequirements.map((req, index) => (
-                    <div key={index} className="flex items-center gap-2 text-xs">
-                      {req.met ? (
-                        <Check className="h-3 w-3 text-green-500" />
-                      ) : (
-                        <X className="h-3 w-3 text-muted-foreground" />
-                      )}
-                      <span className={req.met ? 'text-green-500' : 'text-muted-foreground'}>
-                        {req.label}
-                      </span>
-                    </div>
-                  ))}
-                </div>
+                Sua conta tem autenticação de dois fatores habilitada. Por segurança, você precisa verificar sua identidade antes de alterar a senha.
               </AlertDescription>
             </Alert>
-          )}
 
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              onClick={handleClose}
-              className="flex-1"
-            >
-              Cancelar
-            </Button>
-            <Button
-              onClick={handleChangePassword}
-              disabled={isChanging || !currentPassword || !newPassword || !confirmPassword}
-              className="flex-1"
-            >
-              {isChanging ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Alterando...
-                </>
-              ) : (
-                'Alterar Senha'
-              )}
-            </Button>
+            <div className="space-y-2">
+              <Label htmlFor="mfa-code">Código 2FA</Label>
+              <InputOTP
+                maxLength={6}
+                value={mfaCode}
+                onChange={setMfaCode}
+              >
+                <InputOTPGroup>
+                  <InputOTPSlot index={0} />
+                  <InputOTPSlot index={1} />
+                  <InputOTPSlot index={2} />
+                  <InputOTPSlot index={3} />
+                  <InputOTPSlot index={4} />
+                  <InputOTPSlot index={5} />
+                </InputOTPGroup>
+              </InputOTP>
+              <p className="text-xs text-muted-foreground">
+                Abra seu aplicativo autenticador e digite o código de 6 dígitos
+              </p>
+            </div>
+
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={handleClose}
+                className="flex-1"
+              >
+                Cancelar
+              </Button>
+              <Button
+                onClick={handleVerifyMfaForPasswordChange}
+                disabled={isVerifyingMfa || mfaCode.length !== 6}
+                className="flex-1"
+              >
+                {isVerifyingMfa ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Verificando...
+                  </>
+                ) : (
+                  'Verificar Código'
+                )}
+              </Button>
+            </div>
           </div>
-        </div>
+        ) : (
+          // Password Change Form
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="current-password">Senha Atual</Label>
+              <div className="relative">
+                <Input
+                  id="current-password"
+                  type={showCurrentPassword ? 'text' : 'password'}
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  className={errors.currentPassword ? 'border-destructive' : ''}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  {showCurrentPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+              {errors.currentPassword && (
+                <p className="text-xs text-destructive">{errors.currentPassword}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="new-password">Nova Senha</Label>
+              <div className="relative">
+                <Input
+                  id="new-password"
+                  type={showNewPassword ? 'text' : 'password'}
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  className={errors.newPassword ? 'border-destructive' : ''}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowNewPassword(!showNewPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+              {errors.newPassword && (
+                <p className="text-xs text-destructive">{errors.newPassword}</p>
+              )}
+              
+              {newPassword && (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                      <div 
+                        className={`h-full transition-all ${getStrengthColor(passwordStrength)}`}
+                        style={{ width: passwordStrength === 'weak' ? '33%' : passwordStrength === 'medium' ? '66%' : '100%' }}
+                      />
+                    </div>
+                    <span className="text-xs font-medium capitalize">
+                      {passwordStrength === 'weak' ? 'Fraca' : passwordStrength === 'medium' ? 'Média' : 'Forte'}
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="confirm-password">Confirmar Nova Senha</Label>
+              <div className="relative">
+                <Input
+                  id="confirm-password"
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className={errors.confirmPassword ? 'border-destructive' : ''}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+              {errors.confirmPassword && (
+                <p className="text-xs text-destructive">{errors.confirmPassword}</p>
+              )}
+            </div>
+
+            {newPassword && (
+              <Alert>
+                <AlertDescription>
+                  <div className="space-y-1">
+                    <p className="text-xs font-medium mb-2">Requisitos da senha:</p>
+                    {passwordRequirements.map((req, index) => (
+                      <div key={index} className="flex items-center gap-2 text-xs">
+                        {req.met ? (
+                          <Check className="h-3 w-3 text-green-500" />
+                        ) : (
+                          <X className="h-3 w-3 text-muted-foreground" />
+                        )}
+                        <span className={req.met ? 'text-green-500' : 'text-muted-foreground'}>
+                          {req.label}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </AlertDescription>
+              </Alert>
+            )}
+
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={handleClose}
+                className="flex-1"
+              >
+                Cancelar
+              </Button>
+              <Button
+                onClick={handleChangePassword}
+                disabled={isChanging || !currentPassword || !newPassword || !confirmPassword}
+                className="flex-1"
+              >
+                {isChanging ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Alterando...
+                  </>
+                ) : (
+                  'Alterar Senha'
+                )}
+              </Button>
+            </div>
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );
