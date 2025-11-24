@@ -30,11 +30,18 @@ export const MFAEnrollDialog = ({ open, onOpenChange, onSuccess }: MFAEnrollDial
 
   const handleEnroll = async () => {
     try {
+      console.log('🎯 [Dialog] Iniciando enrollment...');
       const data = await enrollMFA();
+      console.log('🎯 [Dialog] Dados recebidos:', {
+        hasQrCode: !!data.qrCode,
+        hasSecret: !!data.secret,
+        factorId: data.factorId,
+      });
       setEnrollmentData(data);
       setStep('verify');
+      console.log('✅ [Dialog] Estado atualizado, mudando para step verify');
     } catch (error) {
-      console.error('Enrollment error:', error);
+      console.error('❌ [Dialog] Erro no enrollment:', error);
     }
   };
 
@@ -143,11 +150,13 @@ export const MFAEnrollDialog = ({ open, onOpenChange, onSuccess }: MFAEnrollDial
                   <TabsContent value="qrcode" className="space-y-4 mt-4">
                     {enrollmentData.qrCode ? (
                       <div className="flex flex-col items-center space-y-4">
-                        <div className="p-4 bg-white rounded-lg">
+                        <div className="p-3 bg-white rounded-lg">
                           <img 
                             src={enrollmentData.qrCode} 
                             alt="QR Code para 2FA"
-                            className="w-48 h-48"
+                            className="w-32 h-32"
+                            onLoad={() => console.log('✅ [IMG] QR code carregado com sucesso!')}
+                            onError={(e) => console.error('❌ [IMG] Erro ao carregar QR code:', e)}
                           />
                         </div>
                         <p className="text-sm text-muted-foreground text-center">
