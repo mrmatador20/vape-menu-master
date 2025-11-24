@@ -7,6 +7,7 @@ import { Loader2, Shield, AlertTriangle } from 'lucide-react';
 import { useMFA } from '@/hooks/useMFA';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 interface MFAVerifyDialogProps {
   open: boolean;
@@ -70,10 +71,32 @@ export const MFAVerifyDialog = ({ open, onOpenChange, factorId, onSuccess }: MFA
     }
   };
 
-  const handleFailedAttempt = () => {
+  const handleFailedAttempt = async () => {
     setCode('');
     const newAttempts = attempts + 1;
     setAttempts(newAttempts);
+
+    // Send security alert email
+    if (newAttempts >= 3) {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user?.email) {
+          await supabase.functions.invoke('send-security-alert', {
+            body: {
+              alertType: newAttempts >= 5 ? 'account_blocked' : 'failed_2fa',
+              email: user.email,
+              details: {
+                attempts: newAttempts,
+                userAgent: navigator.userAgent,
+                timestamp: new Date().toISOString(),
+              },
+            },
+          });
+        }
+      } catch (emailError) {
+        console.error('Failed to send security alert:', emailError);
+      }
+    }
 
     if (newAttempts >= 5) {
       setIsBlocked(true);

@@ -2,3 +2,6 @@ project_id = "bupbucfdisqedteazifs"
 
 [functions.create-order]
 verify_jwt = true
+
+[functions.send-security-alert]
+verify_jwt = true

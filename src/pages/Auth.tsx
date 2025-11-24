@@ -176,10 +176,17 @@ const Auth = () => {
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                 required
-                minLength={6}
+                minLength={8}
+                pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])[A-Za-z\d@$!%*?&#]{8,}$"
+                title="A senha deve ter no mínimo 8 caracteres, incluindo: maiúsculas, minúsculas, números e caracteres especiais (@$!%*?&#)"
                 className="bg-background border-border text-foreground"
                 placeholder="••••••••"
               />
+              {isSignUp && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Mínimo 8 caracteres com maiúsculas, minúsculas, números e símbolos (@$!%*?&#)
+                </p>
+              )}
             </div>
 
             <Button
