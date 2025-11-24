@@ -50,26 +50,24 @@ export const ResetPasswordForm = () => {
         const resetMode = searchParams.get('reset');
         
         if (resetMode === 'true') {
-          // Add timeout to prevent infinite loading
-          const timeoutPromise = new Promise<void>((_, reject) => 
-            setTimeout(() => reject(new Error('Session check timeout')), 5000)
-          );
-
-          const sessionPromise = supabase.auth.getSession();
+          const { data: { session } } = await supabase.auth.getSession();
           
-          // Race between session check and timeout
-          const result = await Promise.race([sessionPromise, timeoutPromise]);
-          
-          if (result && 'data' in result) {
-            const { data: { session } } = result;
-            if (session) {
-              setIsValidSession(true);
+          if (session) {
+            setIsValidSession(true);
+            
+            // Check if user has MFA enabled
+            const { data: mfaData } = await supabase.auth.mfa.listFactors();
+            const totpFactor = mfaData?.all?.find(f => f.factor_type === 'totp' && f.status === 'verified');
+            
+            if (totpFactor) {
+              // User has MFA enabled, require verification before password reset
+              setNeedsMfa(true);
+              setMfaFactorId(totpFactor.id);
             }
           }
         }
       } catch (error) {
         console.error('Error checking session:', error);
-        // On error, allow user to see invalid session message
         setIsValidSession(false);
       } finally {
         setIsCheckingSession(false);
@@ -133,39 +131,25 @@ export const ResetPasswordForm = () => {
 
     setIsVerifyingMfa(true);
     
-    // Add timeout to prevent infinite loading
-    const timeoutPromise = new Promise((_, reject) => 
-      setTimeout(() => reject(new Error('Timeout')), 10000)
-    );
-
     try {
-      const verifyPromise = supabase.auth.mfa.challengeAndVerify({
+      const { error } = await supabase.auth.mfa.challengeAndVerify({
         factorId: mfaFactorId,
         code: mfaCode,
       });
-
-      const { error } = await Promise.race([verifyPromise, timeoutPromise]) as any;
 
       if (error) throw error;
 
       // MFA verified, session is now AAL2, can proceed with password reset
       setNeedsMfa(false);
       setMfaCode('');
-      toast.success('Código verificado!', {
+      toast.success('Código verificado com sucesso!', {
         description: 'Agora você pode redefinir sua senha',
       });
     } catch (error: any) {
       console.error('MFA verification error:', error);
-      
-      if (error.message === 'Timeout') {
-        toast.error('Tempo esgotado', {
-          description: 'A verificação demorou muito. Tente novamente.',
-        });
-      } else {
-        toast.error('Código incorreto', {
-          description: 'Verifique o código e tente novamente',
-        });
-      }
+      toast.error('Código incorreto', {
+        description: 'Verifique o código no seu autenticador e tente novamente',
+      });
       setMfaCode('');
     } finally {
       setIsVerifyingMfa(false);
@@ -264,21 +248,36 @@ export const ResetPasswordForm = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Shield className="h-5 w-5 text-primary" />
-            Verificação 2FA
+            Autenticação de Dois Fatores - Segurança Extra
           </CardTitle>
           <CardDescription>
-            Digite o código do seu autenticador para continuar
+            Reautenticação necessária para atualização de senha
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-6">
           <Alert>
-            <AlertDescription>
-              Sua conta tem autenticação de dois fatores habilitada. Por segurança, você precisa verificar sua identidade antes de redefinir a senha.
+            <Shield className="h-4 w-4" />
+            <AlertDescription className="space-y-3">
+              <p className="font-medium">
+                Para garantir a segurança da sua conta, é necessário realizar uma reautenticação com autenticação de dois fatores (MFA) antes de poder atualizar sua senha.
+              </p>
+              
+              <div className="space-y-2 text-sm">
+                <p className="font-medium">Passos para continuar:</p>
+                <ol className="list-decimal list-inside space-y-1 ml-2">
+                  <li>Insira o código de verificação enviado pelo seu aplicativo de autenticação (Google Authenticator, Authy, etc.).</li>
+                  <li>Após a verificação, você poderá continuar com a atualização da sua senha.</li>
+                </ol>
+              </div>
+
+              <p className="text-xs text-muted-foreground pt-2 border-t">
+                <strong>Importante:</strong> A autenticação de dois fatores é uma medida de segurança para proteger sua conta contra acessos não autorizados. Certifique-se de que o código inserido seja válido e recente.
+              </p>
             </AlertDescription>
           </Alert>
 
           <div className="space-y-2">
-            <Label htmlFor="mfa-code">Código 2FA</Label>
+            <Label htmlFor="mfa-code">Digite o Código 2FA</Label>
             <InputOTP
               maxLength={6}
               value={mfaCode}
@@ -294,32 +293,42 @@ export const ResetPasswordForm = () => {
               </InputOTPGroup>
             </InputOTP>
             <p className="text-xs text-muted-foreground">
-              Abra seu aplicativo autenticador e digite o código de 6 dígitos
+              Abra seu aplicativo autenticador (Google Authenticator, Authy, etc.) e digite o código de 6 dígitos
             </p>
           </div>
 
-          <Button
-            onClick={handleVerifyMfa}
-            disabled={isVerifyingMfa || mfaCode.length !== 6}
-            className="w-full"
-          >
-            {isVerifyingMfa ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Verificando...
-              </>
-            ) : (
-              'Verificar Código'
-            )}
-          </Button>
+          <div className="space-y-2">
+            <Button
+              onClick={handleVerifyMfa}
+              disabled={isVerifyingMfa || mfaCode.length !== 6}
+              className="w-full"
+            >
+              {isVerifyingMfa ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Verificando...
+                </>
+              ) : (
+                'Confirmar Código MFA'
+              )}
+            </Button>
 
-          <Button
-            variant="outline"
-            onClick={() => navigate('/auth')}
-            className="w-full"
-          >
-            Cancelar
-          </Button>
+            <Button
+              variant="outline"
+              onClick={() => window.open('https://support.google.com/accounts/answer/1066447', '_blank')}
+              className="w-full"
+            >
+              Precisa de ajuda com a autenticação de dois fatores?
+            </Button>
+
+            <Button
+              variant="ghost"
+              onClick={() => navigate('/auth')}
+              className="w-full"
+            >
+              Cancelar
+            </Button>
+          </div>
         </CardContent>
       </Card>
     );
