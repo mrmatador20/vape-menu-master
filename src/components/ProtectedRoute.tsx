@@ -13,15 +13,49 @@ export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const location = useLocation();
 
   useEffect(() => {
-    // Check current session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setIsAuthenticated(!!session);
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session) {
+        // Check if user has MFA enabled
+        const { data: factors } = await supabase.auth.mfa.listFactors();
+        const hasMFA = factors?.totp && factors.totp.length > 0;
+        
+        if (hasMFA) {
+          // User has MFA, verify AAL2 level
+          const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+          setIsAuthenticated(aal?.currentLevel === 'aal2');
+        } else {
+          // No MFA required
+          setIsAuthenticated(true);
+        }
+      } else {
+        setIsAuthenticated(false);
+      }
+      
       setIsLoading(false);
-    });
+    };
+
+    checkAuth();
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      setIsAuthenticated(!!session);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session) {
+        // Check if user has MFA enabled
+        const { data: factors } = await supabase.auth.mfa.listFactors();
+        const hasMFA = factors?.totp && factors.totp.length > 0;
+        
+        if (hasMFA) {
+          // User has MFA, verify AAL2 level
+          const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+          setIsAuthenticated(aal?.currentLevel === 'aal2');
+        } else {
+          // No MFA required
+          setIsAuthenticated(true);
+        }
+      } else {
+        setIsAuthenticated(false);
+      }
       setIsLoading(false);
     });
 
