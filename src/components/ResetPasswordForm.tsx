@@ -46,18 +46,34 @@ export const ResetPasswordForm = () => {
   useEffect(() => {
     // Check if this is a password reset flow
     const checkSession = async () => {
-      const resetMode = searchParams.get('reset');
-      
-      if (resetMode === 'true') {
-        // Check if user has a valid session from the reset link
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session) {
-          setIsValidSession(true);
-          // During password recovery, the email link verification is sufficient
-          // No need to require MFA challenge as it's already a verified recovery flow
+      try {
+        const resetMode = searchParams.get('reset');
+        
+        if (resetMode === 'true') {
+          // Add timeout to prevent infinite loading
+          const timeoutPromise = new Promise<void>((_, reject) => 
+            setTimeout(() => reject(new Error('Session check timeout')), 5000)
+          );
+
+          const sessionPromise = supabase.auth.getSession();
+          
+          // Race between session check and timeout
+          const result = await Promise.race([sessionPromise, timeoutPromise]);
+          
+          if (result && 'data' in result) {
+            const { data: { session } } = result;
+            if (session) {
+              setIsValidSession(true);
+            }
+          }
         }
+      } catch (error) {
+        console.error('Error checking session:', error);
+        // On error, allow user to see invalid session message
+        setIsValidSession(false);
+      } finally {
+        setIsCheckingSession(false);
       }
-      setIsCheckingSession(false);
     };
 
     checkSession();
