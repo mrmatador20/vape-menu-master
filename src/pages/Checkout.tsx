@@ -323,8 +323,8 @@ const Checkout = () => {
               price: item.price,
               flavor: item.flavor
             })),
-            totalAmount: order.total,
-            shippingCost: shippingCost || 0,
+            totalAmount: Number(order.total),
+            shippingCost: Number(shippingCost || 0),
             address: {
               rua: formData.rua,
               numero: formData.numero,
@@ -333,7 +333,7 @@ const Checkout = () => {
               cep: formData.cep
             },
             paymentMethod: formData.paymentMethod,
-            changeAmount: validatedData.changeAmount,
+            changeAmount: validatedData.changeAmount ? Number(validatedData.changeAmount) : undefined,
             whatsappMessage: message
           }
         });
