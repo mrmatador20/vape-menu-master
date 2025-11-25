@@ -6,8 +6,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, Key, Eye, EyeOff, Check, X, CheckCircle2, Shield } from 'lucide-react';
+import { Loader2, Key, Eye, EyeOff, Check, X, CheckCircle2, Shield, Mail, Smartphone } from 'lucide-react';
 import { toast } from 'sonner';
+import { useEmailVerification } from '@/hooks/useEmailVerification';
 import { z } from 'zod';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 
@@ -29,6 +30,7 @@ type PasswordStrength = 'weak' | 'medium' | 'strong';
 export const ResetPasswordForm = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { sendVerificationCode, verifyCode, isSending, isVerifying: isVerifyingEmail } = useEmailVerification();
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showNewPassword, setShowNewPassword] = useState(false);
@@ -39,7 +41,9 @@ export const ResetPasswordForm = () => {
   const [isCheckingSession, setIsCheckingSession] = useState(true);
   const [resetComplete, setResetComplete] = useState(false);
   const [needsMfa, setNeedsMfa] = useState(false);
+  const [verificationMethod, setVerificationMethod] = useState<'totp' | 'email' | null>(null);
   const [mfaCode, setMfaCode] = useState('');
+  const [emailCode, setEmailCode] = useState('');
   const [mfaFactorId, setMfaFactorId] = useState<string>('');
   const [isVerifyingMfa, setIsVerifyingMfa] = useState(false);
 
@@ -290,51 +294,167 @@ export const ResetPasswordForm = () => {
             Verificação 2FA
           </CardTitle>
           <CardDescription>
-            Digite o código do seu autenticador para continuar
+            {verificationMethod 
+              ? 'Digite o código de verificação' 
+              : 'Escolha como deseja verificar sua identidade'}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <Alert>
             <AlertDescription>
-              Sua conta tem autenticação de dois fatores habilitada. Por segurança, você precisa verificar sua identidade antes de redefinir a senha.
+              Sua conta tem autenticação de dois fatores habilitada. 
+              {!verificationMethod && ' Escolha um método de verificação abaixo:'}
             </AlertDescription>
           </Alert>
 
-          <div className="space-y-2">
-            <Label htmlFor="mfa-code">Código 2FA</Label>
-            <InputOTP
-              maxLength={6}
-              value={mfaCode}
-              onChange={setMfaCode}
-            >
-              <InputOTPGroup>
-                <InputOTPSlot index={0} />
-                <InputOTPSlot index={1} />
-                <InputOTPSlot index={2} />
-                <InputOTPSlot index={3} />
-                <InputOTPSlot index={4} />
-                <InputOTPSlot index={5} />
-              </InputOTPGroup>
-            </InputOTP>
-            <p className="text-xs text-muted-foreground">
-              Abra seu aplicativo autenticador e digite o código de 6 dígitos
-            </p>
-          </div>
+          {!verificationMethod ? (
+            // Escolha do método
+            <div className="grid gap-3">
+              <Button
+                variant="outline"
+                className="h-auto py-4 flex-col items-start gap-2"
+                onClick={() => setVerificationMethod('totp')}
+              >
+                <div className="flex items-center gap-2 w-full">
+                  <Smartphone className="h-5 w-5 text-primary" />
+                  <span className="font-semibold">Aplicativo Autenticador</span>
+                </div>
+                <p className="text-xs text-muted-foreground text-left">
+                  Use o código do Google Authenticator ou similar
+                </p>
+              </Button>
+              
+              <Button
+                variant="outline"
+                className="h-auto py-4 flex-col items-start gap-2"
+                onClick={async () => {
+                  setVerificationMethod('email');
+                  await sendVerificationCode('password_change');
+                }}
+                disabled={isSending}
+              >
+                <div className="flex items-center gap-2 w-full">
+                  <Mail className="h-5 w-5 text-primary" />
+                  <span className="font-semibold">Código por Email</span>
+                  {isSending && <Loader2 className="ml-auto h-4 w-4 animate-spin" />}
+                </div>
+                <p className="text-xs text-muted-foreground text-left">
+                  Receba um código de verificação no seu email (mais rápido)
+                </p>
+              </Button>
+            </div>
+          ) : verificationMethod === 'totp' ? (
+            // Verificação TOTP
+            <>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="mfa-code">Código do Autenticador</Label>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setVerificationMethod(null);
+                      setMfaCode('');
+                    }}
+                  >
+                    Voltar
+                  </Button>
+                </div>
+                <InputOTP
+                  maxLength={6}
+                  value={mfaCode}
+                  onChange={setMfaCode}
+                >
+                  <InputOTPGroup>
+                    <InputOTPSlot index={0} />
+                    <InputOTPSlot index={1} />
+                    <InputOTPSlot index={2} />
+                    <InputOTPSlot index={3} />
+                    <InputOTPSlot index={4} />
+                    <InputOTPSlot index={5} />
+                  </InputOTPGroup>
+                </InputOTP>
+                <p className="text-xs text-muted-foreground">
+                  Abra seu aplicativo autenticador e digite o código de 6 dígitos
+                </p>
+              </div>
 
-          <Button
-            onClick={handleVerifyMfa}
-            disabled={isVerifyingMfa || mfaCode.length !== 6}
-            className="w-full"
-          >
-            {isVerifyingMfa ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Verificando...
-              </>
-            ) : (
-              'Verificar Código'
-            )}
-          </Button>
+              <Button
+                onClick={handleVerifyMfa}
+                disabled={isVerifyingMfa || mfaCode.length !== 6}
+                className="w-full"
+              >
+                {isVerifyingMfa ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Verificando...
+                  </>
+                ) : (
+                  'Verificar Código'
+                )}
+              </Button>
+            </>
+          ) : (
+            // Verificação por Email
+            <>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="email-code">Código do Email</Label>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setVerificationMethod(null);
+                      setEmailCode('');
+                    }}
+                  >
+                    Voltar
+                  </Button>
+                </div>
+                <InputOTP
+                  maxLength={6}
+                  value={emailCode}
+                  onChange={setEmailCode}
+                >
+                  <InputOTPGroup>
+                    <InputOTPSlot index={0} />
+                    <InputOTPSlot index={1} />
+                    <InputOTPSlot index={2} />
+                    <InputOTPSlot index={3} />
+                    <InputOTPSlot index={4} />
+                    <InputOTPSlot index={5} />
+                  </InputOTPGroup>
+                </InputOTP>
+                <p className="text-xs text-muted-foreground">
+                  Digite o código de 6 dígitos enviado para seu email
+                </p>
+                <Button
+                  variant="link"
+                  size="sm"
+                  className="h-auto p-0 text-xs"
+                  onClick={() => sendVerificationCode('password_change')}
+                  disabled={isSending}
+                >
+                  {isSending ? 'Enviando...' : 'Reenviar código'}
+                </Button>
+              </div>
+
+              <Button
+                onClick={handleVerifyMfa}
+                disabled={isVerifyingEmail || emailCode.length !== 6}
+                className="w-full"
+              >
+                {isVerifyingEmail ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Verificando...
+                  </>
+                ) : (
+                  'Verificar Código'
+                )}
+              </Button>
+            </>
+          )}
 
           <Button
             variant="outline"

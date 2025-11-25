@@ -5,10 +5,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, Key, Eye, EyeOff, Check, X, Shield } from 'lucide-react';
+import { Loader2, Key, Eye, EyeOff, Check, X, Shield, Mail, Smartphone } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { logActivity } from '@/hooks/useActivityLogs';
+import { useEmailVerification } from '@/hooks/useEmailVerification';
 import { z } from 'zod';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 
@@ -40,6 +41,7 @@ type PasswordStrength = 'weak' | 'medium' | 'strong';
 
 export const ChangePasswordDialog = ({ open, onOpenChange }: ChangePasswordDialogProps) => {
   const navigate = useNavigate();
+  const { sendVerificationCode, verifyCode, isSending, isVerifying: isVerifyingEmail } = useEmailVerification();
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -51,7 +53,9 @@ export const ChangePasswordDialog = ({ open, onOpenChange }: ChangePasswordDialo
   
   // MFA verification states
   const [needsMfaVerification, setNeedsMfaVerification] = useState(false);
+  const [verificationMethod, setVerificationMethod] = useState<'totp' | 'email' | null>(null);
   const [mfaCode, setMfaCode] = useState('');
+  const [emailCode, setEmailCode] = useState('');
   const [mfaFactorId, setMfaFactorId] = useState('');
   const [isVerifyingMfa, setIsVerifyingMfa] = useState(false);
 
@@ -124,6 +128,33 @@ export const ChangePasswordDialog = ({ open, onOpenChange }: ChangePasswordDialo
   };
 
   const handleVerifyMfaForPasswordChange = async () => {
+    if (verificationMethod === 'email') {
+      // Verificar código de email
+      if (emailCode.length !== 6) {
+        toast({
+          title: 'Código inválido',
+          description: 'Digite um código de 6 dígitos',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      const result = await verifyCode(emailCode, 'password_change');
+      if (result.success) {
+        setNeedsMfaVerification(false);
+        setVerificationMethod(null);
+        
+        toast({
+          title: 'Código verificado!',
+          description: 'Alterando sua senha...',
+        });
+
+        await performPasswordChange();
+      }
+      return;
+    }
+
+    // Verificar código TOTP
     if (mfaCode.length !== 6) {
       toast({
         title: 'Código inválido',
@@ -136,7 +167,6 @@ export const ChangePasswordDialog = ({ open, onOpenChange }: ChangePasswordDialo
     setIsVerifyingMfa(true);
 
     try {
-      // Criar challenge primeiro
       const { data: challengeData, error: challengeError } = await supabase.auth.mfa.challenge({
         factorId: mfaFactorId,
       });
@@ -144,7 +174,6 @@ export const ChangePasswordDialog = ({ open, onOpenChange }: ChangePasswordDialo
       if (challengeError) throw challengeError;
       if (!challengeData?.id) throw new Error('Falha ao criar desafio de autenticação');
 
-      // Verificar código com timeout de 30 segundos
       const verifyPromise = supabase.auth.mfa.verify({
         factorId: mfaFactorId,
         challengeId: challengeData.id,
@@ -152,7 +181,7 @@ export const ChangePasswordDialog = ({ open, onOpenChange }: ChangePasswordDialo
       });
 
       const timeoutPromise = new Promise<never>((_, reject) => 
-        setTimeout(() => reject(new Error('A verificação está demorando mais que o esperado. Isto pode ser um problema temporário do servidor. Tente novamente.')), 30000)
+        setTimeout(() => reject(new Error('A verificação está demorando mais que o esperado. Tente usar o método de verificação por email.')), 30000)
       );
 
       const { error: verifyError } = await Promise.race([verifyPromise, timeoutPromise]);
@@ -161,6 +190,7 @@ export const ChangePasswordDialog = ({ open, onOpenChange }: ChangePasswordDialo
 
       setIsVerifyingMfa(false);
       setNeedsMfaVerification(false);
+      setVerificationMethod(null);
       
       toast({
         title: 'Código verificado!',
@@ -239,7 +269,9 @@ export const ChangePasswordDialog = ({ open, onOpenChange }: ChangePasswordDialo
     setShowConfirmPassword(false);
     setErrors({});
     setNeedsMfaVerification(false);
+    setVerificationMethod(null);
     setMfaCode('');
+    setEmailCode('');
     setMfaFactorId('');
     setIsVerifyingMfa(false);
     onOpenChange(false);
@@ -284,54 +316,176 @@ export const ChangePasswordDialog = ({ open, onOpenChange }: ChangePasswordDialo
             <Alert>
               <Shield className="h-4 w-4" />
               <AlertDescription>
-                Sua conta tem autenticação de dois fatores habilitada. Por segurança, você precisa verificar sua identidade antes de alterar a senha.
+                Sua conta tem autenticação de dois fatores habilitada. Escolha como deseja verificar sua identidade:
               </AlertDescription>
             </Alert>
 
-            <div className="space-y-2">
-              <Label htmlFor="mfa-code">Código 2FA</Label>
-              <InputOTP
-                maxLength={6}
-                value={mfaCode}
-                onChange={setMfaCode}
-              >
-                <InputOTPGroup>
-                  <InputOTPSlot index={0} />
-                  <InputOTPSlot index={1} />
-                  <InputOTPSlot index={2} />
-                  <InputOTPSlot index={3} />
-                  <InputOTPSlot index={4} />
-                  <InputOTPSlot index={5} />
-                </InputOTPGroup>
-              </InputOTP>
-              <p className="text-xs text-muted-foreground">
-                Abra seu aplicativo autenticador e digite o código de 6 dígitos
-              </p>
-            </div>
+            {!verificationMethod ? (
+              // Escolha do método de verificação
+              <div className="grid gap-3">
+                <Button
+                  variant="outline"
+                  className="h-auto py-4 flex-col items-start gap-2"
+                  onClick={() => setVerificationMethod('totp')}
+                >
+                  <div className="flex items-center gap-2 w-full">
+                    <Smartphone className="h-5 w-5 text-primary" />
+                    <span className="font-semibold">Aplicativo Autenticador</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground text-left">
+                    Use o código do Google Authenticator ou similar
+                  </p>
+                </Button>
+                
+                <Button
+                  variant="outline"
+                  className="h-auto py-4 flex-col items-start gap-2"
+                  onClick={async () => {
+                    setVerificationMethod('email');
+                    await sendVerificationCode('password_change');
+                  }}
+                  disabled={isSending}
+                >
+                  <div className="flex items-center gap-2 w-full">
+                    <Mail className="h-5 w-5 text-primary" />
+                    <span className="font-semibold">Código por Email</span>
+                    {isSending && <Loader2 className="ml-auto h-4 w-4 animate-spin" />}
+                  </div>
+                  <p className="text-xs text-muted-foreground text-left">
+                    Receba um código de verificação no seu email (mais rápido)
+                  </p>
+                </Button>
+              </div>
+            ) : verificationMethod === 'totp' ? (
+              // Verificação TOTP
+              <>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="mfa-code">Código do Autenticador</Label>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setVerificationMethod(null);
+                        setMfaCode('');
+                      }}
+                    >
+                      Voltar
+                    </Button>
+                  </div>
+                  <InputOTP
+                    maxLength={6}
+                    value={mfaCode}
+                    onChange={setMfaCode}
+                  >
+                    <InputOTPGroup>
+                      <InputOTPSlot index={0} />
+                      <InputOTPSlot index={1} />
+                      <InputOTPSlot index={2} />
+                      <InputOTPSlot index={3} />
+                      <InputOTPSlot index={4} />
+                      <InputOTPSlot index={5} />
+                    </InputOTPGroup>
+                  </InputOTP>
+                  <p className="text-xs text-muted-foreground">
+                    Abra seu aplicativo autenticador e digite o código de 6 dígitos
+                  </p>
+                </div>
 
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                onClick={handleClose}
-                className="flex-1"
-              >
-                Cancelar
-              </Button>
-              <Button
-                onClick={handleVerifyMfaForPasswordChange}
-                disabled={isVerifyingMfa || mfaCode.length !== 6}
-                className="flex-1"
-              >
-                {isVerifyingMfa ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Verificando...
-                  </>
-                ) : (
-                  'Verificar Código'
-                )}
-              </Button>
-            </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={handleClose}
+                    className="flex-1"
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    onClick={handleVerifyMfaForPasswordChange}
+                    disabled={isVerifyingMfa || mfaCode.length !== 6}
+                    className="flex-1"
+                  >
+                    {isVerifyingMfa ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Verificando...
+                      </>
+                    ) : (
+                      'Verificar Código'
+                    )}
+                  </Button>
+                </div>
+              </>
+            ) : (
+              // Verificação por Email
+              <>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="email-code">Código do Email</Label>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setVerificationMethod(null);
+                        setEmailCode('');
+                      }}
+                    >
+                      Voltar
+                    </Button>
+                  </div>
+                  <InputOTP
+                    maxLength={6}
+                    value={emailCode}
+                    onChange={setEmailCode}
+                  >
+                    <InputOTPGroup>
+                      <InputOTPSlot index={0} />
+                      <InputOTPSlot index={1} />
+                      <InputOTPSlot index={2} />
+                      <InputOTPSlot index={3} />
+                      <InputOTPSlot index={4} />
+                      <InputOTPSlot index={5} />
+                    </InputOTPGroup>
+                  </InputOTP>
+                  <p className="text-xs text-muted-foreground">
+                    Digite o código de 6 dígitos enviado para seu email
+                  </p>
+                  <Button
+                    variant="link"
+                    size="sm"
+                    className="h-auto p-0 text-xs"
+                    onClick={() => sendVerificationCode('password_change')}
+                    disabled={isSending}
+                  >
+                    {isSending ? 'Enviando...' : 'Reenviar código'}
+                  </Button>
+                </div>
+
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={handleClose}
+                    className="flex-1"
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    onClick={handleVerifyMfaForPasswordChange}
+                    disabled={isVerifyingEmail || emailCode.length !== 6}
+                    className="flex-1"
+                  >
+                    {isVerifyingEmail ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Verificando...
+                      </>
+                    ) : (
+                      'Verificar Código'
+                    )}
+                  </Button>
+                </div>
+              </>
+            )}
           </div>
         ) : (
           // Password Change Form
