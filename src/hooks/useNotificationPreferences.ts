@@ -65,10 +65,15 @@ export const useNotificationPreferences = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Usuário não autenticado");
 
+      console.log("Atualizando preferências:", updates);
+
       // Se está atualizando o phone_number, garantir que tenha +55
-      if (updates.phone_number) {
-        const cleanNumber = updates.phone_number.replace(/\D/g, '');
-        updates.phone_number = `+55${cleanNumber}`;
+      if (updates.phone_number !== undefined) {
+        if (updates.phone_number) {
+          const cleanNumber = updates.phone_number.replace(/\D/g, '');
+          updates.phone_number = `+55${cleanNumber}`;
+          console.log("Número formatado:", updates.phone_number);
+        }
       }
 
       const { data, error } = await supabase
@@ -78,7 +83,12 @@ export const useNotificationPreferences = () => {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error("Erro ao atualizar preferências:", error);
+        throw error;
+      }
+
+      console.log("Preferências atualizadas com sucesso:", data);
       return data;
     },
     onSuccess: () => {
