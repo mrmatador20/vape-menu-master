@@ -150,28 +150,38 @@ export const ResetPasswordForm = () => {
     console.log('Step 1: Setting verification state to TRUE...');
     setIsVerifyingMfa(true);
     
-    // Add timeout protection - max 30 seconds
+    // Add timeout protection - increase to 45 seconds
     let timeoutTriggered = false;
     const timeoutId = setTimeout(() => {
-      console.error('TIMEOUT: MFA verification took too long (30s)');
+      console.error('TIMEOUT: MFA verification took too long (45s)');
       timeoutTriggered = true;
       setIsVerifyingMfa(false);
       toast.error('Tempo esgotado', {
         description: 'A verificação demorou muito. Tente novamente.',
       });
-    }, 30000);
+    }, 45000); // Increased from 30s to 45s
     
     try {
+      if (timeoutTriggered) {
+        console.log('Timeout already triggered before start, aborting...');
+        return;
+      }
+
       console.log('Step 2: Starting MFA verification...', { factorId: mfaFactorId });
       
-      // First create a challenge
+      // First create a challenge with timeout
       console.log('Step 3: Creating challenge...');
       const challengePromise = supabase.auth.mfa.challenge({
         factorId: mfaFactorId,
       });
       
       console.log('Waiting for challenge response...');
-      const { data: challengeData, error: challengeError } = await challengePromise;
+      const { data: challengeData, error: challengeError } = await Promise.race([
+        challengePromise,
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Challenge timeout')), 10000)
+        )
+      ]) as any;
 
       console.log('Challenge response received:', { 
         hasData: !!challengeData,
@@ -181,7 +191,7 @@ export const ResetPasswordForm = () => {
       });
 
       if (timeoutTriggered) {
-        console.log('Timeout already triggered, aborting...');
+        console.log('Timeout already triggered after challenge, aborting...');
         return;
       }
 
@@ -195,7 +205,7 @@ export const ResetPasswordForm = () => {
         throw new Error('No challenge ID returned');
       }
 
-      // Then verify the code
+      // Then verify the code with timeout
       console.log('Step 4: Verifying code against challenge...');
       const verifyPromise = supabase.auth.mfa.verify({
         factorId: mfaFactorId,
@@ -204,7 +214,12 @@ export const ResetPasswordForm = () => {
       });
 
       console.log('Waiting for verify response...');
-      const { data: verifyData, error: verifyError } = await verifyPromise;
+      const { data: verifyData, error: verifyError } = await Promise.race([
+        verifyPromise,
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Verify timeout')), 10000)
+        )
+      ]) as any;
 
       console.log('Verify response received:', { 
         hasData: !!verifyData,
@@ -224,7 +239,14 @@ export const ResetPasswordForm = () => {
 
       // Check the session after verification
       console.log('Step 5: Checking session after MFA verification...');
-      const { data: { session: updatedSession } } = await supabase.auth.getSession();
+      const getSessionPromise = supabase.auth.getSession();
+      const { data: { session: updatedSession } } = await Promise.race([
+        getSessionPromise,
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('getSession timeout')), 5000)
+        )
+      ]) as any;
+      
       console.log('Session after MFA verification:', {
         userId: updatedSession?.user?.id,
         hasSession: !!updatedSession
@@ -257,8 +279,6 @@ export const ResetPasswordForm = () => {
       
       if (!timeoutTriggered) {
         clearTimeout(timeoutId);
-        console.log('Setting isVerifyingMfa to FALSE due to error...');
-        setIsVerifyingMfa(false);
         
         toast.error('Código incorreto', {
           description: error?.message || 'Verifique o código e tente novamente',
@@ -267,12 +287,10 @@ export const ResetPasswordForm = () => {
     } finally {
       // GARANTIA ABSOLUTA que o loading será desativado
       console.log('Finally block - ensuring isVerifyingMfa is FALSE...');
-      if (!timeoutTriggered) {
-        setTimeout(() => {
-          console.log('Final safety check - setting isVerifyingMfa to FALSE');
-          setIsVerifyingMfa(false);
-        }, 100);
-      }
+      setTimeout(() => {
+        console.log('Final safety check - setting isVerifyingMfa to FALSE');
+        setIsVerifyingMfa(false);
+      }, 100);
     }
   };
 
@@ -287,22 +305,41 @@ export const ResetPasswordForm = () => {
     console.log('Step 1: Setting reset state...');
     setIsResetting(true);
     
-    // Add timeout protection - max 30 seconds
+    // Add timeout protection - increase to 45 seconds
+    let timeoutTriggered = false;
     const timeoutId = setTimeout(() => {
-      console.error('TIMEOUT: Password reset took too long (30s)');
+      console.error('TIMEOUT: Password reset took too long (45s)');
+      timeoutTriggered = true;
       setIsResetting(false);
       toast.error('Tempo esgotado', {
         description: 'A operação demorou muito. Tente novamente.',
       });
-    }, 30000);
+    }, 45000); // Increased from 30s to 45s
     
     try {
+      if (timeoutTriggered) {
+        console.log('Timeout already triggered before start, aborting...');
+        return;
+      }
+
       console.log('Step 2: Updating user password...');
-      const { error } = await supabase.auth.updateUser({
+      const updatePasswordPromise = supabase.auth.updateUser({
         password: newPassword,
       });
+      
+      const { error } = await Promise.race([
+        updatePasswordPromise,
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('updateUser timeout')), 15000)
+        )
+      ]) as any;
 
       console.log('Password update response:', { error });
+
+      if (timeoutTriggered) {
+        console.log('Timeout triggered after password update, aborting...');
+        return;
+      }
 
       if (error) {
         console.error('Password update error:', error);
@@ -311,12 +348,26 @@ export const ResetPasswordForm = () => {
 
       // Update password_changed_at timestamp
       console.log('Step 3: Updating password timestamp...');
-      const { data: { user } } = await supabase.auth.getUser();
+      const getUserPromise = supabase.auth.getUser();
+      const { data: { user } } = await Promise.race([
+        getUserPromise,
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('getUser timeout')), 5000)
+        )
+      ]) as any;
+      
       if (user) {
-        const { error: timestampError } = await supabase
+        const updateTimestampPromise = supabase
           .from('profiles')
           .update({ password_changed_at: new Date().toISOString() })
           .eq('id', user.id);
+          
+        const { error: timestampError } = await Promise.race([
+          updateTimestampPromise,
+          new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('timestamp update timeout')), 10000)
+          )
+        ]) as any;
         
         if (timestampError) {
           console.error('Timestamp update error:', timestampError);
@@ -344,12 +395,20 @@ export const ResetPasswordForm = () => {
         fullError: error
       });
       
-      clearTimeout(timeoutId);
-      setIsResetting(false);
-      
-      toast.error('Erro ao redefinir senha', {
-        description: error.message,
-      });
+      if (!timeoutTriggered) {
+        clearTimeout(timeoutId);
+        
+        toast.error('Erro ao redefinir senha', {
+          description: error.message,
+        });
+      }
+    } finally {
+      // GARANTIA ABSOLUTA que o loading será desativado
+      console.log('Finally block - ensuring isResetting is FALSE...');
+      setTimeout(() => {
+        console.log('Final safety check - setting isResetting to FALSE');
+        setIsResetting(false);
+      }, 100);
     }
   };
 
