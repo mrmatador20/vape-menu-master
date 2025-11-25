@@ -175,18 +175,11 @@ export const ChangePasswordDialog = ({ open, onOpenChange }: ChangePasswordDialo
         return;
       }
       
-      // Create challenge
+      // Create challenge - NO timeout individual, apenas o timeout geral
       console.log('Step 3: Creating MFA challenge...');
-      const challengePromise = supabase.auth.mfa.challenge({
+      const { data: challengeData, error: challengeError } = await supabase.auth.mfa.challenge({
         factorId: mfaFactorId,
       });
-      
-      const { data: challengeData, error: challengeError } = await Promise.race([
-        challengePromise,
-        new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Challenge timeout')), 10000)
-        )
-      ]) as any;
 
       if (timeoutTriggered) {
         console.log('Timeout triggered during challenge, aborting');
@@ -209,20 +202,13 @@ export const ChangePasswordDialog = ({ open, onOpenChange }: ChangePasswordDialo
         throw new Error('No challenge ID returned');
       }
 
-      // Verify code
+      // Verify code - NO timeout individual, apenas o timeout geral
       console.log('Step 4: Verifying MFA code...', { challengeId: challengeData.id });
-      const verifyPromise = supabase.auth.mfa.verify({
+      const { data: verifyData, error: verifyError } = await supabase.auth.mfa.verify({
         factorId: mfaFactorId,
         challengeId: challengeData.id,
         code: mfaCode,
       });
-      
-      const { data: verifyData, error: verifyError } = await Promise.race([
-        verifyPromise,
-        new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Verify timeout')), 10000)
-        )
-      ]) as any;
 
       if (timeoutTriggered) {
         console.log('Timeout triggered during verify, aborting');
@@ -306,13 +292,7 @@ export const ChangePasswordDialog = ({ open, onOpenChange }: ChangePasswordDialo
       }
 
       console.log('Step 2: Getting authenticated user...');
-      const getUserPromise = supabase.auth.getUser();
-      const { data: { user }, error: getUserError } = await Promise.race([
-        getUserPromise,
-        new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('getUser timeout')), 10000)
-        )
-      ]) as any;
+      const { data: { user }, error: getUserError } = await supabase.auth.getUser();
       
       console.log('User fetch result:', { 
         userId: user?.id, 
@@ -336,16 +316,9 @@ export const ChangePasswordDialog = ({ open, onOpenChange }: ChangePasswordDialo
       }
 
       console.log('Step 3: Updating password...');
-      const updatePasswordPromise = supabase.auth.updateUser({
+      const { data: updateData, error: updateError } = await supabase.auth.updateUser({
         password: newPassword,
       });
-      
-      const { data: updateData, error: updateError } = await Promise.race([
-        updatePasswordPromise,
-        new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('updateUser timeout')), 15000)
-        )
-      ]) as any;
 
       console.log('Password update result:', { 
         success: !!updateData.user,
@@ -364,17 +337,10 @@ export const ChangePasswordDialog = ({ open, onOpenChange }: ChangePasswordDialo
       }
 
       console.log('Step 4: Password updated successfully, updating timestamp...');
-      const updateTimestampPromise = supabase
+      const { error: timestampError } = await supabase
         .from('profiles')
         .update({ password_changed_at: new Date().toISOString() })
         .eq('id', user.id);
-        
-      const { error: timestampError } = await Promise.race([
-        updateTimestampPromise,
-        new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('timestamp update timeout')), 10000)
-        )
-      ]) as any;
 
       if (timestampError) {
         console.error('Failed to update password timestamp:', timestampError);

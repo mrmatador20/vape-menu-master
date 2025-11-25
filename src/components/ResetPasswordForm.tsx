@@ -169,19 +169,12 @@ export const ResetPasswordForm = () => {
 
       console.log('Step 2: Starting MFA verification...', { factorId: mfaFactorId });
       
-      // First create a challenge with timeout
+      // First create a challenge - NO timeout individual
       console.log('Step 3: Creating challenge...');
-      const challengePromise = supabase.auth.mfa.challenge({
+      console.log('Waiting for challenge response...');
+      const { data: challengeData, error: challengeError } = await supabase.auth.mfa.challenge({
         factorId: mfaFactorId,
       });
-      
-      console.log('Waiting for challenge response...');
-      const { data: challengeData, error: challengeError } = await Promise.race([
-        challengePromise,
-        new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Challenge timeout')), 10000)
-        )
-      ]) as any;
 
       console.log('Challenge response received:', { 
         hasData: !!challengeData,
@@ -205,21 +198,14 @@ export const ResetPasswordForm = () => {
         throw new Error('No challenge ID returned');
       }
 
-      // Then verify the code with timeout
+      // Then verify the code - NO timeout individual
       console.log('Step 4: Verifying code against challenge...');
-      const verifyPromise = supabase.auth.mfa.verify({
+      console.log('Waiting for verify response...');
+      const { data: verifyData, error: verifyError } = await supabase.auth.mfa.verify({
         factorId: mfaFactorId,
         challengeId: challengeData.id,
         code: mfaCode,
       });
-
-      console.log('Waiting for verify response...');
-      const { data: verifyData, error: verifyError } = await Promise.race([
-        verifyPromise,
-        new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Verify timeout')), 10000)
-        )
-      ]) as any;
 
       console.log('Verify response received:', { 
         hasData: !!verifyData,
@@ -237,15 +223,9 @@ export const ResetPasswordForm = () => {
         throw verifyError;
       }
 
-      // Check the session after verification
+      // Check the session after verification - NO timeout individual
       console.log('Step 5: Checking session after MFA verification...');
-      const getSessionPromise = supabase.auth.getSession();
-      const { data: { session: updatedSession } } = await Promise.race([
-        getSessionPromise,
-        new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('getSession timeout')), 5000)
-        )
-      ]) as any;
+      const { data: { session: updatedSession } } = await supabase.auth.getSession();
       
       console.log('Session after MFA verification:', {
         userId: updatedSession?.user?.id,
@@ -323,16 +303,9 @@ export const ResetPasswordForm = () => {
       }
 
       console.log('Step 2: Updating user password...');
-      const updatePasswordPromise = supabase.auth.updateUser({
+      const { error } = await supabase.auth.updateUser({
         password: newPassword,
       });
-      
-      const { error } = await Promise.race([
-        updatePasswordPromise,
-        new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('updateUser timeout')), 15000)
-        )
-      ]) as any;
 
       console.log('Password update response:', { error });
 
@@ -348,26 +321,13 @@ export const ResetPasswordForm = () => {
 
       // Update password_changed_at timestamp
       console.log('Step 3: Updating password timestamp...');
-      const getUserPromise = supabase.auth.getUser();
-      const { data: { user } } = await Promise.race([
-        getUserPromise,
-        new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('getUser timeout')), 5000)
-        )
-      ]) as any;
+      const { data: { user } } = await supabase.auth.getUser();
       
       if (user) {
-        const updateTimestampPromise = supabase
+        const { error: timestampError } = await supabase
           .from('profiles')
           .update({ password_changed_at: new Date().toISOString() })
           .eq('id', user.id);
-          
-        const { error: timestampError } = await Promise.race([
-          updateTimestampPromise,
-          new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('timestamp update timeout')), 10000)
-          )
-        ]) as any;
         
         if (timestampError) {
           console.error('Timestamp update error:', timestampError);
