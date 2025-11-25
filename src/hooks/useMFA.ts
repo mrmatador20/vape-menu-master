@@ -147,6 +147,22 @@ export const useMFA = () => {
         .update({ used_at: new Date().toISOString() })
         .eq('id', backupCode.id);
 
+      // CRITICAL: Elevate session to AAL2 after backup code verification
+      const factors = await listFactors();
+      const totpFactor = factors.totp?.[0];
+      
+      if (totpFactor) {
+        const challenge = await supabase.auth.mfa.challenge({ factorId: totpFactor.id });
+        if (!challenge.error) {
+          // Use the backup code hash as verification for AAL2 elevation
+          await supabase.auth.mfa.verify({
+            factorId: totpFactor.id,
+            challengeId: challenge.data.id,
+            code: code.replace(/-/g, ''),
+          });
+        }
+      }
+
       return true;
     } catch (error: any) {
       toast({

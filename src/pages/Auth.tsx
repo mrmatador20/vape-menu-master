@@ -12,6 +12,7 @@ import { Loader2, Eye, EyeOff } from 'lucide-react';
 import Header from '@/components/Header';
 import { MFAVerifyDialog } from '@/components/MFAVerifyDialog';
 import { validatePassword, getPasswordStrength, getStrengthColor, passwordRequirements } from '@/lib/passwordValidation';
+import { checkRateLimit, resetRateLimit } from '@/lib/rateLimit';
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -50,6 +51,22 @@ const Auth = () => {
 
     try {
       if (isSignUp) {
+        // Check rate limit for signup
+        const rateLimitResult = await checkRateLimit({
+          action: 'signup',
+          maxAttempts: 3,
+          windowMinutes: 60,
+          blockMinutes: 60,
+        });
+
+        if (!rateLimitResult.allowed) {
+          toast.error('Limite de tentativas excedido', {
+            description: rateLimitResult.message,
+          });
+          setIsLoading(false);
+          return;
+        }
+
         // Validate password strength for signup
         const passwordError = validatePassword(formData.password);
         if (passwordError) {
@@ -70,11 +87,30 @@ const Auth = () => {
 
         if (error) throw error;
 
+        // Reset rate limit on successful signup
+        await resetRateLimit('signup');
+
         toast.success('Conta criada com sucesso!', {
           description: 'Você já pode fazer login.'
         });
         setIsSignUp(false);
       } else {
+        // Check rate limit for login
+        const rateLimitResult = await checkRateLimit({
+          action: 'login',
+          maxAttempts: 5,
+          windowMinutes: 15,
+          blockMinutes: 15,
+        });
+
+        if (!rateLimitResult.allowed) {
+          toast.error('Limite de tentativas excedido', {
+            description: rateLimitResult.message,
+          });
+          setIsLoading(false);
+          return;
+        }
+
         // Try to sign in
         const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
           email: formData.email,
@@ -83,6 +119,9 @@ const Auth = () => {
 
         // If sign in was successful, check if MFA is required
         if (!signInError && signInData.user) {
+          // Reset login rate limit on successful login
+          await resetRateLimit('login');
+
           // Check if user has MFA enabled
           const factors = await listFactors();
           

@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import { Loader2, Eye, EyeOff } from 'lucide-react';
 import Header from '@/components/Header';
 import { validatePassword, getPasswordStrength, getStrengthColor, passwordRequirements } from '@/lib/passwordValidation';
+import { checkRateLimit, resetRateLimit } from '@/lib/rateLimit';
 
 // Flag to indicate user is in password reset flow
 const RESET_PASSWORD_FLAG = 'password_reset_flow';
@@ -88,6 +89,21 @@ const ResetPassword = () => {
     e.preventDefault();
     if (!mfaFactorId) return;
 
+    // Check rate limit for password reset MFA
+    const rateLimitResult = await checkRateLimit({
+      action: 'password_reset_mfa',
+      maxAttempts: 5,
+      windowMinutes: 15,
+      blockMinutes: 15,
+    });
+
+    if (!rateLimitResult.allowed) {
+      toast.error('Limite de tentativas excedido', {
+        description: rateLimitResult.message,
+      });
+      return;
+    }
+
     setIsLoading(true);
     try {
       // Use challengeAndVerify to elevate session to AAL2
@@ -97,6 +113,9 @@ const ResetPassword = () => {
       });
 
       if (error) throw error;
+
+      // Reset rate limit on successful MFA verification
+      await resetRateLimit('password_reset_mfa');
 
       console.log('MFA verified successfully, hiding verification screen');
       setShowMFAVerification(false);
@@ -130,6 +149,21 @@ const ResetPassword = () => {
       return;
     }
 
+    // Check rate limit for password reset
+    const rateLimitResult = await checkRateLimit({
+      action: 'password_reset',
+      maxAttempts: 3,
+      windowMinutes: 60,
+      blockMinutes: 60,
+    });
+
+    if (!rateLimitResult.allowed) {
+      toast.error('Limite de tentativas excedido', {
+        description: rateLimitResult.message,
+      });
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -138,6 +172,9 @@ const ResetPassword = () => {
       });
 
       if (error) throw error;
+
+      // Reset rate limit on successful password reset
+      await resetRateLimit('password_reset');
 
       // Remove reset flag and sign out after successful password reset
       localStorage.removeItem(RESET_PASSWORD_FLAG);
