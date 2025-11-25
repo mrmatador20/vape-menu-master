@@ -100,38 +100,21 @@ export const ChangePasswordDialog = ({ open, onOpenChange }: ChangePasswordDialo
   };
 
   const handleChangePassword = async () => {
-    console.log('=== PASSWORD CHANGE STARTED ===');
-    console.log('Step 1: Validating form...');
-    
-    if (!validatePassword()) {
-      console.log('Validation failed, stopping process');
-      return;
-    }
-
-    console.log('Step 2: Checking if user has MFA enabled...');
+    if (!validatePassword()) return;
     
     try {
       const { data } = await supabase.auth.mfa.listFactors();
       const totpFactor = data?.totp?.find((f: MFAFactor) => f.status === 'verified');
       
-      console.log('MFA check result:', { 
-        hasMFA: !!totpFactor,
-        factorId: totpFactor?.id 
-      });
-      
       if (totpFactor) {
-        console.log('User has MFA - requiring verification before password change');
         setMfaFactorId(totpFactor.id);
         setNeedsMfaVerification(true);
-        return; // Stop here and wait for MFA verification
+        return;
       }
       
-      // No MFA - proceed directly to password change
-      console.log('No MFA detected - proceeding with password change');
       await performPasswordChange();
       
     } catch (error: any) {
-      console.error('Error checking MFA status:', error);
       toast({
         title: 'Erro',
         description: 'Não foi possível verificar o status do MFA',
@@ -141,10 +124,7 @@ export const ChangePasswordDialog = ({ open, onOpenChange }: ChangePasswordDialo
   };
 
   const handleVerifyMfaForPasswordChange = async () => {
-    console.log('=== MFA VERIFICATION FOR PASSWORD CHANGE STARTED ===');
-    
     if (mfaCode.length !== 6) {
-      console.log('Invalid code length:', mfaCode.length);
       toast({
         title: 'Código inválido',
         description: 'Digite um código de 6 dígitos',
@@ -153,82 +133,24 @@ export const ChangePasswordDialog = ({ open, onOpenChange }: ChangePasswordDialo
       return;
     }
 
-    console.log('Step 1: Setting verification state to true...');
     setIsVerifyingMfa(true);
-    
-    // Add timeout protection - increase to 45 seconds and use flag
-    let timeoutTriggered = false;
-    const timeoutId = setTimeout(() => {
-      console.error('TIMEOUT: MFA verification took too long (45s)');
-      timeoutTriggered = true;
-      setIsVerifyingMfa(false);
-      toast({
-        title: 'Tempo esgotado',
-        description: 'A verificação demorou muito. Tente novamente.',
-        variant: 'destructive',
-      });
-    }, 45000); // Increased from 30s to 45s
 
     try {
-      console.log('Step 2: Starting MFA verification for password change...', { factorId: mfaFactorId });
-      
-      if (timeoutTriggered) {
-        console.log('Timeout already triggered, aborting');
-        return;
-      }
-      
-      // Create challenge - NO timeout individual, apenas o timeout geral
-      console.log('Step 3: Creating MFA challenge...');
       const { data: challengeData, error: challengeError } = await supabase.auth.mfa.challenge({
         factorId: mfaFactorId,
       });
 
-      if (timeoutTriggered) {
-        console.log('Timeout triggered during challenge, aborting');
-        return;
-      }
+      if (challengeError) throw challengeError;
+      if (!challengeData?.id) throw new Error('No challenge ID returned');
 
-      console.log('Challenge result:', {
-        hasData: !!challengeData,
-        challengeId: challengeData?.id,
-        error: challengeError?.message
-      });
-
-      if (challengeError) {
-        console.error('Challenge error:', challengeError);
-        throw challengeError;
-      }
-
-      if (!challengeData?.id) {
-        console.error('No challenge ID in response');
-        throw new Error('No challenge ID returned');
-      }
-
-      // Verify code - NO timeout individual, apenas o timeout geral
-      console.log('Step 4: Verifying MFA code...', { challengeId: challengeData.id });
-      const { data: verifyData, error: verifyError } = await supabase.auth.mfa.verify({
+      const { error: verifyError } = await supabase.auth.mfa.verify({
         factorId: mfaFactorId,
         challengeId: challengeData.id,
         code: mfaCode,
       });
 
-      if (timeoutTriggered) {
-        console.log('Timeout triggered during verify, aborting');
-        return;
-      }
+      if (verifyError) throw verifyError;
 
-      console.log('Verify result:', {
-        hasData: !!verifyData,
-        error: verifyError?.message
-      });
-
-      if (verifyError) {
-        console.error('Verify error:', verifyError);
-        throw verifyError;
-      }
-
-      console.log('Step 5: MFA verified successfully - session elevated to AAL2');
-      clearTimeout(timeoutId);
       setIsVerifyingMfa(false);
       setNeedsMfaVerification(false);
       
@@ -237,124 +159,40 @@ export const ChangePasswordDialog = ({ open, onOpenChange }: ChangePasswordDialo
         description: 'Alterando sua senha...',
       });
 
-      console.log('Step 6: Proceeding to password change...');
-      // Now perform password change with elevated session
       await performPasswordChange();
-      
-      console.log('=== MFA VERIFICATION FOR PASSWORD CHANGE COMPLETED ===');
 
     } catch (error: any) {
-      console.error('=== MFA VERIFICATION ERROR ===');
-      console.error('Error details:', {
-        message: error?.message,
-        status: error?.status,
-        code: error?.code,
-        fullError: error
-      });
-      
-      clearTimeout(timeoutId);
-      
+      setIsVerifyingMfa(false);
       toast({
         title: 'Código incorreto',
         description: error?.message || 'Verifique o código e tente novamente',
         variant: 'destructive',
       });
-    } finally {
-      console.log('Step 7: Finally block - ensuring loading state is reset');
-      // Safety check to ensure loading state is always reset
-      setTimeout(() => {
-        console.log('Final safety check - resetting loading state');
-        setIsVerifyingMfa(false);
-      }, 100);
     }
   };
 
   const performPasswordChange = async () => {
-    console.log('=== PERFORMING PASSWORD CHANGE ===');
-    console.log('Step 1: Setting loading state to TRUE');
     setIsChanging(true);
     
-    // Add timeout protection - increase to 45 seconds
-    let timeoutTriggered = false;
-    const timeoutId = setTimeout(() => {
-      console.error('TIMEOUT: Password change took too long (45s)');
-      timeoutTriggered = true;
-      setIsChanging(false);
-      toast({
-        title: 'Tempo esgotado',
-        description: 'A operação demorou muito. Por favor, tente novamente.',
-        variant: 'destructive',
-      });
-    }, 45000); // Increased from 30s to 45s
-    
     try {
-      if (timeoutTriggered) {
-        console.log('Timeout already triggered before start, aborting...');
-        return;
-      }
-
-      console.log('Step 2: Getting authenticated user...');
       const { data: { user }, error: getUserError } = await supabase.auth.getUser();
       
-      console.log('User fetch result:', { 
-        userId: user?.id, 
-        email: user?.email,
-        error: getUserError 
-      });
-      
-      if (timeoutTriggered) {
-        console.log('Timeout triggered after getUser, aborting...');
-        return;
-      }
-      
-      if (getUserError) {
-        console.error('Error getting user:', getUserError);
-        throw getUserError;
-      }
-      
-      if (!user?.email) {
-        console.error('No user or email found');
-        throw new Error('Usuário não autenticado');
-      }
+      if (getUserError) throw getUserError;
+      if (!user?.email) throw new Error('Usuário não autenticado');
 
-      console.log('Step 3: Updating password...');
-      const { data: updateData, error: updateError } = await supabase.auth.updateUser({
+      const { error: updateError } = await supabase.auth.updateUser({
         password: newPassword,
       });
 
-      console.log('Password update result:', { 
-        success: !!updateData.user,
-        error: updateError?.message,
-        errorStatus: updateError?.status 
-      });
+      if (updateError) throw updateError;
 
-      if (timeoutTriggered) {
-        console.log('Timeout triggered after update, aborting...');
-        return;
-      }
-
-      if (updateError) {
-        console.error('Password update failed:', updateError);
-        throw updateError;
-      }
-
-      console.log('Step 4: Password updated successfully, updating timestamp...');
-      const { error: timestampError } = await supabase
+      await supabase
         .from('profiles')
         .update({ password_changed_at: new Date().toISOString() })
         .eq('id', user.id);
 
-      if (timestampError) {
-        console.error('Failed to update password timestamp:', timestampError);
-      } else {
-        console.log('Timestamp updated successfully');
-      }
-
-      console.log('Step 5: Logging activity...');
       await logActivity('password_changed');
 
-      console.log('Step 6: Password change completed successfully!');
-      clearTimeout(timeoutId);
       setIsChanging(false);
 
       toast({
@@ -362,36 +200,16 @@ export const ChangePasswordDialog = ({ open, onOpenChange }: ChangePasswordDialo
         description: 'Sua senha foi atualizada.',
       });
 
-      console.log('Step 7: Closing dialog and redirecting...');
       handleClose();
       navigate('/');
       
-      console.log('=== PASSWORD CHANGE COMPLETED ===');
     } catch (error: any) {
-      console.error('=== PASSWORD CHANGE ERROR ===');
-      console.error('Error details:', {
-        message: error?.message,
-        status: error?.status,
-        code: error?.code,
-        fullError: error
+      setIsChanging(false);
+      toast({
+        title: 'Erro ao alterar senha',
+        description: error.message || 'Ocorreu um erro inesperado',
+        variant: 'destructive',
       });
-      
-      if (!timeoutTriggered) {
-        clearTimeout(timeoutId);
-        
-        toast({
-          title: 'Erro ao alterar senha',
-          description: error.message || 'Ocorreu um erro inesperado',
-          variant: 'destructive',
-        });
-      }
-    } finally {
-      // GARANTIA ABSOLUTA que o loading será desativado
-      console.log('Finally block - ensuring isChanging is FALSE...');
-      setTimeout(() => {
-        console.log('Final safety check - setting isChanging to FALSE');
-        setIsChanging(false);
-      }, 100);
     }
   };
 
