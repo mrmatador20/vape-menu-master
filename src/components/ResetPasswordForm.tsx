@@ -132,243 +132,91 @@ export const ResetPasswordForm = () => {
   };
 
   const handleVerifyMfa = async () => {
-    console.log('=== MFA VERIFICATION STARTED (RESET PASSWORD) ===');
-    console.log('Current state:', { 
-      mfaCodeLength: mfaCode.length,
-      mfaFactorId,
-      isVerifyingMfa 
-    });
-    
     if (mfaCode.length !== 6) {
-      console.log('Invalid code length:', mfaCode.length);
       toast.error('Código inválido', {
         description: 'Digite um código de 6 dígitos',
       });
       return;
     }
 
-    console.log('Step 1: Setting verification state to TRUE...');
     setIsVerifyingMfa(true);
     
-    // Add timeout protection - increase to 45 seconds
-    let timeoutTriggered = false;
-    const timeoutId = setTimeout(() => {
-      console.error('TIMEOUT: MFA verification took too long (45s)');
-      timeoutTriggered = true;
-      setIsVerifyingMfa(false);
-      toast.error('Tempo esgotado', {
-        description: 'A verificação demorou muito. Tente novamente.',
-      });
-    }, 45000); // Increased from 30s to 45s
-    
     try {
-      if (timeoutTriggered) {
-        console.log('Timeout already triggered before start, aborting...');
-        return;
-      }
-
-      console.log('Step 2: Starting MFA verification...', { factorId: mfaFactorId });
-      
-      // First create a challenge - NO timeout individual
-      console.log('Step 3: Creating challenge...');
-      console.log('Waiting for challenge response...');
-      const { data: challengeData, error: challengeError } = await supabase.auth.mfa.challenge({
+      // Usar challengeAndVerify - mais rápido (uma única chamada ao invés de duas)
+      const verifyPromise = supabase.auth.mfa.challengeAndVerify({
         factorId: mfaFactorId,
-      });
-
-      console.log('Challenge response received:', { 
-        hasData: !!challengeData,
-        challengeId: challengeData?.id,
-        hasError: !!challengeError,
-        errorMessage: challengeError?.message
-      });
-
-      if (timeoutTriggered) {
-        console.log('Timeout already triggered after challenge, aborting...');
-        return;
-      }
-
-      if (challengeError) {
-        console.error('Challenge error:', challengeError);
-        throw challengeError;
-      }
-
-      if (!challengeData?.id) {
-        console.error('No challenge ID returned');
-        throw new Error('No challenge ID returned');
-      }
-
-      // Then verify the code - NO timeout individual
-      console.log('Step 4: Verifying code against challenge...');
-      console.log('Waiting for verify response...');
-      const { data: verifyData, error: verifyError } = await supabase.auth.mfa.verify({
-        factorId: mfaFactorId,
-        challengeId: challengeData.id,
         code: mfaCode,
       });
 
-      console.log('Verify response received:', { 
-        hasData: !!verifyData,
-        hasError: !!verifyError,
-        errorMessage: verifyError?.message
-      });
+      // Timeout de 10 segundos
+      const timeoutPromise = new Promise<never>((_, reject) => 
+        setTimeout(() => reject(new Error('Timeout: Verificação demorou muito. Tente novamente.')), 10000)
+      );
 
-      if (timeoutTriggered) {
-        console.log('Timeout already triggered after verify, aborting...');
-        return;
-      }
+      const { error: verifyError } = await Promise.race([verifyPromise, timeoutPromise]);
 
-      if (verifyError) {
-        console.error('Verify error:', verifyError);
-        throw verifyError;
-      }
+      if (verifyError) throw verifyError;
 
-      // Check the session after verification - NO timeout individual
-      console.log('Step 5: Checking session after MFA verification...');
-      const { data: { session: updatedSession } } = await supabase.auth.getSession();
-      
-      console.log('Session after MFA verification:', {
-        userId: updatedSession?.user?.id,
-        hasSession: !!updatedSession
-      });
-
-      // MFA verified successfully - update state immediately
-      console.log('Step 6: MFA verification successful, updating state to FALSE...');
-      
-      clearTimeout(timeoutId);
-      
-      // Update states to show password reset form
+      // MFA verificado com sucesso
       setNeedsMfa(false);
       setIsVerifyingMfa(false);
       
-      console.log('Step 7: Showing success toast...');
       toast.success('Código verificado!', {
         description: 'Agora você pode redefinir sua senha',
       });
       
-      console.log('=== MFA VERIFICATION COMPLETED SUCCESSFULLY ===');
     } catch (error: any) {
-      console.error('=== MFA VERIFICATION ERROR ===');
-      console.error('Error details:', {
-        message: error?.message,
-        status: error?.status,
-        code: error?.code,
-        name: error?.name,
-        fullError: error
+      setIsVerifyingMfa(false);
+      toast.error('Código incorreto', {
+        description: error?.message || 'Verifique o código e tente novamente',
       });
-      
-      if (!timeoutTriggered) {
-        clearTimeout(timeoutId);
-        
-        toast.error('Código incorreto', {
-          description: error?.message || 'Verifique o código e tente novamente',
-        });
-      }
-    } finally {
-      // GARANTIA ABSOLUTA que o loading será desativado
-      console.log('Finally block - ensuring isVerifyingMfa is FALSE...');
-      setTimeout(() => {
-        console.log('Final safety check - setting isVerifyingMfa to FALSE');
-        setIsVerifyingMfa(false);
-      }, 100);
     }
   };
 
   const handleResetPassword = async () => {
-    console.log('=== PASSWORD RESET STARTED ===');
-    
     if (!validatePassword()) {
-      console.log('Password validation failed');
       return;
     }
 
-    console.log('Step 1: Setting reset state...');
     setIsResetting(true);
     
-    // Add timeout protection - increase to 45 seconds
-    let timeoutTriggered = false;
-    const timeoutId = setTimeout(() => {
-      console.error('TIMEOUT: Password reset took too long (45s)');
-      timeoutTriggered = true;
-      setIsResetting(false);
-      toast.error('Tempo esgotado', {
-        description: 'A operação demorou muito. Tente novamente.',
-      });
-    }, 45000); // Increased from 30s to 45s
-    
     try {
-      if (timeoutTriggered) {
-        console.log('Timeout already triggered before start, aborting...');
-        return;
-      }
+      // Timeout de 15 segundos para todas operações
+      const resetPromise = (async () => {
+        const { error } = await supabase.auth.updateUser({
+          password: newPassword,
+        });
 
-      console.log('Step 2: Updating user password...');
-      const { error } = await supabase.auth.updateUser({
-        password: newPassword,
-      });
+        if (error) throw error;
 
-      console.log('Password update response:', { error });
-
-      if (timeoutTriggered) {
-        console.log('Timeout triggered after password update, aborting...');
-        return;
-      }
-
-      if (error) {
-        console.error('Password update error:', error);
-        throw error;
-      }
-
-      // Update password_changed_at timestamp
-      console.log('Step 3: Updating password timestamp...');
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (user) {
-        const { error: timestampError } = await supabase
-          .from('profiles')
-          .update({ password_changed_at: new Date().toISOString() })
-          .eq('id', user.id);
+        // Atualizar timestamp em paralelo com getUser
+        const { data: { user } } = await supabase.auth.getUser();
         
-        if (timestampError) {
-          console.error('Timestamp update error:', timestampError);
-        } else {
-          console.log('Timestamp updated successfully');
+        if (user) {
+          await supabase
+            .from('profiles')
+            .update({ password_changed_at: new Date().toISOString() })
+            .eq('id', user.id);
         }
-      }
+      })();
 
-      console.log('Step 4: Password reset completed!');
-      clearTimeout(timeoutId);
+      const timeoutPromise = new Promise<never>((_, reject) => 
+        setTimeout(() => reject(new Error('Timeout: Operação demorou muito. Tente novamente.')), 15000)
+      );
+
+      await Promise.race([resetPromise, timeoutPromise]);
+
       setResetComplete(true);
       
       setTimeout(() => {
-        console.log('Redirecting to auth page...');
         navigate('/auth');
       }, 3000);
       
-      console.log('=== PASSWORD RESET COMPLETED ===');
     } catch (error: any) {
-      console.error('=== PASSWORD RESET ERROR ===');
-      console.error('Error details:', {
-        message: error?.message,
-        status: error?.status,
-        code: error?.code,
-        fullError: error
+      setIsResetting(false);
+      toast.error('Erro ao redefinir senha', {
+        description: error.message || 'Ocorreu um erro inesperado',
       });
-      
-      if (!timeoutTriggered) {
-        clearTimeout(timeoutId);
-        
-        toast.error('Erro ao redefinir senha', {
-          description: error.message,
-        });
-      }
-    } finally {
-      // GARANTIA ABSOLUTA que o loading será desativado
-      console.log('Finally block - ensuring isResetting is FALSE...');
-      setTimeout(() => {
-        console.log('Final safety check - setting isResetting to FALSE');
-        setIsResetting(false);
-      }, 100);
     }
   };
 
