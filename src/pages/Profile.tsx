@@ -8,6 +8,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Loader2, User, MapPin, Phone, Calendar, Package, Shield, ShieldCheck, ShieldOff, Key } from 'lucide-react';
 import Header from '@/components/Header';
+import { logActivity } from '@/hooks/useActivityLogs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -121,7 +122,28 @@ const Profile = () => {
     }
   }, [profile, form]);
 
-  const onSubmit = (data: ProfileFormData) => {
+  const onSubmit = async (data: ProfileFormData) => {
+    // Log audit trail with before/after data
+    if (profile) {
+      await logActivity('profile_updated', {
+        beforeData: {
+          full_name: profile.full_name,
+          phone: profile.phone,
+          address_street: profile.address_street,
+          address_city: profile.address_city,
+        },
+        afterData: {
+          full_name: data.full_name,
+          phone: data.phone,
+          address_street: data.address_street,
+          address_city: data.address_city,
+        },
+        resourceType: 'profile',
+        resourceId: profile.id,
+        severity: 'info',
+      });
+    }
+    
     updateProfile(data);
   };
 

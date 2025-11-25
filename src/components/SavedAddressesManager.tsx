@@ -7,6 +7,8 @@ import { Badge } from '@/components/ui/badge';
 import { MapPin, Trash2, Star, Edit, Plus, X } from 'lucide-react';
 import { useSavedAddresses } from '@/hooks/useSavedAddresses';
 import { Tables } from '@/integrations/supabase/types';
+import { logActivity } from '@/hooks/useActivityLogs';
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -75,10 +77,23 @@ export const SavedAddressesManager = () => {
     });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (editingAddress) {
+      // Log address update
+      await logActivity('address_updated', {
+        beforeData: {
+          label: editingAddress.label,
+          street: editingAddress.street,
+          cep: editingAddress.cep,
+        },
+        afterData: formData,
+        resourceType: 'saved_address',
+        resourceId: editingAddress.id,
+        severity: 'info',
+      });
+
       updateAddress({
         id: editingAddress.id,
         updates: {
@@ -92,6 +107,13 @@ export const SavedAddressesManager = () => {
         },
       });
     } else {
+      // Log new address creation
+      await logActivity('address_added', {
+        afterData: formData,
+        resourceType: 'saved_address',
+        severity: 'info',
+      });
+
       createAddress({
         label: formData.label,
         street: formData.street,
@@ -107,8 +129,24 @@ export const SavedAddressesManager = () => {
     handleCancel();
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (addressToDelete) {
+      const addressToDeleteData = addresses.find(a => a.id === addressToDelete);
+      
+      // Log address deletion
+      if (addressToDeleteData) {
+        await logActivity('address_deleted', {
+          beforeData: {
+            label: addressToDeleteData.label,
+            street: addressToDeleteData.street,
+            cep: addressToDeleteData.cep,
+          },
+          resourceType: 'saved_address',
+          resourceId: addressToDelete,
+          severity: 'warning',
+        });
+      }
+
       deleteAddress(addressToDelete);
       setDeleteDialogOpen(false);
       setAddressToDelete(null);
