@@ -2,7 +2,9 @@ import { useState } from "react";
 import { useProducts } from "@/hooks/useProducts";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Search, Edit, Trash2, AlertTriangle } from "lucide-react";
+import { Plus, Search, Edit, Trash2, AlertTriangle, Loader2 } from "lucide-react";
+import { useUserRole } from "@/hooks/useUserRole";
+import { Navigate } from "react-router-dom";
 import {
   Table,
   TableBody,
@@ -29,6 +31,7 @@ import { ProductFormDialog } from "@/components/admin/ProductFormDialog";
 import { Product } from "@/context/CartContext";
 
 export default function AdminProducts() {
+  const { data: role, isLoading: roleLoading } = useUserRole();
   const [search, setSearch] = useState("");
   const [deleteProductId, setDeleteProductId] = useState<string | null>(null);
   const [editProduct, setEditProduct] = useState<Product | null>(null);
@@ -37,6 +40,18 @@ export default function AdminProducts() {
   const { data: products, isLoading } = useProducts();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  if (roleLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (role !== 'admin') {
+    return <Navigate to="/" replace />;
+  }
 
   const filteredProducts = products?.filter((product) =>
     product.name.toLowerCase().includes(search.toLowerCase()) ||

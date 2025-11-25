@@ -16,11 +16,26 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import { useUserRole } from '@/hooks/useUserRole';
+import { Navigate } from 'react-router-dom';
 
 export default function Banners() {
+  const { data: role, isLoading: roleLoading } = useUserRole();
   const { data: banners, isLoading } = useBanners();
   const deleteBanner = useDeleteBanner();
   const updateBanner = useUpdateBanner();
+
+  if (roleLoading || isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (role !== 'admin') {
+    return <Navigate to="/" replace />;
+  }
 
   const toggleActive = async (id: string, currentStatus: boolean) => {
     await updateBanner.mutateAsync({ id, is_active: !currentStatus });

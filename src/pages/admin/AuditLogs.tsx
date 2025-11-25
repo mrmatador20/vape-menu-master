@@ -7,11 +7,14 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { format } from 'date-fns';
-import { Shield, AlertTriangle, Info } from 'lucide-react';
+import { Shield, AlertTriangle, Info, Loader2 } from 'lucide-react';
 import { ActivityLog, ActivityType, AuditSeverity } from '@/hooks/useActivityLogs';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useUserRole } from '@/hooks/useUserRole';
+import { Navigate } from 'react-router-dom';
 
 const AuditLogs = () => {
+  const { data: role, isLoading: roleLoading } = useUserRole();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<string>('all');
   const [filterSeverity, setFilterSeverity] = useState<string>('all');
@@ -98,6 +101,18 @@ const AuditLogs = () => {
     };
     return labels[type] || type;
   };
+
+  if (roleLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (role !== 'admin') {
+    return <Navigate to="/" replace />;
+  }
 
   if (isLoading) {
     return (

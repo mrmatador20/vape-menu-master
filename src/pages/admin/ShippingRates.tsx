@@ -18,8 +18,11 @@ import {
   ShippingRate,
 } from '@/hooks/useShippingRates';
 import { ShippingRateFormDialog } from '@/components/admin/ShippingRateFormDialog';
+import { useUserRole } from '@/hooks/useUserRole';
+import { Navigate } from 'react-router-dom';
 
 export default function ShippingRates() {
+  const { data: role, isLoading: roleLoading } = useUserRole();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingRate, setEditingRate] = useState<ShippingRate | null>(null);
 
@@ -27,6 +30,18 @@ export default function ShippingRates() {
   const addRate = useAddShippingRate();
   const updateRate = useUpdateShippingRate();
   const deleteRate = useDeleteShippingRate();
+
+  if (roleLoading || isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (role !== 'admin') {
+    return <Navigate to="/" replace />;
+  }
 
   const handleSubmit = (data: { cep: string; price: number }) => {
     if (editingRate) {

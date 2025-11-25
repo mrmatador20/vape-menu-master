@@ -5,13 +5,28 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Loader2, Save } from 'lucide-react';
 import { useSettings, useUpdateSetting } from '@/hooks/useSettings';
+import { useUserRole } from '@/hooks/useUserRole';
+import { Navigate } from 'react-router-dom';
 
 export default function Settings() {
+  const { data: role, isLoading: roleLoading } = useUserRole();
   const { data: settings, isLoading } = useSettings();
   const updateSetting = useUpdateSetting();
   
   const [freeShippingValue, setFreeShippingValue] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  if (roleLoading || isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (role !== 'admin') {
+    return <Navigate to="/" replace />;
+  }
 
   // Inicializar valor quando os dados carregarem
   useState(() => {

@@ -21,11 +21,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Trash2, Star, MessageSquare, Edit2 } from 'lucide-react';
+import { Trash2, Star, MessageSquare, Edit2, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAddReviewResponse, useUpdateReviewResponse, useDeleteReviewResponse } from '@/hooks/useReviewResponses';
 import ResponseFormDialog from '@/components/admin/ResponseFormDialog';
 import { Badge } from '@/components/ui/badge';
+import { useUserRole } from '@/hooks/useUserRole';
+import { Navigate } from 'react-router-dom';
 
 interface ReviewResponse {
   id: string;
@@ -47,6 +49,7 @@ interface Review {
 }
 
 export default function AdminReviews() {
+  const { data: role, isLoading: roleLoading } = useUserRole();
   const [deleteReviewId, setDeleteReviewId] = useState<string | null>(null);
   const [responseDialogOpen, setResponseDialogOpen] = useState(false);
   const [editingResponse, setEditingResponse] = useState<{ responseId: string; reviewId: string; text: string } | null>(null);
@@ -56,6 +59,18 @@ export default function AdminReviews() {
   const addResponse = useAddReviewResponse();
   const updateResponse = useUpdateReviewResponse();
   const deleteResponse = useDeleteReviewResponse();
+
+  if (roleLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (role !== 'admin') {
+    return <Navigate to="/" replace />;
+  }
 
   const { data: reviews, isLoading } = useQuery({
     queryKey: ['admin-reviews'],

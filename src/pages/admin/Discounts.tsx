@@ -8,10 +8,25 @@ import { Loader2, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { DiscountFormDialog } from "@/components/admin/DiscountFormDialog";
 import { useState } from "react";
+import { useUserRole } from "@/hooks/useUserRole";
+import { Navigate } from "react-router-dom";
 
 export default function AdminDiscounts() {
+  const { data: role, isLoading: roleLoading } = useUserRole();
   const [dialogOpen, setDialogOpen] = useState(false);
   const queryClient = useQueryClient();
+
+  if (roleLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (role !== 'admin') {
+    return <Navigate to="/" replace />;
+  }
 
   const { data: discounts, isLoading } = useQuery({
     queryKey: ['admin-discounts'],

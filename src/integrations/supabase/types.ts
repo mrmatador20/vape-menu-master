@@ -310,6 +310,51 @@ export type Database = {
         }
         Relationships: []
       }
+      notification_preferences: {
+        Row: {
+          created_at: string | null
+          email_enabled: boolean | null
+          id: string
+          notify_account_locked: boolean | null
+          notify_admin_actions: boolean | null
+          notify_failed_auth: boolean | null
+          notify_password_change: boolean | null
+          notify_suspicious_login: boolean | null
+          phone_number: string | null
+          sms_enabled: boolean | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          email_enabled?: boolean | null
+          id?: string
+          notify_account_locked?: boolean | null
+          notify_admin_actions?: boolean | null
+          notify_failed_auth?: boolean | null
+          notify_password_change?: boolean | null
+          notify_suspicious_login?: boolean | null
+          phone_number?: string | null
+          sms_enabled?: boolean | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          email_enabled?: boolean | null
+          id?: string
+          notify_account_locked?: boolean | null
+          notify_admin_actions?: boolean | null
+          notify_failed_auth?: boolean | null
+          notify_password_change?: boolean | null
+          notify_suspicious_login?: boolean | null
+          phone_number?: string | null
+          sms_enabled?: boolean | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       order_items: {
         Row: {
           created_at: string | null
@@ -670,6 +715,51 @@ export type Database = {
           state?: string | null
           street?: string
           updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      security_notification_logs: {
+        Row: {
+          channel: string
+          created_at: string | null
+          delivered_at: string | null
+          error_message: string | null
+          id: string
+          message_content: string
+          metadata: Json | null
+          notification_type: string
+          recipient: string
+          status: string
+          subject: string | null
+          user_id: string
+        }
+        Insert: {
+          channel: string
+          created_at?: string | null
+          delivered_at?: string | null
+          error_message?: string | null
+          id?: string
+          message_content: string
+          metadata?: Json | null
+          notification_type: string
+          recipient: string
+          status: string
+          subject?: string | null
+          user_id: string
+        }
+        Update: {
+          channel?: string
+          created_at?: string | null
+          delivered_at?: string | null
+          error_message?: string | null
+          id?: string
+          message_content?: string
+          metadata?: Json | null
+          notification_type?: string
+          recipient?: string
+          status?: string
+          subject?: string | null
           user_id?: string
         }
         Relationships: []
