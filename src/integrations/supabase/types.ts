@@ -803,31 +803,49 @@ export type Database = {
       user_activity_logs: {
         Row: {
           activity_type: string
+          after_data: Json | null
+          before_data: Json | null
           created_at: string
           device_fingerprint: string | null
           id: string
           ip_address: string | null
           metadata: Json | null
+          resource_id: string | null
+          resource_type: string | null
+          session_id: string | null
+          severity: string | null
           user_agent: string | null
           user_id: string
         }
         Insert: {
           activity_type: string
+          after_data?: Json | null
+          before_data?: Json | null
           created_at?: string
           device_fingerprint?: string | null
           id?: string
           ip_address?: string | null
           metadata?: Json | null
+          resource_id?: string | null
+          resource_type?: string | null
+          session_id?: string | null
+          severity?: string | null
           user_agent?: string | null
           user_id: string
         }
         Update: {
           activity_type?: string
+          after_data?: Json | null
+          before_data?: Json | null
           created_at?: string
           device_fingerprint?: string | null
           id?: string
           ip_address?: string | null
           metadata?: Json | null
+          resource_id?: string | null
+          resource_type?: string | null
+          session_id?: string | null
+          severity?: string | null
           user_agent?: string | null
           user_id?: string
         }
@@ -995,6 +1013,10 @@ export type Database = {
     Functions: {
       cleanup_expired_rate_limits: { Args: never; Returns: undefined }
       cleanup_expired_verification_codes: { Args: never; Returns: undefined }
+      cleanup_old_audit_logs: {
+        Args: { retention_days?: number }
+        Returns: undefined
+      }
       get_product_availability: {
         Args: { stock_value: number }
         Returns: string

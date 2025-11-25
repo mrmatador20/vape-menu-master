@@ -153,7 +153,9 @@ const Auth = () => {
           await logActivity('login');
           toast.success('Login realizado com sucesso!');
         } else if (signInError) {
-          await logActivity('login_failed', { error: signInError.message });
+          await logActivity('login_failed', { 
+            metadata: { error: signInError.message }
+          });
           throw signInError;
         }
       }
@@ -165,7 +167,9 @@ const Auth = () => {
   };
 
   const handleMFASuccess = async () => {
-    await logActivity('login', { method: '2FA' });
+    await logActivity('login', { 
+      metadata: { method: '2FA' }
+    });
     toast.success('Login realizado com sucesso!');
     navigate('/');
   };
