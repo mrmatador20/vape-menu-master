@@ -31,7 +31,47 @@ Deno.serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const supabase = createClient(supabaseUrl, supabaseKey)
 
+    // SECURITY: Verify authentication token
+    const authHeader = req.headers.get('Authorization')
+    if (!authHeader) {
+      console.error('[audit-log] Missing Authorization header')
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized - Missing token' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+    
+    const token = authHeader.replace('Bearer ', '')
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
+
+    if (authError || !user) {
+      console.error('[audit-log] Auth error:', authError?.message || 'User not found')
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
     const logData: AuditLogRequest = await req.json()
+
+    // SECURITY: Validate that the userId in the log matches the authenticated user
+    // or that the user is an admin (for logging actions on behalf of others)
+    if (logData.userId !== user.id) {
+      // Check if user is admin
+      const { data: userRole } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .maybeSingle()
+      
+      if (!userRole || userRole.role !== 'admin') {
+        console.error('[audit-log] Attempt to log for different user without admin privileges')
+        return new Response(
+          JSON.stringify({ error: 'Forbidden - Cannot log for other users' }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+    }
 
     console.log('Creating audit log entry:', {
       userId: logData.userId,
