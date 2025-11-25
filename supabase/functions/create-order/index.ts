@@ -101,26 +101,113 @@ serve(async (req) => {
     
     console.log('[create-order] User authenticated:', user.id);
 
-    // Rate limiting: Check recent orders
-    const RATE_LIMIT_WINDOW = 60; // 1 minute in seconds
-    const MAX_ORDERS_PER_WINDOW = 3; // Max 3 orders per minute
-    
-    const { count: recentOrdersCount, error: rateLimitError } = await supabaseClient
-      .from('orders')
-      .select('id', { count: 'exact', head: true })
-      .eq('user_id', user.id)
-      .gte('created_at', new Date(Date.now() - RATE_LIMIT_WINDOW * 1000).toISOString());
+    // Advanced Rate Limiting System
+    const ACTION_TYPE = 'order_create';
+    const RATE_LIMIT_WINDOW = 60; // 1 minute
+    const MAX_ATTEMPTS = 3; // Max 3 orders per minute
+    const BLOCK_DURATION = 15 * 60; // 15 minutes block
 
-    if (rateLimitError) {
-      console.error('Rate limit check failed');
+    // Get client IP for additional tracking
+    const clientIP = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 
+                     req.headers.get('x-real-ip') || 
+                     'unknown';
+
+    // Check if user is blocked
+    const { data: existingLimit, error: fetchError } = await supabaseClient
+      .from('rate_limit_tracking')
+      .select('*')
+      .eq('identifier', user.id)
+      .eq('action_type', ACTION_TYPE)
+      .maybeSingle();
+
+    if (fetchError) {
+      console.error('[create-order] Rate limit fetch error:', fetchError);
     }
 
-    if (recentOrdersCount !== null && recentOrdersCount >= MAX_ORDERS_PER_WINDOW) {
-      return new Response(
-        JSON.stringify({ error: 'Muitos pedidos. Por favor, aguarde antes de fazer outro pedido.' }),
-        { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    // Check if blocked
+    if (existingLimit?.is_blocked) {
+      if (existingLimit.block_expires_at && new Date(existingLimit.block_expires_at) > new Date()) {
+        const remainingMinutes = Math.ceil((new Date(existingLimit.block_expires_at).getTime() - Date.now()) / 60000);
+        console.log(`[create-order] User ${user.id} is blocked for ${remainingMinutes} more minutes`);
+        return new Response(
+          JSON.stringify({ 
+            error: `Conta temporariamente bloqueada devido a muitas tentativas. Tente novamente em ${remainingMinutes} minutos.` 
+          }),
+          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      } else {
+        // Block expired, reset it
+        await supabaseClient
+          .from('rate_limit_tracking')
+          .update({ 
+            is_blocked: false, 
+            block_expires_at: null,
+            attempt_count: 0,
+            window_start: new Date().toISOString()
+          })
+          .eq('id', existingLimit.id);
+      }
     }
+
+    // Check rate limit window
+    if (existingLimit && !existingLimit.is_blocked) {
+      const windowStart = new Date(existingLimit.window_start);
+      const now = new Date();
+      const windowElapsed = (now.getTime() - windowStart.getTime()) / 1000;
+
+      if (windowElapsed < RATE_LIMIT_WINDOW) {
+        // Still in the same window
+        if (existingLimit.attempt_count >= MAX_ATTEMPTS) {
+          // Block the user
+          await supabaseClient
+            .from('rate_limit_tracking')
+            .update({ 
+              is_blocked: true, 
+              block_expires_at: new Date(Date.now() + BLOCK_DURATION * 1000).toISOString(),
+              attempt_count: existingLimit.attempt_count + 1
+            })
+            .eq('id', existingLimit.id);
+
+          console.log(`[create-order] User ${user.id} blocked for exceeding rate limit`);
+          return new Response(
+            JSON.stringify({ 
+              error: 'Muitas tentativas de pedido. Sua conta foi bloqueada por 15 minutos para segurança.' 
+            }),
+            { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        } else {
+          // Increment attempt count
+          await supabaseClient
+            .from('rate_limit_tracking')
+            .update({ 
+              attempt_count: existingLimit.attempt_count + 1 
+            })
+            .eq('id', existingLimit.id);
+        }
+      } else {
+        // Window expired, reset counter
+        await supabaseClient
+          .from('rate_limit_tracking')
+          .update({ 
+            attempt_count: 1,
+            window_start: new Date().toISOString()
+          })
+          .eq('id', existingLimit.id);
+      }
+    } else if (!existingLimit) {
+      // First attempt, create new tracking record
+      await supabaseClient
+        .from('rate_limit_tracking')
+        .insert({
+          identifier: user.id,
+          action_type: ACTION_TYPE,
+          attempt_count: 1,
+          window_start: new Date().toISOString(),
+          is_blocked: false
+        });
+    }
+
+    console.log(`[create-order] Rate limit check passed for user ${user.id}`);
 
     // Parse and validate request body
     const rawData = await req.json();
