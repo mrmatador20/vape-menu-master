@@ -30,23 +30,6 @@ const NotificationTest = () => {
     setIsLoading(true);
 
     try {
-      // First, create/update notification preferences with phone and SMS enabled
-      const { error: prefsError } = await supabase
-        .from("notification_preferences")
-        .upsert({
-          user_id: testUserId,
-          phone_number: testPhone,
-          sms_enabled: true,
-          email_enabled: true,
-          notify_suspicious_login: true,
-          notify_failed_login: true,
-          notify_password_change: true,
-          notify_admin_actions: true,
-        });
-
-      if (prefsError) {
-        throw new Error(`Erro ao configurar preferências: ${prefsError.message}`);
-      }
       const eventDetails: any = {
         timestamp: new Date().toLocaleString("pt-BR"),
         ipAddress: "192.168.1.1",
@@ -74,6 +57,7 @@ const NotificationTest = () => {
         email: testEmail,
         userName: testUserName,
         alertType,
+        phoneNumber: testPhone,
         eventDetails,
       });
 

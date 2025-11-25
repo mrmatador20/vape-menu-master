@@ -5,6 +5,7 @@ export interface SecurityAlertOptions {
   email: string;
   userName: string;
   alertType: "suspicious_login" | "failed_auth" | "admin_action" | "password_change";
+  phoneNumber?: string;
   eventDetails: {
     ipAddress?: string;
     location?: string;
