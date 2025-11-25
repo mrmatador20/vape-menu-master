@@ -11,6 +11,7 @@ interface SecurityAlertRequest {
   email: string;
   userName: string;
   alertType: "suspicious_login" | "failed_auth" | "admin_action" | "password_change";
+  phoneNumber?: string;
   eventDetails: {
     ipAddress?: string;
     location?: string;
@@ -270,11 +271,44 @@ const handler = async (req: Request): Promise<Response> => {
     console.log("Processing security alert:", alertRequest.alertType);
 
     // Get user notification preferences
-    const { data: preferences } = await supabase
+    let { data: preferences } = await supabase
       .from("notification_preferences")
       .select("*")
       .eq("user_id", alertRequest.userId)
       .single();
+    
+    // If preferences don't exist, create default ones
+    if (!preferences) {
+      const { data: newPrefs } = await supabase
+        .from("notification_preferences")
+        .insert({
+          user_id: alertRequest.userId,
+          email_enabled: true,
+          sms_enabled: alertRequest.phoneNumber ? true : false,
+          phone_number: alertRequest.phoneNumber || null,
+          notify_suspicious_login: true,
+          notify_failed_login: true,
+          notify_password_change: true,
+          notify_admin_actions: true,
+        })
+        .select()
+        .single();
+      
+      preferences = newPrefs;
+    } else if (alertRequest.phoneNumber && preferences.phone_number !== alertRequest.phoneNumber) {
+      // Update phone number if provided and different
+      const { data: updatedPrefs } = await supabase
+        .from("notification_preferences")
+        .update({
+          phone_number: alertRequest.phoneNumber,
+          sms_enabled: true,
+        })
+        .eq("user_id", alertRequest.userId)
+        .select()
+        .single();
+      
+      preferences = updatedPrefs || preferences;
+    }
 
     // Check if user wants notifications for this event type
     const shouldNotify = preferences ? (
