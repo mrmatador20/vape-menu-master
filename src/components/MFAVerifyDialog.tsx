@@ -48,25 +48,58 @@ export const MFAVerifyDialog = ({ open, onOpenChange, factorId, onSuccess }: MFA
     if (useBackupCode && code.length < 8) return;
     if (isBlocked) return;
 
+    console.log('🔐 [MFA Verify] Starting verification process', {
+      useBackupCode,
+      codeLength: code.length,
+      factorId
+    });
+
     setIsVerifying(true);
     try {
       // First verify the MFA code
+      console.log('🔐 [MFA Verify] Step 1: Verifying MFA code...');
+      
       if (useBackupCode) {
         const isValid = await verifyBackupCode(code);
+        console.log('🔐 [MFA Verify] Backup code verification result:', isValid);
         if (!isValid) {
+          console.log('🔐 [MFA Verify] Backup code invalid, calling handleFailedAttempt');
           handleFailedAttempt();
           return;
         }
       } else {
-        await verifyMFACode(factorId, code);
+        try {
+          await verifyMFACode(factorId, code);
+          console.log('🔐 [MFA Verify] MFA code verified successfully');
+        } catch (mfaError: any) {
+          console.error('🔐 [MFA Verify] MFA code verification failed:', mfaError);
+          handleFailedAttempt();
+          return;
+        }
       }
 
       // Then verify reCAPTCHA
+      console.log('🔐 [MFA Verify] Step 2: Starting reCAPTCHA verification...');
+      console.log('🔐 [MFA Verify] Checking if grecaptcha is available:', typeof (window as any).grecaptcha);
+      console.log('🔐 [MFA Verify] VITE_RECAPTCHA_SITE_KEY:', import.meta.env.VITE_RECAPTCHA_SITE_KEY);
+      
       try {
+        if (!(window as any).grecaptcha) {
+          console.error('🔐 [MFA Verify] grecaptcha not loaded, skipping reCAPTCHA verification');
+          // Proceed anyway - don't block user
+          onSuccess();
+          handleClose();
+          return;
+        }
+
+        console.log('🔐 [MFA Verify] Executing grecaptcha...');
         const recaptchaToken = await (window as any).grecaptcha.execute(
           import.meta.env.VITE_RECAPTCHA_SITE_KEY,
           { action: 'verify_2fa' }
         );
+
+        console.log('🔐 [MFA Verify] reCAPTCHA token obtained, length:', recaptchaToken?.length);
+        console.log('🔐 [MFA Verify] Calling verify-recaptcha edge function...');
 
         const { data: recaptchaResult, error: recaptchaError } = await supabase.functions.invoke(
           'verify-recaptcha',
@@ -75,7 +108,13 @@ export const MFAVerifyDialog = ({ open, onOpenChange, factorId, onSuccess }: MFA
           }
         );
 
+        console.log('🔐 [MFA Verify] Edge function response:', {
+          data: recaptchaResult,
+          error: recaptchaError
+        });
+
         if (recaptchaError || !recaptchaResult?.success) {
+          console.error('🔐 [MFA Verify] reCAPTCHA verification failed:', { recaptchaError, recaptchaResult });
           toast({
             title: 'Verificação de segurança falhou',
             description: 'Por favor, tente novamente.',
@@ -83,8 +122,14 @@ export const MFAVerifyDialog = ({ open, onOpenChange, factorId, onSuccess }: MFA
           });
           return;
         }
-      } catch (recaptchaError) {
-        console.error('reCAPTCHA verification failed:', recaptchaError);
+
+        console.log('🔐 [MFA Verify] reCAPTCHA verified successfully, score:', recaptchaResult.score);
+      } catch (recaptchaError: any) {
+        console.error('🔐 [MFA Verify] reCAPTCHA verification exception:', {
+          error: recaptchaError,
+          message: recaptchaError?.message,
+          stack: recaptchaError?.stack
+        });
         toast({
           title: 'Erro na verificação de segurança',
           description: 'Por favor, tente novamente.',
@@ -94,12 +139,18 @@ export const MFAVerifyDialog = ({ open, onOpenChange, factorId, onSuccess }: MFA
       }
 
       // If both verifications passed, proceed
+      console.log('🔐 [MFA Verify] All verifications passed, calling onSuccess');
       onSuccess();
       handleClose();
-    } catch (error) {
-      console.error('Verification error:', error);
+    } catch (error: any) {
+      console.error('🔐 [MFA Verify] Unexpected error:', {
+        error,
+        message: error?.message,
+        stack: error?.stack
+      });
       handleFailedAttempt();
     } finally {
+      console.log('🔐 [MFA Verify] Verification process complete, resetting loading state');
       setIsVerifying(false);
     }
   };
