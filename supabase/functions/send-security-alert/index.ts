@@ -50,11 +50,46 @@ serve(async (req) => {
     console.log("Sending security alert:", { userId, userEmail, alertType });
 
     // Fetch user notification preferences
-    const { data: preferences } = await supabase
+    let { data: preferences } = await supabase
       .from("notification_preferences")
       .select("*")
       .eq("user_id", userId)
       .single();
+
+    // Create default preferences if none exist
+    if (!preferences) {
+      console.log("Creating default notification preferences for user");
+      const { data: newPrefs, error: insertError } = await supabase
+        .from("notification_preferences")
+        .insert({
+          user_id: userId,
+          email_enabled: true,
+          sms_enabled: false,
+          notify_suspicious_login: true,
+          notify_failed_auth: true,
+          notify_admin_actions: true,
+          notify_password_change: true,
+          notify_account_locked: true,
+        })
+        .select()
+        .single();
+
+      if (insertError) {
+        console.error("Error creating preferences:", insertError);
+        // Continue with default values
+        preferences = {
+          email_enabled: true,
+          sms_enabled: false,
+          notify_suspicious_login: true,
+          notify_failed_auth: true,
+          notify_admin_actions: true,
+          notify_password_change: true,
+          notify_account_locked: true,
+        } as any;
+      } else {
+        preferences = newPrefs;
+      }
+    }
 
     // Check if user has opted in for this type of notification
     const notificationMapping = {
