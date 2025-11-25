@@ -1,4 +1,4 @@
-import { LayoutDashboard, Package, ShoppingCart, BarChart3, Tag, Star, Truck, Settings, Megaphone, Shield } from "lucide-react";
+import { LayoutDashboard, Package, ShoppingCart, BarChart3, Tag, Star, Truck, Settings, Megaphone, Shield, TestTube } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import {
   Sidebar,
@@ -24,6 +24,7 @@ const menuItems = [
   { title: "Taxas de Entrega", url: "/admin/shipping-rates", icon: Truck },
   { title: "Banners", url: "/admin/banners", icon: Megaphone },
   { title: "Auditoria", url: "/admin/audit-logs", icon: Shield },
+  { title: "Teste de Notificações", url: "/admin/notification-test", icon: TestTube },
   { title: "Configurações", url: "/admin/settings", icon: Settings },
 ];
 
