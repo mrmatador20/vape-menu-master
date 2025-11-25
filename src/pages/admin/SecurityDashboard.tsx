@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Shield, AlertTriangle, Activity, Lock, TrendingUp, TrendingDown, Eye, AlertCircle } from 'lucide-react';
+import { Shield, AlertTriangle, Activity, Lock, TrendingUp, TrendingDown, Eye, AlertCircle, Loader2 } from 'lucide-react';
 import { useSecurityMetrics } from '@/hooks/useSecurityMetrics';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { supabase } from '@/integrations/supabase/client';
@@ -11,13 +11,28 @@ import { toast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
+import { useUserRole } from '@/hooks/useUserRole';
+import { Navigate } from 'react-router-dom';
 
 const COLORS = ['#ef4444', '#f59e0b', '#10b981', '#3b82f6'];
 
 const SecurityDashboard = () => {
+  const { data: role, isLoading: roleLoading } = useUserRole();
   const navigate = useNavigate();
   const { data: metrics, isLoading, refetch } = useSecurityMetrics();
   const [realtimeAlerts, setRealtimeAlerts] = useState<any[]>([]);
+
+  if (roleLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (role !== 'admin') {
+    return <Navigate to="/" replace />;
+  }
 
   // Real-time subscription for critical events
   useEffect(() => {

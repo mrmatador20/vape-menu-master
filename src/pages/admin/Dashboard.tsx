@@ -4,8 +4,24 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Package, ShoppingCart, AlertCircle, DollarSign, Star, TrendingUp } from "lucide-react";
 import { LowStockAlert } from "@/components/admin/LowStockAlert";
 import { Progress } from "@/components/ui/progress";
+import { useUserRole } from "@/hooks/useUserRole";
+import { Navigate } from "react-router-dom";
+import { Loader2 } from "lucide-react";
 
 export default function AdminDashboard() {
+  const { data: role, isLoading: roleLoading } = useUserRole();
+
+  if (roleLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (role !== 'admin') {
+    return <Navigate to="/" replace />;
+  }
   const { data: stats } = useQuery({
     queryKey: ['admin-stats'],
     queryFn: async () => {
