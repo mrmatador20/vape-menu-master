@@ -8,3 +8,6 @@ verify_jwt = false
 
 [functions.detect-anomalies]
 verify_jwt = true
+
+[functions.send-password-recovery]
+verify_jwt = false
