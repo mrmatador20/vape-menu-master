@@ -6,15 +6,61 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
-import { Shield, AlertTriangle, Info } from 'lucide-react';
+import { Shield, AlertTriangle, Info, Send } from 'lucide-react';
 import { ActivityLog, ActivityType, AuditSeverity } from '@/hooks/useActivityLogs';
 import { Skeleton } from '@/components/ui/skeleton';
+import { toast } from '@/hooks/use-toast';
 
 const AuditLogs = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<string>('all');
   const [filterSeverity, setFilterSeverity] = useState<string>('all');
+  const [isSendingTest, setIsSendingTest] = useState(false);
+
+  const handleTestNotification = async () => {
+    setIsSendingTest(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Usuário não autenticado');
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('full_name, phone')
+        .eq('id', user.id)
+        .single();
+
+      await supabase.functions.invoke('send-security-alert', {
+        body: {
+          userId: user.id,
+          email: user.email,
+          phone: profile?.phone,
+          alertType: 'suspicious_login',
+          metadata: {
+            userName: profile?.full_name || 'Administrador',
+            ipAddress: '192.168.1.1',
+            location: 'São Paulo, Brasil',
+            timestamp: new Date().toLocaleString('pt-BR'),
+          },
+        },
+      });
+
+      toast({
+        title: 'Notificação de teste enviada',
+        description: 'Verifique seu e-mail e SMS para confirmar o recebimento.',
+      });
+    } catch (error) {
+      console.error('Erro ao enviar notificação de teste:', error);
+      toast({
+        title: 'Erro ao enviar notificação',
+        description: 'Não foi possível enviar a notificação de teste.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSendingTest(false);
+    }
+  };
 
   const { data: logs, isLoading } = useQuery({
     queryKey: ['admin-audit-logs', filterType, filterSeverity],
@@ -112,13 +158,26 @@ const AuditLogs = () => {
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Shield className="h-5 w-5" />
-            Auditoria e Compliance
-          </CardTitle>
-          <CardDescription>
-            Registro imutável de todas as ações sensíveis dos usuários para monitoramento e compliance
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Shield className="h-5 w-5" />
+                Auditoria e Compliance
+              </CardTitle>
+              <CardDescription>
+                Registro imutável de todas as ações sensíveis dos usuários para monitoramento e compliance
+              </CardDescription>
+            </div>
+            <Button
+              onClick={handleTestNotification}
+              disabled={isSendingTest}
+              variant="outline"
+              size="sm"
+            >
+              <Send className="h-4 w-4 mr-2" />
+              {isSendingTest ? 'Enviando...' : 'Testar Notificação'}
+            </Button>
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-4 md:grid-cols-3">
