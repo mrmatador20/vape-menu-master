@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -38,6 +39,7 @@ const passwordSchema = z.object({
 type PasswordStrength = 'weak' | 'medium' | 'strong';
 
 export const ChangePasswordDialog = ({ open, onOpenChange }: ChangePasswordDialogProps) => {
+  const navigate = useNavigate();
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -357,11 +359,12 @@ export const ChangePasswordDialog = ({ open, onOpenChange }: ChangePasswordDialo
 
       toast({
         title: 'Senha alterada com sucesso!',
-        description: 'Sua senha foi atualizada. Use a nova senha no próximo login.',
+        description: 'Sua senha foi atualizada.',
       });
 
-      console.log('Step 7: Closing dialog...');
+      console.log('Step 7: Closing dialog and redirecting...');
       handleClose();
+      navigate('/');
       
       console.log('=== PASSWORD CHANGE COMPLETED ===');
     } catch (error: any) {
