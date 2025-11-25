@@ -310,51 +310,6 @@ export type Database = {
         }
         Relationships: []
       }
-      notification_preferences: {
-        Row: {
-          created_at: string
-          email_enabled: boolean
-          id: string
-          notify_account_locked: boolean
-          notify_admin_actions: boolean
-          notify_failed_login: boolean
-          notify_password_change: boolean
-          notify_suspicious_login: boolean
-          phone_number: string | null
-          sms_enabled: boolean
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          email_enabled?: boolean
-          id?: string
-          notify_account_locked?: boolean
-          notify_admin_actions?: boolean
-          notify_failed_login?: boolean
-          notify_password_change?: boolean
-          notify_suspicious_login?: boolean
-          phone_number?: string | null
-          sms_enabled?: boolean
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          email_enabled?: boolean
-          id?: string
-          notify_account_locked?: boolean
-          notify_admin_actions?: boolean
-          notify_failed_login?: boolean
-          notify_password_change?: boolean
-          notify_suspicious_login?: boolean
-          phone_number?: string | null
-          sms_enabled?: boolean
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
       order_items: {
         Row: {
           created_at: string | null
@@ -715,48 +670,6 @@ export type Database = {
           state?: string | null
           street?: string
           updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
-      security_notification_logs: {
-        Row: {
-          channel: string
-          created_at: string
-          delivery_status: string
-          error_message: string | null
-          event_metadata: Json | null
-          event_type: string
-          id: string
-          notification_type: string
-          recipient: string
-          sent_at: string
-          user_id: string
-        }
-        Insert: {
-          channel: string
-          created_at?: string
-          delivery_status?: string
-          error_message?: string | null
-          event_metadata?: Json | null
-          event_type: string
-          id?: string
-          notification_type: string
-          recipient: string
-          sent_at?: string
-          user_id: string
-        }
-        Update: {
-          channel?: string
-          created_at?: string
-          delivery_status?: string
-          error_message?: string | null
-          event_metadata?: Json | null
-          event_type?: string
-          id?: string
-          notification_type?: string
-          recipient?: string
-          sent_at?: string
           user_id?: string
         }
         Relationships: []

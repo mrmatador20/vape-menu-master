@@ -27,7 +27,6 @@ import AdminSettings from "./pages/admin/Settings";
 import AdminBanners from "./pages/admin/Banners";
 import AdminAuditLogs from "./pages/admin/AuditLogs";
 import AdminSecurityDashboard from "./pages/admin/SecurityDashboard";
-import AdminNotificationTest from "./pages/admin/NotificationTest";
 
 const queryClient = new QueryClient();
 
@@ -119,7 +118,6 @@ const App = () => (
               <Route path="banners" element={<AdminBanners />} />
               <Route path="audit-logs" element={<AdminAuditLogs />} />
               <Route path="settings" element={<AdminSettings />} />
-              <Route path="notification-test" element={<AdminNotificationTest />} />
             </Route>
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={
