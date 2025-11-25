@@ -4,11 +4,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, Key, Eye, EyeOff, Check, X, Shield } from 'lucide-react';
+import { Loader2, Key, Eye, EyeOff, Check, X, Shield, AlertTriangle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { logActivity } from '@/hooks/useActivityLogs';
 import { z } from 'zod';
+import { checkPwnedPassword, formatPwnedCount } from '@/lib/pwnedPassword';
 
 interface ChangePasswordDialogProps {
   open: boolean;
@@ -45,6 +46,8 @@ export const ChangePasswordDialog = ({ open, onOpenChange }: ChangePasswordDialo
   const [mfaCode, setMfaCode] = useState('');
   const [factorId, setFactorId] = useState<string | null>(null);
   const [isVerifyingMFA, setIsVerifyingMFA] = useState(false);
+  const [pwnedInfo, setPwnedInfo] = useState<{ isPwned: boolean; count: number } | null>(null);
+  const [isCheckingPwned, setIsCheckingPwned] = useState(false);
 
   const getPasswordStrength = (password: string): PasswordStrength => {
     let strength = 0;
@@ -170,6 +173,16 @@ export const ChangePasswordDialog = ({ open, onOpenChange }: ChangePasswordDialo
 
   const handleChangePassword = async () => {
     if (!validatePassword()) return;
+
+    // Check if password has been compromised
+    if (pwnedInfo?.isPwned) {
+      toast({
+        title: 'Senha comprometida detectada',
+        description: `Esta senha foi exposta em ${formatPwnedCount(pwnedInfo.count)} vazamentos de dados. Escolha uma senha diferente.`,
+        variant: 'destructive',
+      });
+      return;
+    }
 
     setIsChanging(true);
     try {
@@ -327,7 +340,20 @@ export const ChangePasswordDialog = ({ open, onOpenChange }: ChangePasswordDialo
                 id="new-password"
                 type={showNewPassword ? 'text' : 'password'}
                 value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
+                onChange={async (e) => {
+                  setNewPassword(e.target.value);
+                  
+                  // Check for pwned password
+                  if (e.target.value.length >= 8) {
+                    setIsCheckingPwned(true);
+                    setPwnedInfo(null);
+                    setTimeout(async () => {
+                      const result = await checkPwnedPassword(e.target.value);
+                      setPwnedInfo({ isPwned: result.isPwned, count: result.count });
+                      setIsCheckingPwned(false);
+                    }, 800);
+                  }
+                }}
                 className={errors.newPassword ? 'border-destructive' : ''}
               />
               <button
@@ -355,6 +381,34 @@ export const ChangePasswordDialog = ({ open, onOpenChange }: ChangePasswordDialo
                     {passwordStrength === 'weak' ? 'Fraca' : passwordStrength === 'medium' ? 'Média' : 'Forte'}
                   </span>
                 </div>
+
+                {/* Pwned Password Warning */}
+                {isCheckingPwned && (
+                  <Alert className="bg-muted/50">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <AlertDescription className="text-xs">
+                      Verificando segurança da senha...
+                    </AlertDescription>
+                  </Alert>
+                )}
+
+                {pwnedInfo?.isPwned && !isCheckingPwned && (
+                  <Alert variant="destructive">
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertDescription className="text-xs">
+                      <strong>⚠️ Senha comprometida!</strong><br/>
+                      Esta senha foi exposta em <strong>{formatPwnedCount(pwnedInfo.count)}</strong> vazamentos de dados.
+                    </AlertDescription>
+                  </Alert>
+                )}
+
+                {pwnedInfo && !pwnedInfo.isPwned && !isCheckingPwned && (
+                  <Alert className="bg-green-500/10 border-green-500/20">
+                    <AlertDescription className="text-xs text-green-700 dark:text-green-400">
+                      ✓ Senha segura - não encontrada em vazamentos conhecidos
+                    </AlertDescription>
+                  </Alert>
+                )}
               </div>
             )}
           </div>
