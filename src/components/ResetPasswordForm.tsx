@@ -142,15 +142,23 @@ export const ResetPasswordForm = () => {
     setIsVerifyingMfa(true);
     
     try {
-      // Usar challengeAndVerify - mais rápido (uma única chamada ao invés de duas)
-      const verifyPromise = supabase.auth.mfa.challengeAndVerify({
+      // Criar challenge primeiro
+      const { data: challengeData, error: challengeError } = await supabase.auth.mfa.challenge({
         factorId: mfaFactorId,
+      });
+
+      if (challengeError) throw challengeError;
+      if (!challengeData?.id) throw new Error('Falha ao criar desafio de autenticação');
+
+      // Verificar código com timeout de 30 segundos
+      const verifyPromise = supabase.auth.mfa.verify({
+        factorId: mfaFactorId,
+        challengeId: challengeData.id,
         code: mfaCode,
       });
 
-      // Timeout de 10 segundos
       const timeoutPromise = new Promise<never>((_, reject) => 
-        setTimeout(() => reject(new Error('Timeout: Verificação demorou muito. Tente novamente.')), 10000)
+        setTimeout(() => reject(new Error('A verificação está demorando mais que o esperado. Isto pode ser um problema temporário do servidor. Tente novamente.')), 30000)
       );
 
       const { error: verifyError } = await Promise.race([verifyPromise, timeoutPromise]);
@@ -167,7 +175,8 @@ export const ResetPasswordForm = () => {
       
     } catch (error: any) {
       setIsVerifyingMfa(false);
-      toast.error('Código incorreto', {
+      const isTimeout = error?.message?.includes('demorando');
+      toast.error(isTimeout ? 'Tempo esgotado' : 'Código incorreto', {
         description: error?.message || 'Verifique o código e tente novamente',
       });
     }

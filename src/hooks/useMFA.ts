@@ -188,9 +188,13 @@ export const useMFA = () => {
 
   const verifyMFACode = async (factorId: string, code: string) => {
     try {
-      // Usar challengeAndVerify - mais rápido (uma única chamada)
-      const verify = await supabase.auth.mfa.challengeAndVerify({
+      const challenge = await supabase.auth.mfa.challenge({ factorId });
+      
+      if (challenge.error) throw challenge.error;
+
+      const verify = await supabase.auth.mfa.verify({
         factorId,
+        challengeId: challenge.data.id,
         code,
       });
 
