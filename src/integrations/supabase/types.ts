@@ -509,6 +509,42 @@ export type Database = {
         }
         Relationships: []
       }
+      rate_limit_tracking: {
+        Row: {
+          action_type: string
+          attempt_count: number
+          block_expires_at: string | null
+          created_at: string
+          id: string
+          identifier: string
+          is_blocked: boolean
+          updated_at: string
+          window_start: string
+        }
+        Insert: {
+          action_type: string
+          attempt_count?: number
+          block_expires_at?: string | null
+          created_at?: string
+          id?: string
+          identifier: string
+          is_blocked?: boolean
+          updated_at?: string
+          window_start?: string
+        }
+        Update: {
+          action_type?: string
+          attempt_count?: number
+          block_expires_at?: string | null
+          created_at?: string
+          id?: string
+          identifier?: string
+          is_blocked?: boolean
+          updated_at?: string
+          window_start?: string
+        }
+        Relationships: []
+      }
       review_responses: {
         Row: {
           admin_user_id: string
@@ -957,6 +993,7 @@ export type Database = {
       }
     }
     Functions: {
+      cleanup_expired_rate_limits: { Args: never; Returns: undefined }
       cleanup_expired_verification_codes: { Args: never; Returns: undefined }
       get_product_availability: {
         Args: { stock_value: number }
