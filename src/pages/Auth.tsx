@@ -3,8 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useMFA } from '@/hooks/useMFA';
 import { logActivity } from '@/hooks/useActivityLogs';
-import { useDeviceCheck } from '@/hooks/useDeviceCheck';
-import { usePasswordPolicy } from '@/hooks/usePasswordPolicy';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -13,70 +11,35 @@ import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 import Header from '@/components/Header';
 import { MFAVerifyDialog } from '@/components/MFAVerifyDialog';
-import { ForcedPasswordChangeDialog } from '@/components/ForcedPasswordChangeDialog';
 
 const Auth = () => {
   const navigate = useNavigate();
   const { listFactors } = useMFA();
-  const { checkDevice } = useDeviceCheck();
-  const { needsPasswordChange, daysSinceChange, checkPasswordPolicy, updatePasswordTimestamp } = usePasswordPolicy();
   const [isLoading, setIsLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
   const [showMFADialog, setShowMFADialog] = useState(false);
-  const [showPasswordChangeDialog, setShowPasswordChangeDialog] = useState(false);
   const [mfaFactorId, setMfaFactorId] = useState<string | null>(null);
-  const [awaitingMFAVerification, setAwaitingMFAVerification] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
   });
 
   useEffect(() => {
-    // Check if user is already logged in with proper AAL level
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (session && !awaitingMFAVerification) {
-        // Check if user has MFA enabled
-        const factors = await listFactors();
-        const hasMFA = factors.totp && factors.totp.length > 0;
-        
-        if (hasMFA) {
-          // User has MFA, verify current AAL level
-          const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-          if (aal?.currentLevel === 'aal2') {
-            // Properly authenticated with 2FA
-            navigate('/');
-          }
-          // If AAL1, user needs to verify 2FA - don't redirect
-        } else {
-          // No MFA, can proceed
-          navigate('/');
-        }
+    // Check if user is already logged in
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        navigate('/');
       }
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (session && !awaitingMFAVerification) {
-        // Check if user has MFA enabled
-        const factors = await listFactors();
-        const hasMFA = factors.totp && factors.totp.length > 0;
-        
-        if (hasMFA) {
-          // User has MFA, verify current AAL level
-          const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-          if (aal?.currentLevel === 'aal2') {
-            // Properly authenticated with 2FA
-            navigate('/');
-          }
-          // If AAL1, user needs to verify 2FA - don't redirect
-        } else {
-          // No MFA, can proceed
-          navigate('/');
-        }
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session) {
+        navigate('/');
       }
     });
 
     return () => subscription.unsubscribe();
-  }, [navigate, awaitingMFAVerification, listFactors]);
+  }, [navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -115,7 +78,6 @@ const Auth = () => {
             const activeFactor = factors.totp.find((f: any) => f.status === 'verified');
             if (activeFactor) {
               setMfaFactorId(activeFactor.id);
-              setAwaitingMFAVerification(true);
               setShowMFADialog(true);
               setIsLoading(false);
               return;
@@ -138,45 +100,7 @@ const Auth = () => {
   };
 
   const handleMFASuccess = async () => {
-    setAwaitingMFAVerification(false);
-    
-    // Check device trust
-    try {
-      const deviceCheckResult = await checkDevice();
-      
-      if (deviceCheckResult.isNewDevice) {
-        toast.info('Novo dispositivo detectado', {
-          description: 'Um email de confirmação foi enviado para você.',
-        });
-      }
-      
-      await logActivity('login', { 
-        method: '2FA',
-        deviceFingerprint: deviceCheckResult.deviceFingerprint,
-        isNewDevice: deviceCheckResult.isNewDevice,
-      });
-    } catch (error) {
-      console.error('Device check failed:', error);
-      // Continue with login even if device check fails
-    }
-    
-    // Check if password change is required
-    const passwordChangeRequired = await checkPasswordPolicy();
-    
-    if (passwordChangeRequired) {
-      setShowPasswordChangeDialog(true);
-      toast.info('Alteração de senha necessária', {
-        description: 'Sua senha expirou. Por favor, crie uma nova senha.',
-      });
-    } else {
-      toast.success('Login realizado com sucesso!');
-      navigate('/');
-    }
-  };
-
-  const handlePasswordChanged = async () => {
-    await updatePasswordTimestamp();
-    setShowPasswordChangeDialog(false);
+    await logActivity('login', { method: '2FA' });
     toast.success('Login realizado com sucesso!');
     navigate('/');
   };
@@ -219,17 +143,10 @@ const Auth = () => {
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                 required
-                minLength={8}
-                pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])[A-Za-z\d@$!%*?&#]{8,}$"
-                title="A senha deve ter no mínimo 8 caracteres, incluindo: maiúsculas, minúsculas, números e caracteres especiais (@$!%*?&#)"
+                minLength={6}
                 className="bg-background border-border text-foreground"
                 placeholder="••••••••"
               />
-              {isSignUp && (
-                <p className="text-xs text-muted-foreground mt-1">
-                  Mínimo 8 caracteres com maiúsculas, minúsculas, números e símbolos (@$!%*?&#)
-                </p>
-              )}
             </div>
 
             <Button
@@ -270,13 +187,6 @@ const Auth = () => {
             onSuccess={handleMFASuccess}
           />
         )}
-
-        {/* Forced Password Change Dialog */}
-        <ForcedPasswordChangeDialog
-          open={showPasswordChangeDialog}
-          daysSinceChange={daysSinceChange}
-          onPasswordChanged={handlePasswordChanged}
-        />
       </div>
     </>
   );

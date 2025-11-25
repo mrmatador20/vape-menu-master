@@ -3,18 +3,16 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useProfile } from '@/hooks/useProfile';
 import { useMFA } from '@/hooks/useMFA';
-import { usePasswordPolicy } from '@/hooks/usePasswordPolicy';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Loader2, User, MapPin, Phone, Calendar, Package, Shield, ShieldCheck, ShieldOff, Key, AlertTriangle, Smartphone } from 'lucide-react';
+import { Loader2, User, MapPin, Phone, Calendar, Package, Shield, ShieldCheck, ShieldOff, Key } from 'lucide-react';
 import Header from '@/components/Header';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Separator } from '@/components/ui/separator';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { MFAEnrollDialog } from '@/components/MFAEnrollDialog';
 import { ChangePasswordDialog } from '@/components/ChangePasswordDialog';
 import { ActivityLogsCard } from '@/components/ActivityLogsCard';
@@ -51,7 +49,6 @@ const Profile = () => {
   const navigate = useNavigate();
   const { profile, isLoading, updateProfile, isUpdating } = useProfile();
   const { listFactors, unenrollMFA, isUnenrolling } = useMFA();
-  const { daysSinceChange, checkPasswordPolicy } = usePasswordPolicy();
   const [userEmail, setUserEmail] = useState<string>('');
   const [mfaFactors, setMfaFactors] = useState<any[]>([]);
   const [showEnrollDialog, setShowEnrollDialog] = useState(false);
@@ -84,7 +81,6 @@ const Profile = () => {
     };
     getUser();
     loadMFAFactors();
-    checkPasswordPolicy();
   }, []);
 
   const loadMFAFactors = async () => {
@@ -537,47 +533,6 @@ const Profile = () => {
             </CardContent>
           </Card>
 
-          {/* Trusted Devices */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Smartphone className="h-5 w-5" />
-                Dispositivos Confiáveis
-              </CardTitle>
-              <CardDescription>
-                Gerencie os dispositivos que têm acesso à sua conta
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-start justify-between p-4 border rounded-lg">
-                <div className="flex-1 space-y-2">
-                  <h4 className="font-medium">Dispositivos Registrados</h4>
-                  <p className="text-sm text-muted-foreground">
-                    Visualize e gerencie todos os dispositivos que acessaram sua conta. 
-                    Remova dispositivos que você não reconhece para manter sua conta segura.
-                  </p>
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => navigate('/trusted-devices')}
-                >
-                  Gerenciar
-                </Button>
-              </div>
-
-              <div className="bg-muted/50 p-4 rounded-lg space-y-2">
-                <h5 className="font-medium text-sm">O que você pode fazer:</h5>
-                <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
-                  <li>Ver endereço IP e localização de cada dispositivo</li>
-                  <li>Verificar quando cada dispositivo foi usado pela última vez</li>
-                  <li>Remover dispositivos que você não reconhece</li>
-                  <li>Receber alertas quando um novo dispositivo faz login</li>
-                </ul>
-              </div>
-            </CardContent>
-          </Card>
-
           {/* Password Change */}
           <Card>
             <CardHeader>
@@ -590,32 +545,12 @@ const Profile = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {daysSinceChange !== null && daysSinceChange >= 75 && (
-                <Alert variant={daysSinceChange >= 90 ? 'destructive' : 'default'}>
-                  <AlertTriangle className="h-4 w-4" />
-                  <AlertDescription>
-                    {daysSinceChange >= 90 ? (
-                      <strong>Sua senha expirou! É obrigatório alterá-la a cada 90 dias por política de segurança.</strong>
-                    ) : (
-                      <>
-                        Sua senha será alterada em <strong>{90 - daysSinceChange} dias</strong>. Por política de segurança, é obrigatório alterar a senha a cada 90 dias.
-                      </>
-                    )}
-                  </AlertDescription>
-                </Alert>
-              )}
-
               <div className="flex items-start justify-between p-4 border rounded-lg">
                 <div className="flex-1 space-y-2">
                   <h4 className="font-medium">Senha da Conta</h4>
                   <p className="text-sm text-muted-foreground">
                     Escolha uma senha forte com no mínimo 8 caracteres, incluindo letras maiúsculas, minúsculas, números e caracteres especiais.
                   </p>
-                  {daysSinceChange !== null && daysSinceChange < 75 && (
-                    <p className="text-xs text-muted-foreground">
-                      Última alteração há {daysSinceChange} dias
-                    </p>
-                  )}
                 </div>
                 <Button
                   variant="outline"
@@ -632,7 +567,7 @@ const Profile = () => {
                   <li>Use uma senha única que você não usa em outros sites</li>
                   <li>Evite informações pessoais óbvias (nome, data de nascimento)</li>
                   <li>Considere usar um gerenciador de senhas</li>
-                  <li>Altere sua senha a cada 90 dias (política obrigatória)</li>
+                  <li>Altere sua senha periodicamente</li>
                 </ul>
               </div>
             </CardContent>

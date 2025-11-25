@@ -31,48 +31,20 @@ export const useMFA = () => {
   const enrollMFA = async () => {
     setIsEnrolling(true);
     try {
-      // Check for existing unverified factors and remove them
-      const factors = await listFactors();
-      const unverifiedFactors = factors.all?.filter(f => f.status === 'unverified') || [];
-      
-      for (const factor of unverifiedFactors) {
-        try {
-          await supabase.auth.mfa.unenroll({ factorId: factor.id });
-        } catch (e) {
-          console.error('Error removing unverified factor:', e);
-        }
-      }
-
       const { data, error } = await supabase.auth.mfa.enroll({
         factorType: 'totp',
       });
 
       if (error) throw error;
 
-      // Get current user email for the URI
-      const { data: { user } } = await supabase.auth.getUser();
-      const userIdentifier = user?.email || 'user';
-
-      // Create a shorter custom TOTP URI instead of using the long Supabase one
-      const customUri = `otpauth://totp/App:${userIdentifier}?secret=${data.totp.secret}&issuer=App`;
-
-      // Generate QR code with the shorter custom URI
-      let qrCodeUrl = null;
-      try {
-        qrCodeUrl = await QRCode.toDataURL(customUri, {
-          errorCorrectionLevel: 'L',
-          margin: 1,
-          width: 200,
-        });
-      } catch (qrError) {
-        console.error('QR code generation failed:', qrError);
-      }
+      // Generate QR code from the URI
+      const qrCodeUrl = await QRCode.toDataURL(data.totp.qr_code);
 
       return {
         factorId: data.id,
         qrCode: qrCodeUrl,
         secret: data.totp.secret,
-        uri: customUri,
+        uri: data.totp.qr_code,
       };
     } catch (error: any) {
       toast({

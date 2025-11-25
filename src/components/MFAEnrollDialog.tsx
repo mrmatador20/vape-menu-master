@@ -4,8 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, Copy, Shield, Smartphone, QrCode } from 'lucide-react';
+import { Loader2, Copy, Shield, Smartphone } from 'lucide-react';
 import { useMFA } from '@/hooks/useMFA';
 import { toast } from '@/hooks/use-toast';
 import { BackupCodesDialog } from './BackupCodesDialog';
@@ -128,73 +127,35 @@ export const MFAEnrollDialog = ({ open, onOpenChange, onSuccess }: MFAEnrollDial
           <div className="space-y-4">
             {enrollmentData && (
               <>
-                <Tabs defaultValue="qrcode" className="w-full">
-                  <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="qrcode" className="gap-2">
-                      <QrCode className="h-4 w-4" />
-                      QR Code
-                    </TabsTrigger>
-                    <TabsTrigger value="manual" className="gap-2">
-                      <Smartphone className="h-4 w-4" />
-                      Código Manual
-                    </TabsTrigger>
-                  </TabsList>
-                
-                  <TabsContent value="qrcode" className="space-y-4 mt-4">
-                    <div className="flex flex-col items-center space-y-4">
-                      {enrollmentData.qrCode ? (
-                        <>
-                          <div className="p-3 bg-white rounded-lg">
-                            <img 
-                              src={enrollmentData.qrCode} 
-                              alt="QR Code para 2FA"
-                              className="w-40 h-40"
-                            />
-                          </div>
-                          <p className="text-sm text-muted-foreground text-center">
-                            Escaneie este código com seu aplicativo autenticador
-                          </p>
-                        </>
-                      ) : (
-                        <Alert>
-                          <AlertDescription>
-                            Não foi possível gerar o QR code. Use o código manual na aba ao lado.
-                          </AlertDescription>
-                        </Alert>
-                      )}
-                    </div>
-                  </TabsContent>
+                <div className="flex flex-col items-center space-y-4">
+                  <div className="p-4 bg-white rounded-lg">
+                    <img 
+                      src={enrollmentData.qrCode} 
+                      alt="QR Code para 2FA"
+                      className="w-48 h-48"
+                    />
+                  </div>
                   
-                  <TabsContent value="manual" className="space-y-4 mt-4">
-                    <Alert>
-                      <Smartphone className="h-4 w-4" />
-                      <AlertDescription>
-                        Insira manualmente este código no seu aplicativo autenticador
-                      </AlertDescription>
-                    </Alert>
-                    
-                    <div className="space-y-2">
-                      <Label>Código Secreto</Label>
-                      <div className="flex gap-2">
-                        <Input 
-                          value={enrollmentData.secret}
-                          readOnly
-                          className="font-mono text-sm"
-                        />
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          onClick={copySecret}
-                        >
-                          <Copy className="h-4 w-4" />
-                        </Button>
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        Abra seu aplicativo autenticador e adicione manualmente usando este código
-                      </p>
+                  <div className="w-full space-y-2">
+                    <Label className="text-xs text-muted-foreground">
+                      Ou insira manualmente este código:
+                    </Label>
+                    <div className="flex gap-2">
+                      <Input 
+                        value={enrollmentData.secret}
+                        readOnly
+                        className="font-mono text-sm"
+                      />
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={copySecret}
+                      >
+                        <Copy className="h-4 w-4" />
+                      </Button>
                     </div>
-                  </TabsContent>
-                </Tabs>
+                  </div>
+                </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="code">Código de Verificação</Label>

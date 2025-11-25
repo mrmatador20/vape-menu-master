@@ -113,16 +113,6 @@ export const ChangePasswordDialog = ({ open, onOpenChange }: ChangePasswordDialo
 
       if (updateError) throw updateError;
 
-      // Update password_changed_at timestamp
-      const { error: timestampError } = await supabase
-        .from('profiles')
-        .update({ password_changed_at: new Date().toISOString() })
-        .eq('id', user.id);
-
-      if (timestampError) {
-        console.error('Failed to update password timestamp:', timestampError);
-      }
-
       await logActivity('password_changed');
 
       toast({
