@@ -27,6 +27,7 @@ import AdminSettings from "./pages/admin/Settings";
 import AdminBanners from "./pages/admin/Banners";
 import AdminAuditLogs from "./pages/admin/AuditLogs";
 import AdminSecurityDashboard from "./pages/admin/SecurityDashboard";
+import NotificationSettings from "./pages/NotificationSettings";
 
 const queryClient = new QueryClient();
 
@@ -97,6 +98,13 @@ const App = () => (
               <ResetFlowGuard>
                 <ProtectedRoute>
                   <Profile />
+                </ProtectedRoute>
+              </ResetFlowGuard>
+            } />
+            <Route path="/notification-settings" element={
+              <ResetFlowGuard>
+                <ProtectedRoute>
+                  <NotificationSettings />
                 </ProtectedRoute>
               </ResetFlowGuard>
             } />
