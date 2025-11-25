@@ -65,7 +65,11 @@ const App = () => (
                 <Profile />
               </ProtectedRoute>
             } />
-            <Route path="/admin" element={<AdminLayout />}>
+            <Route path="/admin" element={
+              <ProtectedRoute>
+                <AdminLayout />
+              </ProtectedRoute>
+            }>
               <Route index element={<AdminDashboard />} />
               <Route path="products" element={<AdminProducts />} />
               <Route path="orders" element={<AdminOrders />} />
