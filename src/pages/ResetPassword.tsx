@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { useMFA } from '@/hooks/useMFA';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,7 +11,6 @@ import Header from '@/components/Header';
 
 const ResetPassword = () => {
   const navigate = useNavigate();
-  const { listFactors, verifyMFACode } = useMFA();
   const [isLoading, setIsLoading] = useState(false);
   const [isValidSession, setIsValidSession] = useState<boolean | null>(null);
   const [showPassword, setShowPassword] = useState(false);
@@ -47,9 +45,9 @@ const ResetPassword = () => {
         }
 
         // Check if user has MFA enabled
-        const factors = await listFactors();
-        if (factors.totp && factors.totp.length > 0) {
-          const activeFactor = factors.totp.find((f: any) => f.status === 'verified');
+        const { data: mfaData, error: mfaError } = await supabase.auth.mfa.listFactors();
+        if (!mfaError && mfaData.totp && mfaData.totp.length > 0) {
+          const activeFactor = mfaData.totp.find((f: any) => f.status === 'verified');
           if (activeFactor) {
             setMfaFactorId(activeFactor.id);
             setShowMFAVerification(true);
@@ -64,7 +62,7 @@ const ResetPassword = () => {
     };
 
     checkSession();
-  }, [listFactors]);
+  }, []);
 
   const handleMFAVerification = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -72,12 +70,21 @@ const ResetPassword = () => {
 
     setIsLoading(true);
     try {
-      await verifyMFACode(mfaFactorId, mfaCode);
+      // Use challengeAndVerify to elevate session to AAL2
+      const { error } = await supabase.auth.mfa.challengeAndVerify({
+        factorId: mfaFactorId,
+        code: mfaCode,
+      });
+
+      if (error) throw error;
+
+      console.log('MFA verified successfully, hiding verification screen');
       setShowMFAVerification(false);
       toast.success('Código verificado!', {
         description: 'Agora você pode redefinir sua senha.',
       });
     } catch (error: any) {
+      console.error('MFA verification failed:', error);
       toast.error('Código incorreto', {
         description: 'Verifique o código e tente novamente.',
       });
