@@ -2,17 +2,20 @@ import { useEffect, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader2 } from 'lucide-react';
+import { useUserRole } from '@/hooks/useUserRole';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
+  requireAdmin?: boolean;
 }
 
 // Flag to check if user is in password reset flow
 const RESET_PASSWORD_FLAG = 'password_reset_flow';
 
-export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
+export const ProtectedRoute = ({ children, requireAdmin = false }: ProtectedRouteProps) => {
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const { data: userRole, isLoading: isLoadingRole } = useUserRole();
   const location = useLocation();
 
   useEffect(() => {
@@ -31,7 +34,7 @@ export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
     return () => subscription.unsubscribe();
   }, []);
 
-  if (isLoading) {
+  if (isLoading || isLoadingRole) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -47,6 +50,11 @@ export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
 
   if (!isAuthenticated) {
     return <Navigate to="/auth" state={{ from: location }} replace />;
+  }
+
+  // Check admin requirement
+  if (requireAdmin && userRole !== 'admin') {
+    return <Navigate to="/" replace />;
   }
 
   return <>{children}</>;
