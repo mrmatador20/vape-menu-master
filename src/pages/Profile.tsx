@@ -6,7 +6,7 @@ import { useMFA } from '@/hooks/useMFA';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Loader2, User, MapPin, Phone, Calendar, Package, Shield, ShieldCheck, ShieldOff, Key, Bell } from 'lucide-react';
+import { Loader2, User, MapPin, Phone, Calendar, Package, Shield, ShieldCheck, ShieldOff, Key } from 'lucide-react';
 import Header from '@/components/Header';
 import { logActivity } from '@/hooks/useActivityLogs';
 import { Button } from '@/components/ui/button';
@@ -552,36 +552,6 @@ const Profile = () => {
                   </ul>
                 </div>
               )}
-            </CardContent>
-          </Card>
-
-          {/* Security Notifications */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Shield className="h-5 w-5" />
-                Notificações de Segurança
-              </CardTitle>
-              <CardDescription>
-                Configure alertas sobre atividades suspeitas em sua conta
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-start justify-between p-4 border rounded-lg">
-                <div className="flex-1 space-y-2">
-                  <h4 className="font-medium">Alertas por E-mail e SMS</h4>
-                  <p className="text-sm text-muted-foreground">
-                    Receba notificações sobre logins suspeitos, falhas de autenticação, alterações de senha e outras atividades de segurança.
-                  </p>
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => navigate('/notification-settings')}
-                >
-                  Configurar
-                </Button>
-              </div>
             </CardContent>
           </Card>
 
