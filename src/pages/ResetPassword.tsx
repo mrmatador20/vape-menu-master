@@ -8,6 +8,7 @@ import { Card } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { Loader2, Eye, EyeOff } from 'lucide-react';
 import Header from '@/components/Header';
+import { validatePassword, getPasswordStrength, getStrengthColor, passwordRequirements } from '@/lib/passwordValidation';
 
 // Flag to indicate user is in password reset flow
 const RESET_PASSWORD_FLAG = 'password_reset_flow';
@@ -21,6 +22,7 @@ const ResetPassword = () => {
   const [showMFAVerification, setShowMFAVerification] = useState(false);
   const [mfaCode, setMfaCode] = useState('');
   const [mfaFactorId, setMfaFactorId] = useState<string | null>(null);
+  const [passwordStrength, setPasswordStrength] = useState('');
   const [formData, setFormData] = useState({
     password: '',
     confirmPassword: '',
@@ -30,6 +32,8 @@ const ResetPassword = () => {
     const checkSession = async () => {
       // Set flag to indicate we're in password reset flow
       localStorage.setItem(RESET_PASSWORD_FLAG, 'true');
+      // Dispatch custom event to notify Header component
+      window.dispatchEvent(new Event('resetFlowChange'));
 
       const timeout = setTimeout(() => {
         setIsValidSession(false);
@@ -46,6 +50,7 @@ const ResetPassword = () => {
         if (error || !session) {
           setIsValidSession(false);
           localStorage.removeItem(RESET_PASSWORD_FLAG);
+          window.dispatchEvent(new Event('resetFlowChange'));
           toast.error('Link inválido ou expirado', {
             description: 'Solicite um novo link de recuperação.',
           });
@@ -75,6 +80,7 @@ const ResetPassword = () => {
     // Cleanup flag when component unmounts
     return () => {
       localStorage.removeItem(RESET_PASSWORD_FLAG);
+      window.dispatchEvent(new Event('resetFlowChange'));
     };
   }, []);
 
@@ -115,8 +121,12 @@ const ResetPassword = () => {
       return;
     }
 
-    if (formData.password.length < 6) {
-      toast.error('A senha deve ter pelo menos 6 caracteres');
+    // Validate password strength
+    const passwordError = validatePassword(formData.password);
+    if (passwordError) {
+      toast.error('Senha fraca', {
+        description: passwordError
+      });
       return;
     }
 
@@ -131,6 +141,7 @@ const ResetPassword = () => {
 
       // Remove reset flag and sign out after successful password reset
       localStorage.removeItem(RESET_PASSWORD_FLAG);
+      window.dispatchEvent(new Event('resetFlowChange'));
       await supabase.auth.signOut();
 
       toast.success('Senha redefinida com sucesso!', {
@@ -277,11 +288,12 @@ const ResetPassword = () => {
                   id="password"
                   type={showPassword ? 'text' : 'password'}
                   value={formData.password}
-                  onChange={(e) =>
-                    setFormData({ ...formData, password: e.target.value })
-                  }
+                  onChange={(e) => {
+                    setFormData({ ...formData, password: e.target.value });
+                    setPasswordStrength(getPasswordStrength(e.target.value));
+                  }}
                   required
-                  minLength={6}
+                  minLength={8}
                   className="bg-background border-border text-foreground pr-10"
                   placeholder="••••••••"
                 />
@@ -297,6 +309,41 @@ const ResetPassword = () => {
                   )}
                 </button>
               </div>
+              
+              {formData.password && (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
+                      <div
+                        className={`h-full transition-all ${getStrengthColor(passwordStrength)}`}
+                        style={{
+                          width: passwordStrength === 'weak' ? '25%' :
+                                 passwordStrength === 'medium' ? '50%' :
+                                 passwordStrength === 'strong' ? '75%' :
+                                 passwordStrength === 'very-strong' ? '100%' : '0%'
+                        }}
+                      />
+                    </div>
+                    <span className="text-xs text-muted-foreground capitalize">
+                      {passwordStrength === 'weak' ? 'Fraca' :
+                       passwordStrength === 'medium' ? 'Média' :
+                       passwordStrength === 'strong' ? 'Forte' :
+                       passwordStrength === 'very-strong' ? 'Muito Forte' : ''}
+                    </span>
+                  </div>
+                  <div className="text-xs text-muted-foreground space-y-1">
+                    <p className="font-medium">Requisitos da senha:</p>
+                    {passwordRequirements.map((req) => (
+                      <div key={req.id} className="flex items-center gap-2">
+                        <span className={req.regex.test(formData.password) ? 'text-green-500' : 'text-muted-foreground'}>
+                          {req.regex.test(formData.password) ? '✓' : '○'}
+                        </span>
+                        <span>{req.text}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -312,7 +359,7 @@ const ResetPassword = () => {
                     setFormData({ ...formData, confirmPassword: e.target.value })
                   }
                   required
-                  minLength={6}
+                  minLength={8}
                   className="bg-background border-border text-foreground pr-10"
                   placeholder="••••••••"
                 />
