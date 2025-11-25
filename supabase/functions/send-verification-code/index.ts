@@ -124,46 +124,72 @@ serve(async (req: Request) => {
       }
     );
 
-    // Get authenticated user
+    const { purpose, email: providedEmail }: VerificationRequest = await req.json();
+    
+    console.log('Request purpose:', purpose);
+
+    // Get authenticated user (if available)
     const {
       data: { user },
       error: userError,
     } = await supabaseClient.auth.getUser();
 
-    if (userError || !user) {
-      console.error('User authentication error:', userError);
-      throw new Error("Não autenticado");
+    // For password_change, user must be authenticated
+    if (purpose === 'password_change' && (userError || !user)) {
+      console.error('User authentication required for password change:', userError);
+      throw new Error("Autenticação necessária para alterar senha");
     }
 
-    const { purpose, email: providedEmail }: VerificationRequest = await req.json();
-    
-    console.log('Request purpose:', purpose);
+    // For login, email must be provided
+    if (purpose === 'login' && !providedEmail) {
+      throw new Error("Email é obrigatório para login");
+    }
 
-    // Use provided email or user's email
-    const userEmail = providedEmail || user.email;
+    // Determine user email and ID
+    const userEmail = providedEmail || user?.email;
+    const userId = user?.id;
+
     if (!userEmail) {
       throw new Error("Email não encontrado");
     }
 
-    // Get user profile for name
-    const { data: profile } = await supabaseClient
-      .from('profiles')
-      .select('full_name')
-      .eq('id', user.id)
-      .maybeSingle();
+    console.log('Processing verification code for:', userEmail);
+
+    // Get user profile for name (if user is authenticated)
+    let profile = null;
+    if (userId) {
+      const { data: profileData } = await supabaseClient
+        .from('profiles')
+        .select('full_name')
+        .eq('id', userId)
+        .maybeSingle();
+      profile = profileData;
+    }
 
     // Generate verification code
     const code = generateCode();
     const expiresAt = new Date();
     expiresAt.setMinutes(expiresAt.getMinutes() + 5); // 5 minutes
 
-    console.log('Generated code for user:', user.id);
+    console.log('Generated code for:', userEmail);
+
+    // For login purpose without userId, we need to find the user by email
+    let finalUserId = userId;
+    if (!finalUserId && purpose === 'login') {
+      const { data: authUsers } = await supabaseClient.auth.admin.listUsers();
+      const foundUser = authUsers?.users?.find(u => u.email === userEmail);
+      finalUserId = foundUser?.id;
+    }
+
+    if (!finalUserId) {
+      throw new Error("Usuário não encontrado");
+    }
 
     // Store code in database
     const { error: insertError } = await supabaseClient
       .from('email_verification_codes')
       .insert({
-        user_id: user.id,
+        user_id: finalUserId,
         code: code,
         purpose: purpose,
         expires_at: expiresAt.toISOString(),
