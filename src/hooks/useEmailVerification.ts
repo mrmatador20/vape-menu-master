@@ -9,8 +9,18 @@ export const useEmailVerification = () => {
   const sendVerificationCode = async (purpose: 'password_change' | 'login') => {
     setIsSending(true);
     try {
+      // Get the current session to ensure we have a valid token
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        throw new Error('Sessão não encontrada. Por favor, tente novamente.');
+      }
+
       const { data, error } = await supabase.functions.invoke('send-verification-code', {
         body: { purpose },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
       });
 
       if (error) throw error;
