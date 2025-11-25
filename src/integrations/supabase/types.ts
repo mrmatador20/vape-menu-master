@@ -312,45 +312,45 @@ export type Database = {
       }
       notification_preferences: {
         Row: {
-          created_at: string
-          email_enabled: boolean
+          created_at: string | null
+          email_enabled: boolean | null
           id: string
-          notify_account_locked: boolean
-          notify_admin_actions: boolean
-          notify_failed_login: boolean
-          notify_password_change: boolean
-          notify_suspicious_login: boolean
+          notify_account_locked: boolean | null
+          notify_admin_actions: boolean | null
+          notify_failed_auth: boolean | null
+          notify_password_change: boolean | null
+          notify_suspicious_login: boolean | null
           phone_number: string | null
-          sms_enabled: boolean
-          updated_at: string
+          sms_enabled: boolean | null
+          updated_at: string | null
           user_id: string
         }
         Insert: {
-          created_at?: string
-          email_enabled?: boolean
+          created_at?: string | null
+          email_enabled?: boolean | null
           id?: string
-          notify_account_locked?: boolean
-          notify_admin_actions?: boolean
-          notify_failed_login?: boolean
-          notify_password_change?: boolean
-          notify_suspicious_login?: boolean
+          notify_account_locked?: boolean | null
+          notify_admin_actions?: boolean | null
+          notify_failed_auth?: boolean | null
+          notify_password_change?: boolean | null
+          notify_suspicious_login?: boolean | null
           phone_number?: string | null
-          sms_enabled?: boolean
-          updated_at?: string
+          sms_enabled?: boolean | null
+          updated_at?: string | null
           user_id: string
         }
         Update: {
-          created_at?: string
-          email_enabled?: boolean
+          created_at?: string | null
+          email_enabled?: boolean | null
           id?: string
-          notify_account_locked?: boolean
-          notify_admin_actions?: boolean
-          notify_failed_login?: boolean
-          notify_password_change?: boolean
-          notify_suspicious_login?: boolean
+          notify_account_locked?: boolean | null
+          notify_admin_actions?: boolean | null
+          notify_failed_auth?: boolean | null
+          notify_password_change?: boolean | null
+          notify_suspicious_login?: boolean | null
           phone_number?: string | null
-          sms_enabled?: boolean
-          updated_at?: string
+          sms_enabled?: boolean | null
+          updated_at?: string | null
           user_id?: string
         }
         Relationships: []
@@ -722,41 +722,44 @@ export type Database = {
       security_notification_logs: {
         Row: {
           channel: string
-          created_at: string
-          delivery_status: string
+          created_at: string | null
+          delivered_at: string | null
           error_message: string | null
-          event_metadata: Json | null
-          event_type: string
           id: string
+          message_content: string
+          metadata: Json | null
           notification_type: string
           recipient: string
-          sent_at: string
+          status: string
+          subject: string | null
           user_id: string
         }
         Insert: {
           channel: string
-          created_at?: string
-          delivery_status?: string
+          created_at?: string | null
+          delivered_at?: string | null
           error_message?: string | null
-          event_metadata?: Json | null
-          event_type: string
           id?: string
+          message_content: string
+          metadata?: Json | null
           notification_type: string
           recipient: string
-          sent_at?: string
+          status: string
+          subject?: string | null
           user_id: string
         }
         Update: {
           channel?: string
-          created_at?: string
-          delivery_status?: string
+          created_at?: string | null
+          delivered_at?: string | null
           error_message?: string | null
-          event_metadata?: Json | null
-          event_type?: string
           id?: string
+          message_content?: string
+          metadata?: Json | null
           notification_type?: string
           recipient?: string
-          sent_at?: string
+          status?: string
+          subject?: string | null
           user_id?: string
         }
         Relationships: []
