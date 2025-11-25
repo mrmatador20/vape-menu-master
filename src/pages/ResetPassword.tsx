@@ -1,0 +1,330 @@
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import { useMFA } from '@/hooks/useMFA';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card } from '@/components/ui/card';
+import { toast } from 'sonner';
+import { Loader2, Eye, EyeOff } from 'lucide-react';
+import Header from '@/components/Header';
+
+const ResetPassword = () => {
+  const navigate = useNavigate();
+  const { listFactors, verifyMFACode } = useMFA();
+  const [isLoading, setIsLoading] = useState(false);
+  const [isValidSession, setIsValidSession] = useState<boolean | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showMFAVerification, setShowMFAVerification] = useState(false);
+  const [mfaCode, setMfaCode] = useState('');
+  const [mfaFactorId, setMfaFactorId] = useState<string | null>(null);
+  const [formData, setFormData] = useState({
+    password: '',
+    confirmPassword: '',
+  });
+
+  useEffect(() => {
+    const checkSession = async () => {
+      const timeout = setTimeout(() => {
+        setIsValidSession(false);
+        toast.error('Sessão expirada', {
+          description: 'O link de recuperação expirou ou é inválido.',
+        });
+      }, 5000);
+
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        clearTimeout(timeout);
+
+        if (error || !session) {
+          setIsValidSession(false);
+          toast.error('Link inválido ou expirado', {
+            description: 'Solicite um novo link de recuperação.',
+          });
+          return;
+        }
+
+        // Check if user has MFA enabled
+        const factors = await listFactors();
+        if (factors.totp && factors.totp.length > 0) {
+          const activeFactor = factors.totp.find((f: any) => f.status === 'verified');
+          if (activeFactor) {
+            setMfaFactorId(activeFactor.id);
+            setShowMFAVerification(true);
+          }
+        }
+
+        setIsValidSession(true);
+      } catch (error) {
+        clearTimeout(timeout);
+        setIsValidSession(false);
+      }
+    };
+
+    checkSession();
+  }, [listFactors]);
+
+  const handleMFAVerification = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!mfaFactorId) return;
+
+    setIsLoading(true);
+    try {
+      await verifyMFACode(mfaFactorId, mfaCode);
+      setShowMFAVerification(false);
+      toast.success('Código verificado!', {
+        description: 'Agora você pode redefinir sua senha.',
+      });
+    } catch (error: any) {
+      toast.error('Código incorreto', {
+        description: 'Verifique o código e tente novamente.',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (formData.password !== formData.confirmPassword) {
+      toast.error('As senhas não coincidem');
+      return;
+    }
+
+    if (formData.password.length < 6) {
+      toast.error('A senha deve ter pelo menos 6 caracteres');
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: formData.password,
+      });
+
+      if (error) throw error;
+
+      toast.success('Senha redefinida com sucesso!', {
+        description: 'Você será redirecionado para a página de login.',
+      });
+
+      setTimeout(() => {
+        navigate('/auth');
+      }, 2000);
+    } catch (error: any) {
+      toast.error('Erro ao redefinir senha', {
+        description: error.message || 'Tente novamente mais tarde.',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (isValidSession === null) {
+    return (
+      <>
+        <Header />
+        <div className="min-h-[calc(100vh-4rem)] bg-gradient-hero flex items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </>
+    );
+  }
+
+  if (isValidSession === false) {
+    return (
+      <>
+        <Header />
+        <div className="min-h-[calc(100vh-4rem)] bg-gradient-hero flex items-center justify-center py-8">
+          <Card className="w-full max-w-md p-8 bg-gradient-card border-border">
+            <div className="text-center space-y-4">
+              <h1 className="text-2xl font-bold text-foreground">
+                Link Inválido ou Expirado
+              </h1>
+              <p className="text-muted-foreground">
+                O link de recuperação de senha expirou ou é inválido.
+              </p>
+              <Button
+                onClick={() => navigate('/forgot-password')}
+                className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
+                size="lg"
+              >
+                Solicitar novo link
+              </Button>
+            </div>
+          </Card>
+        </div>
+      </>
+    );
+  }
+
+  if (showMFAVerification) {
+    return (
+      <>
+        <Header />
+        <div className="min-h-[calc(100vh-4rem)] bg-gradient-hero flex items-center justify-center py-8">
+          <Card className="w-full max-w-md p-8 bg-gradient-card border-border">
+            <div className="text-center mb-6">
+              <h1 className="text-3xl font-bold text-foreground mb-2">
+                Verificação 2FA Necessária
+              </h1>
+              <p className="text-muted-foreground">
+                Para garantir a segurança da sua conta, digite o código do seu aplicativo autenticador
+              </p>
+            </div>
+
+            <form onSubmit={handleMFAVerification} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="mfaCode" className="text-foreground">
+                  Código 2FA
+                </Label>
+                <Input
+                  id="mfaCode"
+                  type="text"
+                  value={mfaCode}
+                  onChange={(e) => setMfaCode(e.target.value)}
+                  required
+                  maxLength={6}
+                  className="bg-background border-border text-foreground text-center text-2xl tracking-widest"
+                  placeholder="000000"
+                />
+              </div>
+
+              <Button
+                type="submit"
+                className="w-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-glow"
+                size="lg"
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Verificando...
+                  </>
+                ) : (
+                  'Confirmar código MFA'
+                )}
+              </Button>
+            </form>
+
+            <div className="mt-4 text-center">
+              <p className="text-sm text-muted-foreground">
+                Problemas com o autenticador?{' '}
+                <button
+                  onClick={() => navigate('/auth')}
+                  className="text-primary hover:text-primary/90 underline"
+                >
+                  Entre em contato com o suporte
+                </button>
+              </p>
+            </div>
+          </Card>
+        </div>
+      </>
+    );
+  }
+
+  return (
+    <>
+      <Header />
+      <div className="min-h-[calc(100vh-4rem)] bg-gradient-hero flex items-center justify-center py-8">
+        <Card className="w-full max-w-md p-8 bg-gradient-card border-border">
+          <div className="text-center mb-6">
+            <h1 className="text-3xl font-bold text-foreground mb-2">
+              Redefinir Senha
+            </h1>
+            <p className="text-muted-foreground">
+              Digite sua nova senha abaixo
+            </p>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="password" className="text-foreground">
+                Nova Senha
+              </Label>
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  value={formData.password}
+                  onChange={(e) =>
+                    setFormData({ ...formData, password: e.target.value })
+                  }
+                  required
+                  minLength={6}
+                  className="bg-background border-border text-foreground pr-10"
+                  placeholder="••••••••"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </button>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword" className="text-foreground">
+                Confirmar Nova Senha
+              </Label>
+              <div className="relative">
+                <Input
+                  id="confirmPassword"
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  value={formData.confirmPassword}
+                  onChange={(e) =>
+                    setFormData({ ...formData, confirmPassword: e.target.value })
+                  }
+                  required
+                  minLength={6}
+                  className="bg-background border-border text-foreground pr-10"
+                  placeholder="••••••••"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  {showConfirmPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </button>
+              </div>
+            </div>
+
+            <Button
+              type="submit"
+              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-glow"
+              size="lg"
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Redefinindo...
+                </>
+              ) : (
+                'Redefinir senha'
+              )}
+            </Button>
+          </form>
+        </Card>
+      </div>
+    </>
+  );
+};
+
+export default ResetPassword;
