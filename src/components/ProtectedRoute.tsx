@@ -7,6 +7,9 @@ interface ProtectedRouteProps {
   children: React.ReactNode;
 }
 
+// Flag to check if user is in password reset flow
+const RESET_PASSWORD_FLAG = 'password_reset_flow';
+
 export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -34,6 +37,12 @@ export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
+  }
+
+  // If user is in password reset flow, redirect to reset password page
+  const isInResetFlow = localStorage.getItem(RESET_PASSWORD_FLAG) === 'true';
+  if (isInResetFlow && location.pathname !== '/reset-password') {
+    return <Navigate to="/reset-password" replace />;
   }
 
   if (!isAuthenticated) {
