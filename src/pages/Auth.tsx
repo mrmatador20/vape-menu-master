@@ -15,7 +15,6 @@ import { MFAVerifyDialog } from '@/components/MFAVerifyDialog';
 import { validatePassword, getPasswordStrength, getStrengthColor, passwordRequirements } from '@/lib/passwordValidation';
 import { checkRateLimit, resetRateLimit } from '@/lib/rateLimit';
 import { checkPwnedPassword, formatPwnedCount } from '@/lib/pwnedPassword';
-import { sendFailedLoginAlert } from '@/lib/securityNotifications';
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -154,26 +153,9 @@ const Auth = () => {
           await logActivity('login');
           toast.success('Login realizado com sucesso!');
         } else if (signInError) {
-          // Log failed login attempt
           await logActivity('login_failed', { 
             metadata: { error: signInError.message }
           });
-          
-          // Send security alert for failed login
-          try {
-            const attemptCount = 5 - (rateLimitResult.remainingAttempts || 0);
-            if (attemptCount >= 3) {
-              // Send alert after 3 or more failed attempts
-              await sendFailedLoginAlert(
-                signInData?.user?.id || '',
-                formData.email,
-                attemptCount
-              );
-            }
-          } catch (notificationError) {
-            console.error('Failed to send security alert:', notificationError);
-          }
-          
           throw signInError;
         }
       }

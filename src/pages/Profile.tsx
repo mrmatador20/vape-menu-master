@@ -20,7 +20,6 @@ import { ActivityLogsCard } from '@/components/ActivityLogsCard';
 import { AvatarUpload } from '@/components/AvatarUpload';
 import { Badge } from '@/components/ui/badge';
 import { SavedAddressesManager } from '@/components/SavedAddressesManager';
-import { NotificationPreferencesCard } from '@/components/NotificationPreferencesCard';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -598,9 +597,6 @@ const Profile = () => {
 
           {/* Activity Logs */}
           <ActivityLogsCard />
-
-          {/* Notification Preferences */}
-          <NotificationPreferencesCard />
 
           {/* Orders History Link */}
           <Card className="cursor-pointer hover:border-primary transition-colors" onClick={() => navigate('/my-orders')}>

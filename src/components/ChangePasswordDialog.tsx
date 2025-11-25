@@ -10,7 +10,6 @@ import { toast } from '@/hooks/use-toast';
 import { logActivity } from '@/hooks/useActivityLogs';
 import { z } from 'zod';
 import { checkPwnedPassword, formatPwnedCount } from '@/lib/pwnedPassword';
-import { sendPasswordChangedAlert } from '@/lib/securityNotifications';
 
 interface ChangePasswordDialogProps {
   open: boolean;
@@ -154,16 +153,6 @@ export const ChangePasswordDialog = ({ open, onOpenChange }: ChangePasswordDialo
       if (updateError) throw updateError;
 
       await logActivity('password_changed');
-      
-      // Send security notification for password change
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user?.email) {
-          await sendPasswordChangedAlert(user.id, user.email);
-        }
-      } catch (notificationError) {
-        console.error('Failed to send password change notification:', notificationError);
-      }
 
       toast({
         title: 'Senha alterada com sucesso!',
