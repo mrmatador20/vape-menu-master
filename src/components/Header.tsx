@@ -62,12 +62,16 @@ const Header = () => {
   useEffect(() => {
     // Check current session
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setIsLoggedIn(!!session);
+      // Don't show as logged in if user is in password reset flow
+      const isInResetFlow = localStorage.getItem('password_reset_flow') === 'true';
+      setIsLoggedIn(!!session && !isInResetFlow);
     });
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      setIsLoggedIn(!!session);
+      // Don't show as logged in if user is in password reset flow
+      const isInResetFlow = localStorage.getItem('password_reset_flow') === 'true';
+      setIsLoggedIn(!!session && !isInResetFlow);
     });
 
     return () => subscription.unsubscribe();

@@ -9,6 +9,9 @@ import { toast } from 'sonner';
 import { Loader2, Eye, EyeOff } from 'lucide-react';
 import Header from '@/components/Header';
 
+// Flag to indicate user is in password reset flow
+const RESET_PASSWORD_FLAG = 'password_reset_flow';
+
 const ResetPassword = () => {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
@@ -25,8 +28,12 @@ const ResetPassword = () => {
 
   useEffect(() => {
     const checkSession = async () => {
+      // Set flag to indicate we're in password reset flow
+      localStorage.setItem(RESET_PASSWORD_FLAG, 'true');
+
       const timeout = setTimeout(() => {
         setIsValidSession(false);
+        localStorage.removeItem(RESET_PASSWORD_FLAG);
         toast.error('Sessão expirada', {
           description: 'O link de recuperação expirou ou é inválido.',
         });
@@ -38,6 +45,7 @@ const ResetPassword = () => {
 
         if (error || !session) {
           setIsValidSession(false);
+          localStorage.removeItem(RESET_PASSWORD_FLAG);
           toast.error('Link inválido ou expirado', {
             description: 'Solicite um novo link de recuperação.',
           });
@@ -58,10 +66,16 @@ const ResetPassword = () => {
       } catch (error) {
         clearTimeout(timeout);
         setIsValidSession(false);
+        localStorage.removeItem(RESET_PASSWORD_FLAG);
       }
     };
 
     checkSession();
+
+    // Cleanup flag when component unmounts
+    return () => {
+      localStorage.removeItem(RESET_PASSWORD_FLAG);
+    };
   }, []);
 
   const handleMFAVerification = async (e: React.FormEvent) => {
@@ -115,8 +129,12 @@ const ResetPassword = () => {
 
       if (error) throw error;
 
+      // Remove reset flag and sign out after successful password reset
+      localStorage.removeItem(RESET_PASSWORD_FLAG);
+      await supabase.auth.signOut();
+
       toast.success('Senha redefinida com sucesso!', {
-        description: 'Você será redirecionado para a página de login.',
+        description: 'Faça login com sua nova senha.',
       });
 
       setTimeout(() => {
