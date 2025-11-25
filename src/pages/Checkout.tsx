@@ -268,17 +268,13 @@ const Checkout = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    console.log('[Checkout] Starting order submission');
-    
     if (!userId) {
-      console.error('[Checkout] No user ID found');
       toast.error('Você precisa estar logado para fazer um pedido');
       navigate('/auth');
       return;
     }
 
     if (items.length === 0) {
-      console.error('[Checkout] Cart is empty');
       toast.error('Seu carrinho está vazio');
       return;
     }
@@ -287,18 +283,14 @@ const Checkout = () => {
 
     try {
       const validatedData = checkoutSchema.parse(formData);
-      console.log('[Checkout] Form data validated');
 
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session) {
-        console.error('[Checkout] No active session');
         toast.error('Sessão expirada. Faça login novamente.');
         navigate('/auth');
         return;
       }
-      
-      console.log('[Checkout] Session found, calling edge function');
 
       const { data, error } = await supabase.functions.invoke('create-order', {
         body: {
@@ -320,36 +312,26 @@ const Checkout = () => {
           discountCode: appliedDiscount?.code || undefined,
         }
       });
-      
-      console.log('[Checkout] Edge function response:', { data, error });
 
       if (error) {
-        console.error('[Checkout] Edge function error:', error);
         toast.error('Erro ao processar pedido. Tente novamente.');
         return;
       }
 
       if (!data?.success) {
-        console.error('[Checkout] Order creation failed:', data);
         toast.error(data?.error || 'Erro ao processar pedido. Tente novamente.');
         return;
       }
 
       const order = data.order;
-      console.log('[Checkout] Order created successfully:', order.id);
-      console.log('[Checkout] Order data:', JSON.stringify(order));
 
       try {
-        console.log('[Checkout] Starting WhatsApp message construction');
-        
         const itemsList = order.items
           .map((item: any) => {
             const flavorText = item.flavor ? ` (${item.flavor})` : '';
             return `${item.quantity}x ${item.name}${flavorText} - R$ ${item.price.toFixed(2)}`;
           })
           .join('\n');
-        
-        console.log('[Checkout] Items list built:', itemsList);
         
         // Montando a mensagem para o WhatsApp
         let message = `*Novo Pedido #${order.id}*\n\n*Itens:*\n${itemsList}\n\n*Subtotal: R$ ${subtotal.toFixed(2)}*\n*Taxa de Entrega (CEP ${validatedData.cep}): R$ ${(shippingCost || 0).toFixed(2)}*\n*Total: R$ ${order.total.toFixed(2)}*\n\n*Endereço de Entrega:*\n${validatedData.rua}, ${validatedData.numero}\n${validatedData.bairro} - ${validatedData.cidade}\nCEP: ${validatedData.cep}\n\n*Forma de Pagamento:* ${validatedData.paymentMethod === 'pix' ? 'PIX' : 'Dinheiro'}`;
@@ -361,15 +343,9 @@ const Checkout = () => {
           message += `\nTroco para: R$ ${changeAmount.toFixed(2)}\nTroco a ser pago: R$ ${changeToGive.toFixed(2)}`;
         }
 
-        console.log('[Checkout] Message built successfully');
-        console.log('[Checkout] Message preview:', message.substring(0, 100));
-
         // Codificando a mensagem para ser passada na URL do WhatsApp
         const encodedMessage = encodeURIComponent(message);
         const whatsappUrl = `https://wa.me/5583996694806?text=${encodedMessage}`;
-        
-        console.log('[Checkout] WhatsApp URL constructed');
-        console.log('[Checkout] Opening WhatsApp...');
 
         clearCart();
         toast.success('Pedido realizado com sucesso! Abrindo WhatsApp...');
@@ -413,10 +389,7 @@ const Checkout = () => {
           }
         });
       } catch (whatsappError) {
-        console.error('[Checkout] Critical error in WhatsApp flow:', whatsappError);
-        console.error('[Checkout] Error stack:', whatsappError instanceof Error ? whatsappError.stack : 'No stack');
         toast.error('Erro ao abrir WhatsApp. Por favor, entre em contato diretamente.');
-        // Mesmo com erro, navega para home após delay
         setTimeout(() => {
           navigate('/');
         }, 2000);

@@ -70,8 +70,9 @@ const Header = () => {
     // Initial check
     checkResetFlow();
 
-    // Check periodically for changes (in case flag is set by another component)
-    const interval = setInterval(checkResetFlow, 100);
+    // Listen for custom event instead of polling
+    const handleResetFlowChange = () => checkResetFlow();
+    window.addEventListener('resetFlowChange', handleResetFlowChange);
 
     // Check current session
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -88,7 +89,7 @@ const Header = () => {
 
     return () => {
       subscription.unsubscribe();
-      clearInterval(interval);
+      window.removeEventListener('resetFlowChange', handleResetFlowChange);
     };
   }, []);
 

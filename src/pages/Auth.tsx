@@ -8,9 +8,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Eye, EyeOff } from 'lucide-react';
 import Header from '@/components/Header';
 import { MFAVerifyDialog } from '@/components/MFAVerifyDialog';
+import { validatePassword, getPasswordStrength, getStrengthColor, passwordRequirements } from '@/lib/passwordValidation';
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -19,6 +20,8 @@ const Auth = () => {
   const [isSignUp, setIsSignUp] = useState(false);
   const [showMFADialog, setShowMFADialog] = useState(false);
   const [mfaFactorId, setMfaFactorId] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
+  const [passwordStrength, setPasswordStrength] = useState('');
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -47,6 +50,16 @@ const Auth = () => {
 
     try {
       if (isSignUp) {
+        // Validate password strength for signup
+        const passwordError = validatePassword(formData.password);
+        if (passwordError) {
+          toast.error('Senha fraca', {
+            description: passwordError
+          });
+          setIsLoading(false);
+          return;
+        }
+
         const { error } = await supabase.auth.signUp({
           email: formData.email,
           password: formData.password,
@@ -137,16 +150,69 @@ const Auth = () => {
 
             <div className="space-y-2">
               <Label htmlFor="password" className="text-foreground">Senha</Label>
-              <Input
-                id="password"
-                type="password"
-                value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                required
-                minLength={6}
-                className="bg-background border-border text-foreground"
-                placeholder="••••••••"
-              />
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  value={formData.password}
+                  onChange={(e) => {
+                    setFormData({ ...formData, password: e.target.value });
+                    if (isSignUp) {
+                      setPasswordStrength(getPasswordStrength(e.target.value));
+                    }
+                  }}
+                  required
+                  minLength={8}
+                  className="bg-background border-border text-foreground pr-10"
+                  placeholder="••••••••"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </button>
+              </div>
+              
+              {isSignUp && formData.password && (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
+                      <div
+                        className={`h-full transition-all ${getStrengthColor(passwordStrength)}`}
+                        style={{
+                          width: passwordStrength === 'weak' ? '25%' :
+                                 passwordStrength === 'medium' ? '50%' :
+                                 passwordStrength === 'strong' ? '75%' :
+                                 passwordStrength === 'very-strong' ? '100%' : '0%'
+                        }}
+                      />
+                    </div>
+                    <span className="text-xs text-muted-foreground capitalize">
+                      {passwordStrength === 'weak' ? 'Fraca' :
+                       passwordStrength === 'medium' ? 'Média' :
+                       passwordStrength === 'strong' ? 'Forte' :
+                       passwordStrength === 'very-strong' ? 'Muito Forte' : ''}
+                    </span>
+                  </div>
+                  <div className="text-xs text-muted-foreground space-y-1">
+                    <p className="font-medium">Requisitos da senha:</p>
+                    {passwordRequirements.map((req) => (
+                      <div key={req.id} className="flex items-center gap-2">
+                        <span className={req.regex.test(formData.password) ? 'text-green-500' : 'text-muted-foreground'}>
+                          {req.regex.test(formData.password) ? '✓' : '○'}
+                        </span>
+                        <span>{req.text}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             <Button
