@@ -43,9 +43,7 @@ const Header = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isCategoriesOpen, setIsCategoriesOpen] = useState(false);
-
-  // Check if user is in password reset flow
-  const isInResetFlow = localStorage.getItem('password_reset_flow') === 'true';
+  const [isInResetFlow, setIsInResetFlow] = useState(false);
 
   // Extrai categorias únicas dos produtos
   const categories = useMemo(() => 
@@ -63,21 +61,35 @@ const Header = () => {
   };
 
   useEffect(() => {
+    // Check if user is in password reset flow
+    const checkResetFlow = () => {
+      const resetFlag = localStorage.getItem('password_reset_flow') === 'true';
+      setIsInResetFlow(resetFlag);
+    };
+
+    // Initial check
+    checkResetFlow();
+
+    // Check periodically for changes (in case flag is set by another component)
+    const interval = setInterval(checkResetFlow, 100);
+
     // Check current session
     supabase.auth.getSession().then(({ data: { session } }) => {
-      // Don't show as logged in if user is in password reset flow
-      const isInResetFlow = localStorage.getItem('password_reset_flow') === 'true';
-      setIsLoggedIn(!!session && !isInResetFlow);
+      const resetFlag = localStorage.getItem('password_reset_flow') === 'true';
+      setIsLoggedIn(!!session && !resetFlag);
     });
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      // Don't show as logged in if user is in password reset flow
-      const isInResetFlow = localStorage.getItem('password_reset_flow') === 'true';
-      setIsLoggedIn(!!session && !isInResetFlow);
+      const resetFlag = localStorage.getItem('password_reset_flow') === 'true';
+      setIsLoggedIn(!!session && !resetFlag);
+      setIsInResetFlow(resetFlag);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+      clearInterval(interval);
+    };
   }, []);
 
   const handleLogout = async () => {
@@ -118,7 +130,7 @@ const Header = () => {
             </span>
           </div>
           <div className="text-sm text-muted-foreground">
-            Recuperação de Senha
+            Recuperação de Senha em Andamento
           </div>
         </div>
       </header>
