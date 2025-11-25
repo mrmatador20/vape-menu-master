@@ -214,6 +214,36 @@ export type Database = {
         }
         Relationships: []
       }
+      email_verification_codes: {
+        Row: {
+          code: string
+          created_at: string
+          expires_at: string
+          id: string
+          purpose: string
+          used_at: string | null
+          user_id: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          expires_at: string
+          id?: string
+          purpose: string
+          used_at?: string | null
+          user_id: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          purpose?: string
+          used_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       flavors: {
         Row: {
           created_at: string
@@ -427,6 +457,7 @@ export type Database = {
           created_at: string
           full_name: string | null
           id: string
+          password_changed_at: string | null
           phone: string | null
           updated_at: string
         }
@@ -442,6 +473,7 @@ export type Database = {
           created_at?: string
           full_name?: string | null
           id: string
+          password_changed_at?: string | null
           phone?: string | null
           updated_at?: string
         }
@@ -457,6 +489,7 @@ export type Database = {
           created_at?: string
           full_name?: string | null
           id?: string
+          password_changed_at?: string | null
           phone?: string | null
           updated_at?: string
         }
@@ -667,10 +700,47 @@ export type Database = {
         }
         Relationships: []
       }
+      trusted_devices: {
+        Row: {
+          created_at: string
+          device_fingerprint: string
+          device_name: string | null
+          id: string
+          ip_address: string | null
+          is_trusted: boolean
+          last_used_at: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          device_fingerprint: string
+          device_name?: string | null
+          id?: string
+          ip_address?: string | null
+          is_trusted?: boolean
+          last_used_at?: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          device_fingerprint?: string
+          device_name?: string | null
+          id?: string
+          ip_address?: string | null
+          is_trusted?: boolean
+          last_used_at?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_activity_logs: {
         Row: {
           activity_type: string
           created_at: string
+          device_fingerprint: string | null
           id: string
           ip_address: string | null
           metadata: Json | null
@@ -680,6 +750,7 @@ export type Database = {
         Insert: {
           activity_type: string
           created_at?: string
+          device_fingerprint?: string | null
           id?: string
           ip_address?: string | null
           metadata?: Json | null
@@ -689,6 +760,7 @@ export type Database = {
         Update: {
           activity_type?: string
           created_at?: string
+          device_fingerprint?: string | null
           id?: string
           ip_address?: string | null
           metadata?: Json | null
@@ -723,11 +795,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cleanup_expired_verification_codes: { Args: never; Returns: undefined }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
+        Returns: boolean
+      }
+      is_password_change_required: {
+        Args: { user_profile_id: string }
         Returns: boolean
       }
       validate_discount_code: {
