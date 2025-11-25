@@ -136,18 +136,18 @@ export const ChangePasswordDialog = ({ open, onOpenChange }: ChangePasswordDialo
     setIsVerifyingMfa(true);
 
     try {
-      const { data: challengeData, error: challengeError } = await supabase.auth.mfa.challenge({
+      // Usar challengeAndVerify - mais rápido (uma única chamada ao invés de duas)
+      const verifyPromise = supabase.auth.mfa.challengeAndVerify({
         factorId: mfaFactorId,
-      });
-
-      if (challengeError) throw challengeError;
-      if (!challengeData?.id) throw new Error('No challenge ID returned');
-
-      const { error: verifyError } = await supabase.auth.mfa.verify({
-        factorId: mfaFactorId,
-        challengeId: challengeData.id,
         code: mfaCode,
       });
+
+      // Timeout de 10 segundos
+      const timeoutPromise = new Promise<never>((_, reject) => 
+        setTimeout(() => reject(new Error('Timeout: Verificação demorou muito. Tente novamente.')), 10000)
+      );
+
+      const { error: verifyError } = await Promise.race([verifyPromise, timeoutPromise]);
 
       if (verifyError) throw verifyError;
 
@@ -175,23 +175,31 @@ export const ChangePasswordDialog = ({ open, onOpenChange }: ChangePasswordDialo
     setIsChanging(true);
     
     try {
-      const { data: { user }, error: getUserError } = await supabase.auth.getUser();
-      
-      if (getUserError) throw getUserError;
-      if (!user?.email) throw new Error('Usuário não autenticado');
+      // Timeout de 15 segundos para todas operações
+      const changePromise = (async () => {
+        const { data: { user }, error: getUserError } = await supabase.auth.getUser();
+        
+        if (getUserError) throw getUserError;
+        if (!user?.email) throw new Error('Usuário não autenticado');
 
-      const { error: updateError } = await supabase.auth.updateUser({
-        password: newPassword,
-      });
+        const { error: updateError } = await supabase.auth.updateUser({
+          password: newPassword,
+        });
 
-      if (updateError) throw updateError;
+        if (updateError) throw updateError;
 
-      await supabase
-        .from('profiles')
-        .update({ password_changed_at: new Date().toISOString() })
-        .eq('id', user.id);
+        // Atualizar profile em paralelo com log de atividade
+        await Promise.all([
+          supabase.from('profiles').update({ password_changed_at: new Date().toISOString() }).eq('id', user.id),
+          logActivity('password_changed')
+        ]);
+      })();
 
-      await logActivity('password_changed');
+      const timeoutPromise = new Promise<never>((_, reject) => 
+        setTimeout(() => reject(new Error('Timeout: Operação demorou muito. Tente novamente.')), 15000)
+      );
+
+      await Promise.race([changePromise, timeoutPromise]);
 
       setIsChanging(false);
 
