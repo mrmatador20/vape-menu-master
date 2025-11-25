@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, Key, Eye, EyeOff, Check, X } from 'lucide-react';
+import { Loader2, Key, Eye, EyeOff, Check, X, Shield } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { logActivity } from '@/hooks/useActivityLogs';
@@ -40,6 +40,11 @@ export const ChangePasswordDialog = ({ open, onOpenChange }: ChangePasswordDialo
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isChanging, setIsChanging] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [hasMFA, setHasMFA] = useState(false);
+  const [showMFAVerification, setShowMFAVerification] = useState(false);
+  const [mfaCode, setMfaCode] = useState('');
+  const [factorId, setFactorId] = useState<string | null>(null);
+  const [isVerifyingMFA, setIsVerifyingMFA] = useState(false);
 
   const getPasswordStrength = (password: string): PasswordStrength => {
     let strength = 0;
@@ -85,28 +90,59 @@ export const ChangePasswordDialog = ({ open, onOpenChange }: ChangePasswordDialo
     }
   };
 
-  const handleChangePassword = async () => {
-    if (!validatePassword()) return;
-
-    setIsChanging(true);
-    try {
-      // Verify current password by attempting to sign in
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user?.email) {
-        throw new Error('Usuário não autenticado');
+  useEffect(() => {
+    const checkMFA = async () => {
+      if (open) {
+        const { data } = await supabase.auth.mfa.listFactors();
+        const hasTOTP = data?.totp && data.totp.length > 0;
+        setHasMFA(hasTOTP);
+        if (hasTOTP) {
+          setFactorId(data.totp[0].id);
+        }
       }
+    };
+    checkMFA();
+  }, [open]);
 
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: user.email,
-        password: currentPassword,
+  const handleVerifyMFA = async () => {
+    if (!factorId || !mfaCode) return;
+
+    setIsVerifyingMFA(true);
+    try {
+      const challenge = await supabase.auth.mfa.challenge({ factorId });
+      if (challenge.error) throw challenge.error;
+
+      const verify = await supabase.auth.mfa.verify({
+        factorId,
+        challengeId: challenge.data.id,
+        code: mfaCode,
       });
 
-      if (signInError) {
-        setErrors({ currentPassword: 'Senha atual incorreta' });
+      if (verify.error) {
+        toast({
+          title: 'Código incorreto',
+          description: 'Verifique o código e tente novamente.',
+          variant: 'destructive',
+        });
         return;
       }
 
-      // Update password
+      // Now proceed with password change
+      await performPasswordChange();
+    } catch (error: any) {
+      toast({
+        title: 'Erro na verificação MFA',
+        description: error.message,
+        variant: 'destructive',
+      });
+    } finally {
+      setIsVerifyingMFA(false);
+    }
+  };
+
+  const performPasswordChange = async () => {
+    setIsChanging(true);
+    try {
       const { error: updateError } = await supabase.auth.updateUser({
         password: newPassword,
       });
@@ -132,6 +168,46 @@ export const ChangePasswordDialog = ({ open, onOpenChange }: ChangePasswordDialo
     }
   };
 
+  const handleChangePassword = async () => {
+    if (!validatePassword()) return;
+
+    setIsChanging(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user?.email) {
+        throw new Error('Usuário não autenticado');
+      }
+
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: user.email,
+        password: currentPassword,
+      });
+
+      if (signInError) {
+        setErrors({ currentPassword: 'Senha atual incorreta' });
+        setIsChanging(false);
+        return;
+      }
+
+      // If user has MFA, show verification step
+      if (hasMFA) {
+        setShowMFAVerification(true);
+        setIsChanging(false);
+        return;
+      }
+
+      // If no MFA, proceed directly
+      await performPasswordChange();
+    } catch (error: any) {
+      toast({
+        title: 'Erro ao alterar senha',
+        description: error.message,
+        variant: 'destructive',
+      });
+      setIsChanging(false);
+    }
+  };
+
   const handleClose = () => {
     setCurrentPassword('');
     setNewPassword('');
@@ -140,6 +216,8 @@ export const ChangePasswordDialog = ({ open, onOpenChange }: ChangePasswordDialo
     setShowNewPassword(false);
     setShowConfirmPassword(false);
     setErrors({});
+    setShowMFAVerification(false);
+    setMfaCode('');
     onOpenChange(false);
   };
 
@@ -157,14 +235,68 @@ export const ChangePasswordDialog = ({ open, onOpenChange }: ChangePasswordDialo
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Key className="h-5 w-5 text-primary" />
-            Alterar Senha
+            {showMFAVerification ? 'Verificação de Segurança' : 'Alterar Senha'}
           </DialogTitle>
           <DialogDescription>
-            Digite sua senha atual e escolha uma nova senha forte
+            {showMFAVerification 
+              ? 'Para garantir a segurança da sua conta, digite o código de autenticação de 2 fatores'
+              : 'Digite sua senha atual e escolha uma nova senha forte'}
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
+        {showMFAVerification ? (
+          <div className="space-y-4">
+            <Alert>
+              <Shield className="h-4 w-4" />
+              <AlertDescription>
+                Abra seu aplicativo autenticador e digite o código de 6 dígitos para confirmar esta alteração.
+              </AlertDescription>
+            </Alert>
+
+            <div className="space-y-2">
+              <Label htmlFor="mfa-code">Código de Autenticação</Label>
+              <Input
+                id="mfa-code"
+                placeholder="000000"
+                maxLength={6}
+                value={mfaCode}
+                onChange={(e) => setMfaCode(e.target.value.replace(/\D/g, ''))}
+                className="text-center text-lg tracking-widest"
+              />
+              <p className="text-xs text-muted-foreground">
+                Problemas com o autenticador? <a href="#" className="text-primary hover:underline">Entre em contato com o suporte</a>
+              </p>
+            </div>
+
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowMFAVerification(false);
+                  setMfaCode('');
+                }}
+                className="flex-1"
+              >
+                Voltar
+              </Button>
+              <Button
+                onClick={handleVerifyMFA}
+                disabled={isVerifyingMFA || mfaCode.length !== 6}
+                className="flex-1"
+              >
+                {isVerifyingMFA ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Verificando...
+                  </>
+                ) : (
+                  'Confirmar Código MFA'
+                )}
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="current-password">Senha Atual</Label>
             <div className="relative">
@@ -296,6 +428,7 @@ export const ChangePasswordDialog = ({ open, onOpenChange }: ChangePasswordDialo
             </Button>
           </div>
         </div>
+        )}
       </DialogContent>
     </Dialog>
   );
