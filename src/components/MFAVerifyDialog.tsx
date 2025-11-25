@@ -6,6 +6,8 @@ import { Label } from '@/components/ui/label';
 import { Loader2, Shield } from 'lucide-react';
 import { useMFA } from '@/hooks/useMFA';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { checkRateLimit, resetRateLimit } from '@/lib/rateLimit';
+import { toast } from 'sonner';
 
 interface MFAVerifyDialogProps {
   open: boolean;
@@ -25,11 +27,27 @@ export const MFAVerifyDialog = ({ open, onOpenChange, factorId, onSuccess }: MFA
     if (!useBackupCode && code.length !== 6) return;
     if (useBackupCode && code.length < 8) return;
 
+    // Check rate limit for MFA verification
+    const rateLimitResult = await checkRateLimit({
+      action: 'mfa_verify',
+      maxAttempts: 5,
+      windowMinutes: 15,
+      blockMinutes: 15,
+    });
+
+    if (!rateLimitResult.allowed) {
+      toast.error('Limite de tentativas excedido', {
+        description: rateLimitResult.message,
+      });
+      return;
+    }
+
     setIsVerifying(true);
     try {
       if (useBackupCode) {
         const isValid = await verifyBackupCode(code);
         if (isValid) {
+          await resetRateLimit('mfa_verify');
           onSuccess();
           handleClose();
         } else {
@@ -37,6 +55,7 @@ export const MFAVerifyDialog = ({ open, onOpenChange, factorId, onSuccess }: MFA
         }
       } else {
         await verifyMFACode(factorId, code);
+        await resetRateLimit('mfa_verify');
         onSuccess();
         handleClose();
       }
