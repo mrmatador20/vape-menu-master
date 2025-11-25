@@ -44,6 +44,9 @@ const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isCategoriesOpen, setIsCategoriesOpen] = useState(false);
 
+  // Check if user is in password reset flow
+  const isInResetFlow = localStorage.getItem('password_reset_flow') === 'true';
+
   // Extrai categorias únicas dos produtos
   const categories = useMemo(() => 
     Array.from(new Set(products?.map(p => p.category) || [])).sort(),
@@ -102,6 +105,25 @@ const Header = () => {
   const getCategoryIcon = (category: string) => {
     return categoryIcons[category] || categoryIcons.default;
   };
+
+  // If user is in password reset flow, show minimal header
+  if (isInResetFlow) {
+    return (
+      <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="container flex h-16 items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <div className="h-8 w-8 rounded-lg bg-gradient-primary" />
+            <span className="text-xl font-bold bg-gradient-primary bg-clip-text text-transparent">
+              NebulaVape
+            </span>
+          </div>
+          <div className="text-sm text-muted-foreground">
+            Recuperação de Senha
+          </div>
+        </div>
+      </header>
+    );
+  }
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">

@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { CartProvider } from "./context/CartContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import Index from "./pages/Index";
@@ -28,6 +28,17 @@ import AdminBanners from "./pages/admin/Banners";
 
 const queryClient = new QueryClient();
 
+// Component to check if user is in password reset flow
+const ResetFlowGuard = ({ children }: { children: React.ReactNode }) => {
+  const isInResetFlow = localStorage.getItem('password_reset_flow') === 'true';
+  
+  if (isInResetFlow) {
+    return <Navigate to="/reset-password" replace />;
+  }
+  
+  return <>{children}</>;
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
@@ -36,39 +47,63 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Routes>
-            <Route path="/" element={<Index />} />
+            <Route path="/" element={
+              <ResetFlowGuard>
+                <Index />
+              </ResetFlowGuard>
+            } />
             <Route path="/cart" element={
-              <ProtectedRoute>
-                <Cart />
-              </ProtectedRoute>
+              <ResetFlowGuard>
+                <ProtectedRoute>
+                  <Cart />
+                </ProtectedRoute>
+              </ResetFlowGuard>
             } />
             <Route path="/checkout" element={
-              <ProtectedRoute>
-                <Checkout />
-              </ProtectedRoute>
+              <ResetFlowGuard>
+                <ProtectedRoute>
+                  <Checkout />
+                </ProtectedRoute>
+              </ResetFlowGuard>
             } />
             <Route path="/order-confirmation" element={
-              <ProtectedRoute>
-                <OrderConfirmation />
-              </ProtectedRoute>
+              <ResetFlowGuard>
+                <ProtectedRoute>
+                  <OrderConfirmation />
+                </ProtectedRoute>
+              </ResetFlowGuard>
             } />
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/auth" element={
+              <ResetFlowGuard>
+                <Auth />
+              </ResetFlowGuard>
+            } />
+            <Route path="/forgot-password" element={
+              <ResetFlowGuard>
+                <ForgotPassword />
+              </ResetFlowGuard>
+            } />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/my-orders" element={
-              <ProtectedRoute>
-                <MyOrders />
-              </ProtectedRoute>
+              <ResetFlowGuard>
+                <ProtectedRoute>
+                  <MyOrders />
+                </ProtectedRoute>
+              </ResetFlowGuard>
             } />
             <Route path="/profile" element={
-              <ProtectedRoute>
-                <Profile />
-              </ProtectedRoute>
+              <ResetFlowGuard>
+                <ProtectedRoute>
+                  <Profile />
+                </ProtectedRoute>
+              </ResetFlowGuard>
             } />
             <Route path="/admin" element={
-              <ProtectedRoute>
-                <AdminLayout />
-              </ProtectedRoute>
+              <ResetFlowGuard>
+                <ProtectedRoute>
+                  <AdminLayout />
+                </ProtectedRoute>
+              </ResetFlowGuard>
             }>
               <Route index element={<AdminDashboard />} />
               <Route path="products" element={<AdminProducts />} />
@@ -81,7 +116,11 @@ const App = () => (
               <Route path="settings" element={<AdminSettings />} />
             </Route>
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
+            <Route path="*" element={
+              <ResetFlowGuard>
+                <NotFound />
+              </ResetFlowGuard>
+            } />
           </Routes>
         </BrowserRouter>
       </CartProvider>
