@@ -329,7 +329,11 @@ export const ResetPasswordForm = () => {
                 className="h-auto py-4 flex-col items-start gap-2"
                 onClick={async () => {
                   setVerificationMethod('email');
-                  await sendVerificationCode('password_change');
+                  // Get user email for password reset flow
+                  const { data: { user } } = await supabase.auth.getUser();
+                  if (user?.email) {
+                    await sendVerificationCode('login');
+                  }
                 }}
                 disabled={isSending}
               >
