@@ -15,6 +15,7 @@ import {
 
 const menuItems = [
   { title: "Dashboard", url: "/admin", icon: LayoutDashboard },
+  { title: "Segurança", url: "/admin/security", icon: Shield },
   { title: "Produtos", url: "/admin/products", icon: Package },
   { title: "Pedidos", url: "/admin/orders", icon: ShoppingCart },
   { title: "Avaliações", url: "/admin/reviews", icon: Star },

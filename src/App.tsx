@@ -26,6 +26,7 @@ import AdminShippingRates from "./pages/admin/ShippingRates";
 import AdminSettings from "./pages/admin/Settings";
 import AdminBanners from "./pages/admin/Banners";
 import AdminAuditLogs from "./pages/admin/AuditLogs";
+import AdminSecurityDashboard from "./pages/admin/SecurityDashboard";
 
 const queryClient = new QueryClient();
 
@@ -107,6 +108,7 @@ const App = () => (
               </ResetFlowGuard>
             }>
               <Route index element={<AdminDashboard />} />
+              <Route path="security" element={<AdminSecurityDashboard />} />
               <Route path="products" element={<AdminProducts />} />
               <Route path="orders" element={<AdminOrders />} />
               <Route path="reviews" element={<AdminReviews />} />
