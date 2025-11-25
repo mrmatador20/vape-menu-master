@@ -154,25 +154,44 @@ export const ChangePasswordDialog = ({ open, onOpenChange }: ChangePasswordDialo
     console.log('Step 1: Setting verification state to true...');
     setIsVerifyingMfa(true);
     
-    // Add timeout protection - max 30 seconds
+    // Add timeout protection - increase to 45 seconds and use flag
+    let timeoutTriggered = false;
     const timeoutId = setTimeout(() => {
-      console.error('TIMEOUT: MFA verification took too long (30s)');
+      console.error('TIMEOUT: MFA verification took too long (45s)');
+      timeoutTriggered = true;
       setIsVerifyingMfa(false);
       toast({
         title: 'Tempo esgotado',
         description: 'A verificação demorou muito. Tente novamente.',
         variant: 'destructive',
       });
-    }, 30000);
+    }, 45000); // Increased from 30s to 45s
 
     try {
       console.log('Step 2: Starting MFA verification for password change...', { factorId: mfaFactorId });
       
+      if (timeoutTriggered) {
+        console.log('Timeout already triggered, aborting');
+        return;
+      }
+      
       // Create challenge
       console.log('Step 3: Creating MFA challenge...');
-      const { data: challengeData, error: challengeError } = await supabase.auth.mfa.challenge({
+      const challengePromise = supabase.auth.mfa.challenge({
         factorId: mfaFactorId,
       });
+      
+      const { data: challengeData, error: challengeError } = await Promise.race([
+        challengePromise,
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Challenge timeout')), 10000)
+        )
+      ]) as any;
+
+      if (timeoutTriggered) {
+        console.log('Timeout triggered during challenge, aborting');
+        return;
+      }
 
       console.log('Challenge result:', {
         hasData: !!challengeData,
@@ -192,11 +211,23 @@ export const ChangePasswordDialog = ({ open, onOpenChange }: ChangePasswordDialo
 
       // Verify code
       console.log('Step 4: Verifying MFA code...', { challengeId: challengeData.id });
-      const { data: verifyData, error: verifyError } = await supabase.auth.mfa.verify({
+      const verifyPromise = supabase.auth.mfa.verify({
         factorId: mfaFactorId,
         challengeId: challengeData.id,
         code: mfaCode,
       });
+      
+      const { data: verifyData, error: verifyError } = await Promise.race([
+        verifyPromise,
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Verify timeout')), 10000)
+        )
+      ]) as any;
+
+      if (timeoutTriggered) {
+        console.log('Timeout triggered during verify, aborting');
+        return;
+      }
 
       console.log('Verify result:', {
         hasData: !!verifyData,
@@ -234,13 +265,19 @@ export const ChangePasswordDialog = ({ open, onOpenChange }: ChangePasswordDialo
       });
       
       clearTimeout(timeoutId);
-      setIsVerifyingMfa(false);
       
       toast({
         title: 'Código incorreto',
         description: error?.message || 'Verifique o código e tente novamente',
         variant: 'destructive',
       });
+    } finally {
+      console.log('Step 7: Finally block - ensuring loading state is reset');
+      // Safety check to ensure loading state is always reset
+      setTimeout(() => {
+        console.log('Final safety check - resetting loading state');
+        setIsVerifyingMfa(false);
+      }, 100);
     }
   };
 
@@ -249,10 +286,10 @@ export const ChangePasswordDialog = ({ open, onOpenChange }: ChangePasswordDialo
     console.log('Step 1: Setting loading state to TRUE');
     setIsChanging(true);
     
-    // Add timeout protection - max 30 seconds
+    // Add timeout protection - increase to 45 seconds
     let timeoutTriggered = false;
     const timeoutId = setTimeout(() => {
-      console.error('TIMEOUT: Password change took too long (30s)');
+      console.error('TIMEOUT: Password change took too long (45s)');
       timeoutTriggered = true;
       setIsChanging(false);
       toast({
@@ -260,11 +297,23 @@ export const ChangePasswordDialog = ({ open, onOpenChange }: ChangePasswordDialo
         description: 'A operação demorou muito. Por favor, tente novamente.',
         variant: 'destructive',
       });
-    }, 30000);
+    }, 45000); // Increased from 30s to 45s
     
     try {
+      if (timeoutTriggered) {
+        console.log('Timeout already triggered before start, aborting...');
+        return;
+      }
+
       console.log('Step 2: Getting authenticated user...');
-      const { data: { user }, error: getUserError } = await supabase.auth.getUser();
+      const getUserPromise = supabase.auth.getUser();
+      const { data: { user }, error: getUserError } = await Promise.race([
+        getUserPromise,
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('getUser timeout')), 10000)
+        )
+      ]) as any;
+      
       console.log('User fetch result:', { 
         userId: user?.id, 
         email: user?.email,
@@ -272,7 +321,7 @@ export const ChangePasswordDialog = ({ open, onOpenChange }: ChangePasswordDialo
       });
       
       if (timeoutTriggered) {
-        console.log('Timeout triggered, aborting...');
+        console.log('Timeout triggered after getUser, aborting...');
         return;
       }
       
@@ -287,9 +336,16 @@ export const ChangePasswordDialog = ({ open, onOpenChange }: ChangePasswordDialo
       }
 
       console.log('Step 3: Updating password...');
-      const { data: updateData, error: updateError } = await supabase.auth.updateUser({
+      const updatePasswordPromise = supabase.auth.updateUser({
         password: newPassword,
       });
+      
+      const { data: updateData, error: updateError } = await Promise.race([
+        updatePasswordPromise,
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('updateUser timeout')), 15000)
+        )
+      ]) as any;
 
       console.log('Password update result:', { 
         success: !!updateData.user,
@@ -308,10 +364,17 @@ export const ChangePasswordDialog = ({ open, onOpenChange }: ChangePasswordDialo
       }
 
       console.log('Step 4: Password updated successfully, updating timestamp...');
-      const { error: timestampError } = await supabase
+      const updateTimestampPromise = supabase
         .from('profiles')
         .update({ password_changed_at: new Date().toISOString() })
         .eq('id', user.id);
+        
+      const { error: timestampError } = await Promise.race([
+        updateTimestampPromise,
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('timestamp update timeout')), 10000)
+        )
+      ]) as any;
 
       if (timestampError) {
         console.error('Failed to update password timestamp:', timestampError);
@@ -346,7 +409,6 @@ export const ChangePasswordDialog = ({ open, onOpenChange }: ChangePasswordDialo
       
       if (!timeoutTriggered) {
         clearTimeout(timeoutId);
-        setIsChanging(false);
         
         toast({
           title: 'Erro ao alterar senha',
@@ -357,12 +419,10 @@ export const ChangePasswordDialog = ({ open, onOpenChange }: ChangePasswordDialo
     } finally {
       // GARANTIA ABSOLUTA que o loading será desativado
       console.log('Finally block - ensuring isChanging is FALSE...');
-      if (!timeoutTriggered) {
-        setTimeout(() => {
-          console.log('Final safety check - setting isChanging to FALSE');
-          setIsChanging(false);
-        }, 100);
-      }
+      setTimeout(() => {
+        console.log('Final safety check - setting isChanging to FALSE');
+        setIsChanging(false);
+      }, 100);
     }
   };
 
