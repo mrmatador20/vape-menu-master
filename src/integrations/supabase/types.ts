@@ -277,6 +277,13 @@ export type Database = {
             referencedRelation: "products"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "flavors_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "public_products"
+            referencedColumns: ["id"]
+          },
         ]
       }
       mfa_backup_codes: {
@@ -344,6 +351,13 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "public_products"
             referencedColumns: ["id"]
           },
         ]
@@ -525,6 +539,13 @@ export type Database = {
             foreignKeyName: "review_responses_review_id_fkey"
             columns: ["review_id"]
             isOneToOne: false
+            referencedRelation: "public_reviews"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "review_responses_review_id_fkey"
+            columns: ["review_id"]
+            isOneToOne: false
             referencedRelation: "reviews"
             referencedColumns: ["id"]
           },
@@ -561,6 +582,13 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reviews_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "public_products"
             referencedColumns: ["id"]
           },
         ]
@@ -792,10 +820,148 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      public_flavors: {
+        Row: {
+          availability_status: string | null
+          created_at: string | null
+          id: string | null
+          in_stock: boolean | null
+          name: string | null
+          price: number | null
+          product_id: string | null
+        }
+        Insert: {
+          availability_status?: never
+          created_at?: string | null
+          id?: string | null
+          in_stock?: never
+          name?: string | null
+          price?: number | null
+          product_id?: string | null
+        }
+        Update: {
+          availability_status?: never
+          created_at?: string | null
+          id?: string | null
+          in_stock?: never
+          name?: string | null
+          price?: number | null
+          product_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "flavors_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "flavors_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "public_products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      public_products: {
+        Row: {
+          availability_status: string | null
+          category: string | null
+          created_at: string | null
+          description: string | null
+          discount_type: string | null
+          discount_value: number | null
+          display_order: number | null
+          id: string | null
+          image: string | null
+          in_stock: boolean | null
+          name: string | null
+          price: number | null
+          subcategory: string | null
+        }
+        Insert: {
+          availability_status?: never
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          discount_type?: string | null
+          discount_value?: number | null
+          display_order?: number | null
+          id?: string | null
+          image?: string | null
+          in_stock?: never
+          name?: string | null
+          price?: number | null
+          subcategory?: string | null
+        }
+        Update: {
+          availability_status?: never
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          discount_type?: string | null
+          discount_value?: number | null
+          display_order?: number | null
+          id?: string | null
+          image?: string | null
+          in_stock?: never
+          name?: string | null
+          price?: number | null
+          subcategory?: string | null
+        }
+        Relationships: []
+      }
+      public_reviews: {
+        Row: {
+          anonymous_user: string | null
+          comment: string | null
+          created_at: string | null
+          id: string | null
+          product_id: string | null
+          rating: number | null
+        }
+        Insert: {
+          anonymous_user?: never
+          comment?: string | null
+          created_at?: string | null
+          id?: string | null
+          product_id?: string | null
+          rating?: number | null
+        }
+        Update: {
+          anonymous_user?: never
+          comment?: string | null
+          created_at?: string | null
+          id?: string | null
+          product_id?: string | null
+          rating?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reviews_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reviews_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "public_products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       cleanup_expired_verification_codes: { Args: never; Returns: undefined }
+      get_product_availability: {
+        Args: { stock_value: number }
+        Returns: string
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
