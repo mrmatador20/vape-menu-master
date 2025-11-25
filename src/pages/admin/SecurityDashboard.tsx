@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Shield, AlertTriangle, Activity, Lock, TrendingUp, TrendingDown, Eye, AlertCircle } from 'lucide-react';
+import { Shield, AlertTriangle, Activity, Lock, TrendingUp, TrendingDown, Eye, AlertCircle, Send } from 'lucide-react';
 import { useSecurityMetrics } from '@/hooks/useSecurityMetrics';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { supabase } from '@/integrations/supabase/client';
@@ -18,6 +18,63 @@ const SecurityDashboard = () => {
   const navigate = useNavigate();
   const { data: metrics, isLoading, refetch } = useSecurityMetrics();
   const [realtimeAlerts, setRealtimeAlerts] = useState<any[]>([]);
+  const [isSendingTest, setIsSendingTest] = useState(false);
+
+  const sendTestNotification = async () => {
+    try {
+      setIsSendingTest(true);
+      
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast({
+          title: "Erro",
+          description: "Usuário não autenticado",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      console.log("Sending test notification for user:", user.id, user.email);
+
+      // Invoke the send-security-alert function
+      const { data, error } = await supabase.functions.invoke('send-security-alert', {
+        body: {
+          userId: user.id,
+          userEmail: user.email,
+          alertType: 'suspicious_login',
+          metadata: {
+            ipAddress: '192.168.1.100',
+            location: 'São Paulo, BR',
+            timestamp: new Date().toISOString(),
+          }
+        }
+      });
+
+      if (error) {
+        console.error("Error sending test notification:", error);
+        toast({
+          title: "Erro ao Enviar",
+          description: "Erro ao enviar notificação de teste: " + error.message,
+          variant: "destructive"
+        });
+      } else {
+        console.log("Test notification sent successfully:", data);
+        toast({
+          title: "✅ Notificação Enviada",
+          description: "Notificação de teste enviada com sucesso! Verifique seu e-mail e SMS (se configurado).",
+        });
+      }
+    } catch (error: any) {
+      console.error("Error:", error);
+      toast({
+        title: "Erro",
+        description: "Erro ao enviar notificação: " + error.message,
+        variant: "destructive"
+      });
+    } finally {
+      setIsSendingTest(false);
+    }
+  };
 
   // Real-time subscription for critical events
   useEffect(() => {
@@ -107,10 +164,20 @@ const SecurityDashboard = () => {
             Análise em tempo real de ameaças e atividades suspeitas
           </p>
         </div>
-        <Button onClick={() => navigate('/admin/audit-logs')} variant="outline">
-          <Eye className="h-4 w-4 mr-2" />
-          Ver Logs Completos
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            onClick={sendTestNotification} 
+            variant="secondary"
+            disabled={isSendingTest}
+          >
+            <Send className="h-4 w-4 mr-2" />
+            {isSendingTest ? "Enviando..." : "Testar Notificações"}
+          </Button>
+          <Button onClick={() => navigate('/admin/audit-logs')} variant="outline">
+            <Eye className="h-4 w-4 mr-2" />
+            Ver Logs Completos
+          </Button>
+        </div>
       </div>
 
       {/* Real-time Alerts Banner */}
