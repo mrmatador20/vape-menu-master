@@ -65,6 +65,12 @@ export const useNotificationPreferences = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Usuário não autenticado");
 
+      // Se está atualizando o phone_number, garantir que tenha +55
+      if (updates.phone_number) {
+        const cleanNumber = updates.phone_number.replace(/\D/g, '');
+        updates.phone_number = `+55${cleanNumber}`;
+      }
+
       const { data, error } = await supabase
         .from("notification_preferences")
         .update(updates)

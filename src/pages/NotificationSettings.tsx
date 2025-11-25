@@ -101,21 +101,24 @@ const NotificationSettings = () => {
                     <Input
                       id="phone-number"
                       type="tel"
-                      placeholder="(00) 00000-0000"
-                      value={preferences?.phone_number || ""}
+                      placeholder="(83) 99669-4806"
+                      value={preferences?.phone_number ? preferences.phone_number.replace('+55', '').replace(/^(\d{2})(\d{5})(\d{4})$/, '($1) $2-$3') : ""}
                       onChange={(e) => {
-                        const formatted = e.target.value
-                          .replace(/\D/g, "")
+                        const cleaned = e.target.value.replace(/\D/g, "");
+                        const formatted = cleaned
                           .replace(/^(\d{2})(\d)/g, "($1) $2")
                           .replace(/(\d)(\d{4})$/, "$1-$2");
-                        updatePreferences({ phone_number: formatted });
+                        updatePreferences({ phone_number: cleaned });
                       }}
                       disabled={isUpdating}
                       maxLength={15}
                     />
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Este número será usado para enviar alertas de segurança via SMS
+                    Digite apenas os números (DDD + número). Ex: 83996694806
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    O código do país (+55) será adicionado automaticamente
                   </p>
                 </div>
               )}
