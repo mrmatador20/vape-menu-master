@@ -7,12 +7,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card } from '@/components/ui/card';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from 'sonner';
-import { Loader2, Eye, EyeOff } from 'lucide-react';
+import { Loader2, Eye, EyeOff, AlertTriangle } from 'lucide-react';
 import Header from '@/components/Header';
 import { MFAVerifyDialog } from '@/components/MFAVerifyDialog';
 import { validatePassword, getPasswordStrength, getStrengthColor, passwordRequirements } from '@/lib/passwordValidation';
 import { checkRateLimit, resetRateLimit } from '@/lib/rateLimit';
+import { checkPwnedPassword, formatPwnedCount } from '@/lib/pwnedPassword';
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -23,6 +25,8 @@ const Auth = () => {
   const [mfaFactorId, setMfaFactorId] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState('');
+  const [pwnedInfo, setPwnedInfo] = useState<{ isPwned: boolean; count: number } | null>(null);
+  const [isCheckingPwned, setIsCheckingPwned] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -72,6 +76,15 @@ const Auth = () => {
         if (passwordError) {
           toast.error('Senha fraca', {
             description: passwordError
+          });
+          setIsLoading(false);
+          return;
+        }
+
+        // Check if password has been compromised
+        if (pwnedInfo?.isPwned) {
+          toast.error('Senha comprometida detectada', {
+            description: `Esta senha foi exposta em ${formatPwnedCount(pwnedInfo.count)} vazamentos de dados. Escolha uma senha diferente.`,
           });
           setIsLoading(false);
           return;
@@ -194,10 +207,22 @@ const Auth = () => {
                   id="password"
                   type={showPassword ? 'text' : 'password'}
                   value={formData.password}
-                  onChange={(e) => {
+                  onChange={async (e) => {
                     setFormData({ ...formData, password: e.target.value });
                     if (isSignUp) {
                       setPasswordStrength(getPasswordStrength(e.target.value));
+                      
+                      // Check for pwned password (debounced)
+                      if (e.target.value.length >= 8) {
+                        setIsCheckingPwned(true);
+                        setPwnedInfo(null);
+                        // Simple debounce
+                        setTimeout(async () => {
+                          const result = await checkPwnedPassword(e.target.value);
+                          setPwnedInfo({ isPwned: result.isPwned, count: result.count });
+                          setIsCheckingPwned(false);
+                        }, 800);
+                      }
                     }
                   }}
                   required
@@ -239,6 +264,36 @@ const Auth = () => {
                        passwordStrength === 'very-strong' ? 'Muito Forte' : ''}
                     </span>
                   </div>
+
+                  {/* Pwned Password Warning */}
+                  {isCheckingPwned && (
+                    <Alert className="bg-muted/50">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <AlertDescription className="text-xs">
+                        Verificando segurança da senha...
+                      </AlertDescription>
+                    </Alert>
+                  )}
+
+                  {pwnedInfo?.isPwned && !isCheckingPwned && (
+                    <Alert variant="destructive">
+                      <AlertTriangle className="h-4 w-4" />
+                      <AlertDescription className="text-xs">
+                        <strong>⚠️ Senha comprometida!</strong><br/>
+                        Esta senha foi exposta em <strong>{formatPwnedCount(pwnedInfo.count)}</strong> vazamentos de dados. 
+                        Escolha uma senha diferente para proteger sua conta.
+                      </AlertDescription>
+                    </Alert>
+                  )}
+
+                  {pwnedInfo && !pwnedInfo.isPwned && !isCheckingPwned && (
+                    <Alert className="bg-green-500/10 border-green-500/20">
+                      <AlertDescription className="text-xs text-green-700 dark:text-green-400">
+                        ✓ Senha segura - não encontrada em vazamentos conhecidos
+                      </AlertDescription>
+                    </Alert>
+                  )}
+
                   <div className="text-xs text-muted-foreground space-y-1">
                     <p className="font-medium">Requisitos da senha:</p>
                     {passwordRequirements.map((req) => (
