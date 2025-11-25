@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
 import { sendSecurityAlert } from "@/lib/sendSecurityAlert";
+import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Send, TestTube } from "lucide-react";
 
 const NotificationTest = () => {
@@ -14,9 +15,10 @@ const NotificationTest = () => {
   const [testEmail, setTestEmail] = useState("");
   const [testUserId, setTestUserId] = useState("");
   const [testUserName, setTestUserName] = useState("");
+  const [testPhone, setTestPhone] = useState("");
 
   const handleSendTest = async () => {
-    if (!testEmail || !testUserId || !testUserName) {
+    if (!testEmail || !testUserId || !testUserName || !testPhone) {
       toast({
         title: "Campos obrigatórios",
         description: "Preencha todos os campos antes de enviar o teste.",
@@ -28,6 +30,23 @@ const NotificationTest = () => {
     setIsLoading(true);
 
     try {
+      // First, create/update notification preferences with phone and SMS enabled
+      const { error: prefsError } = await supabase
+        .from("notification_preferences")
+        .upsert({
+          user_id: testUserId,
+          phone_number: testPhone,
+          sms_enabled: true,
+          email_enabled: true,
+          notify_suspicious_login: true,
+          notify_failed_login: true,
+          notify_password_change: true,
+          notify_admin_actions: true,
+        });
+
+      if (prefsError) {
+        throw new Error(`Erro ao configurar preferências: ${prefsError.message}`);
+      }
       const eventDetails: any = {
         timestamp: new Date().toLocaleString("pt-BR"),
         ipAddress: "192.168.1.1",
@@ -127,6 +146,20 @@ const NotificationTest = () => {
             </div>
 
             <div className="space-y-2">
+              <Label htmlFor="phone">Telefone (com DDD)</Label>
+              <Input
+                id="phone"
+                type="tel"
+                placeholder="+5511999999999"
+                value={testPhone}
+                onChange={(e) => setTestPhone(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                Formato: +55 seguido do DDD e número (ex: +5511999999999)
+              </p>
+            </div>
+
+            <div className="space-y-2">
               <Label htmlFor="alertType">Tipo de Alerta</Label>
               <Select value={alertType} onValueChange={(value: any) => setAlertType(value)}>
                 <SelectTrigger id="alertType">
@@ -178,10 +211,10 @@ const NotificationTest = () => {
           </CardHeader>
           <CardContent className="space-y-2 text-sm text-muted-foreground">
             <p>
-              • A notificação será enviada para o e-mail especificado
+              • A notificação será enviada para o e-mail e telefone especificados
             </p>
             <p>
-              • Se o usuário tiver SMS habilitado nas preferências, também receberá um SMS
+              • O sistema habilitará automaticamente SMS para este teste
             </p>
             <p>
               • Verifique os logs da Edge Function "send-security-alert" para debug
