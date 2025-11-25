@@ -5,12 +5,26 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useNotificationPreferences } from "@/hooks/useNotificationPreferences";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Bell, Mail, Smartphone, Shield } from "lucide-react";
+import { Bell, Mail, Smartphone, Shield, ShieldAlert } from "lucide-react";
+import { useUserRole } from "@/hooks/useUserRole";
+import { useNavigate } from "react-router-dom";
+import { useEffect } from "react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const NotificationSettings = () => {
   const { preferences, isLoading, updatePreferences, isUpdating } = useNotificationPreferences();
+  const { data: role, isLoading: isLoadingRole } = useUserRole();
+  const navigate = useNavigate();
 
-  if (isLoading) {
+  // Redirecionar se não for admin
+  useEffect(() => {
+    if (!isLoadingRole && role !== 'admin') {
+      navigate('/');
+    }
+  }, [role, isLoadingRole, navigate]);
+
+  // Mostrar loading enquanto verifica role
+  if (isLoadingRole || isLoading) {
     return (
       <div className="container mx-auto p-6 max-w-4xl">
         <Skeleton className="h-12 w-64 mb-6" />
@@ -29,15 +43,38 @@ const NotificationSettings = () => {
     );
   }
 
+  // Verificação adicional de segurança
+  if (role !== 'admin') {
+    return (
+      <div className="container mx-auto p-6 max-w-4xl">
+        <Alert variant="destructive">
+          <ShieldAlert className="h-4 w-4" />
+          <AlertTitle>Acesso Negado</AlertTitle>
+          <AlertDescription>
+            Você não tem permissão para acessar esta página. Esta área é restrita a administradores.
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto p-6 max-w-4xl">
+      <Alert className="mb-6 border-primary/50 bg-primary/5">
+        <Shield className="h-4 w-4 text-primary" />
+        <AlertTitle>Área Administrativa - Acesso Restrito</AlertTitle>
+        <AlertDescription>
+          Apenas administradores podem configurar preferências de notificações de segurança do sistema.
+        </AlertDescription>
+      </Alert>
+
       <div className="mb-6">
         <h1 className="text-3xl font-bold flex items-center gap-2">
           <Bell className="h-8 w-8" />
-          Configurações de Notificações
+          Configurações de Notificações de Segurança
         </h1>
         <p className="text-muted-foreground mt-2">
-          Gerencie como e quando você deseja receber notificações de segurança
+          Gerencie como e quando os administradores desejam receber notificações de segurança do sistema
         </p>
       </div>
 

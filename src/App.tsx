@@ -103,7 +103,7 @@ const App = () => (
             } />
             <Route path="/notification-settings" element={
               <ResetFlowGuard>
-                <ProtectedRoute>
+                <ProtectedRoute requireAdmin>
                   <NotificationSettings />
                 </ProtectedRoute>
               </ResetFlowGuard>
