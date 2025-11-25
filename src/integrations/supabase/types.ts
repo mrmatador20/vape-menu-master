@@ -320,6 +320,7 @@ export type Database = {
           notify_failed_login: boolean
           notify_password_change: boolean
           notify_suspicious_login: boolean
+          phone_number: string | null
           sms_enabled: boolean
           updated_at: string
           user_id: string
@@ -333,6 +334,7 @@ export type Database = {
           notify_failed_login?: boolean
           notify_password_change?: boolean
           notify_suspicious_login?: boolean
+          phone_number?: string | null
           sms_enabled?: boolean
           updated_at?: string
           user_id: string
@@ -346,6 +348,7 @@ export type Database = {
           notify_failed_login?: boolean
           notify_password_change?: boolean
           notify_suspicious_login?: boolean
+          phone_number?: string | null
           sms_enabled?: boolean
           updated_at?: string
           user_id?: string
