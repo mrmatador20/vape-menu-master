@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useMFA } from '@/hooks/useMFA';
 import { logActivity } from '@/hooks/useActivityLogs';
@@ -14,12 +14,9 @@ import { Loader2 } from 'lucide-react';
 import Header from '@/components/Header';
 import { MFAVerifyDialog } from '@/components/MFAVerifyDialog';
 import { ForcedPasswordChangeDialog } from '@/components/ForcedPasswordChangeDialog';
-import { ForgotPasswordDialog } from '@/components/ForgotPasswordDialog';
-import { ResetPasswordForm } from '@/components/ResetPasswordForm';
 
 const Auth = () => {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
   const { listFactors } = useMFA();
   const { checkDevice } = useDeviceCheck();
   const { needsPasswordChange, daysSinceChange, checkPasswordPolicy, updatePasswordTimestamp } = usePasswordPolicy();
@@ -27,16 +24,12 @@ const Auth = () => {
   const [isSignUp, setIsSignUp] = useState(false);
   const [showMFADialog, setShowMFADialog] = useState(false);
   const [showPasswordChangeDialog, setShowPasswordChangeDialog] = useState(false);
-  const [showForgotPasswordDialog, setShowForgotPasswordDialog] = useState(false);
   const [mfaFactorId, setMfaFactorId] = useState<string | null>(null);
   const [awaitingMFAVerification, setAwaitingMFAVerification] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
   });
-
-  // Check if this is a password reset flow
-  const isResetMode = searchParams.get('reset') === 'true';
 
   useEffect(() => {
     // Check if user is already logged in with proper AAL level
@@ -192,98 +185,81 @@ const Auth = () => {
     <>
       <Header />
       <div className="min-h-[calc(100vh-4rem)] bg-gradient-hero flex items-center justify-center py-8">
-        {isResetMode ? (
-          <ResetPasswordForm />
-        ) : (
-          <Card className="w-full max-w-md p-8 bg-gradient-card border-border">
-            <div className="text-center mb-6">
-              <h1 className="text-3xl font-bold text-foreground mb-2">
-                {isSignUp ? 'Criar Conta' : 'Entrar'}
-              </h1>
-              <p className="text-muted-foreground">
-                {isSignUp 
-                  ? 'Cadastre-se para fazer pedidos' 
-                  : 'Entre para acessar sua conta'}
-              </p>
+        <Card className="w-full max-w-md p-8 bg-gradient-card border-border">
+          <div className="text-center mb-6">
+            <h1 className="text-3xl font-bold text-foreground mb-2">
+              {isSignUp ? 'Criar Conta' : 'Entrar'}
+            </h1>
+            <p className="text-muted-foreground">
+              {isSignUp 
+                ? 'Cadastre-se para fazer pedidos' 
+                : 'Entre para acessar sua conta'}
+            </p>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="email" className="text-foreground">E-mail</Label>
+              <Input
+                id="email"
+                type="email"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                required
+                className="bg-background border-border text-foreground"
+                placeholder="seu@email.com"
+              />
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email" className="text-foreground">E-mail</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  required
-                  className="bg-background border-border text-foreground"
-                  placeholder="seu@email.com"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="password" className="text-foreground">Senha</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  required
-                  minLength={8}
-                  pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])[A-Za-z\d@$!%*?&#]{8,}$"
-                  title="A senha deve ter no mínimo 8 caracteres, incluindo: maiúsculas, minúsculas, números e caracteres especiais (@$!%*?&#)"
-                  className="bg-background border-border text-foreground"
-                  placeholder="••••••••"
-                />
-                {isSignUp && (
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Mínimo 8 caracteres com maiúsculas, minúsculas, números e símbolos (@$!%*?&#)
-                  </p>
-                )}
-              </div>
-
-              <Button
-                type="submit"
-                className="w-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-glow"
-                size="lg"
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Processando...
-                  </>
-                ) : (
-                  isSignUp ? 'Criar Conta' : 'Entrar'
-                )}
-              </Button>
-            </form>
-
-            <div className="mt-6 space-y-4">
-              {!isSignUp && (
-                <div className="text-center">
-                  <button
-                    onClick={() => setShowForgotPasswordDialog(true)}
-                    className="text-sm text-primary hover:text-primary/90 underline"
-                  >
-                    Esqueceu sua senha?
-                  </button>
-                </div>
+            <div className="space-y-2">
+              <Label htmlFor="password" className="text-foreground">Senha</Label>
+              <Input
+                id="password"
+                type="password"
+                value={formData.password}
+                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                required
+                minLength={8}
+                pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])[A-Za-z\d@$!%*?&#]{8,}$"
+                title="A senha deve ter no mínimo 8 caracteres, incluindo: maiúsculas, minúsculas, números e caracteres especiais (@$!%*?&#)"
+                className="bg-background border-border text-foreground"
+                placeholder="••••••••"
+              />
+              {isSignUp && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Mínimo 8 caracteres com maiúsculas, minúsculas, números e símbolos (@$!%*?&#)
+                </p>
               )}
-              
-              <div className="text-center">
-                <button
-                  onClick={() => setIsSignUp(!isSignUp)}
-                  className="text-sm text-primary hover:text-primary/90 underline"
-                >
-                  {isSignUp 
-                    ? 'Já tem uma conta? Entre aqui' 
-                    : 'Não tem conta? Cadastre-se'}
-                </button>
-              </div>
             </div>
-          </Card>
-        )}
+
+            <Button
+              type="submit"
+              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-glow"
+              size="lg"
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Processando...
+                </>
+              ) : (
+                isSignUp ? 'Criar Conta' : 'Entrar'
+              )}
+            </Button>
+          </form>
+
+          <div className="mt-6 text-center">
+            <button
+              onClick={() => setIsSignUp(!isSignUp)}
+              className="text-sm text-primary hover:text-primary/90 underline"
+            >
+              {isSignUp 
+                ? 'Já tem uma conta? Entre aqui' 
+                : 'Não tem conta? Cadastre-se'}
+            </button>
+          </div>
+        </Card>
 
         {/* MFA Verification Dialog */}
         {mfaFactorId && (
@@ -300,12 +276,6 @@ const Auth = () => {
           open={showPasswordChangeDialog}
           daysSinceChange={daysSinceChange}
           onPasswordChanged={handlePasswordChanged}
-        />
-
-        {/* Forgot Password Dialog */}
-        <ForgotPasswordDialog
-          open={showForgotPasswordDialog}
-          onOpenChange={setShowForgotPasswordDialog}
         />
       </div>
     </>

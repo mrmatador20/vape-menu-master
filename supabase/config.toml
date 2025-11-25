@@ -6,9 +6,6 @@ verify_jwt = true
 [functions.send-security-alert]
 verify_jwt = true
 
-[functions.send-password-reset]
-verify_jwt = false
-
 [functions.verify-recaptcha]
 verify_jwt = false
 
