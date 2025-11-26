@@ -314,7 +314,35 @@ const Checkout = () => {
       });
 
       if (error) {
-        toast.error('Erro ao processar pedido. Tente novamente.');
+        // Tentar extrair mensagem de erro específica do edge function
+        let errorMessage = 'Erro ao processar pedido. Tente novamente.';
+        
+        try {
+          // O erro do edge function pode vir no context
+          if (error.context?.body) {
+            const errorBody = typeof error.context.body === 'string' 
+              ? JSON.parse(error.context.body) 
+              : error.context.body;
+            if (errorBody?.error) {
+              errorMessage = errorBody.error;
+            }
+          } else if (error.message) {
+            // Tentar parsear a mensagem se for JSON
+            try {
+              const parsed = JSON.parse(error.message);
+              if (parsed?.error) {
+                errorMessage = parsed.error;
+              }
+            } catch {
+              // Se não for JSON, usar a mensagem direta
+              errorMessage = error.message;
+            }
+          }
+        } catch (parseError) {
+          console.error('Erro ao parsear mensagem de erro:', parseError);
+        }
+        
+        toast.error(errorMessage);
         return;
       }
 
