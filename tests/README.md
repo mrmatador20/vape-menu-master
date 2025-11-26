@@ -1,143 +1,263 @@
 # E2E Security Tests - 2FA Bypass Prevention
 
-## Overview
+## 📋 Arquivos de Teste
 
-Testes automatizados end-to-end usando Playwright para verificar que o sistema de autenticação 2FA não pode ser bypassado em nenhum cenário.
+### ⭐ `auth-2fa-comprehensive-security.spec.ts` (PRINCIPAL)
+**Suite completa de 11 seções de segurança 2FA** - USE ESTE
 
-## Configuração
+Cobre TODAS as seções críticas do manual de teste:
+- ✅ SECTION 1: Fluxo normal com 2FA
+- ✅ SECTION 2: Race condition durante "Processando..."
+- ✅ SECTION 3: Navegação direta via URL
+- ✅ SECTION 4: Acesso multi-aba
+- ✅ SECTION 5: Refresh (F5) durante 2FA
+- ✅ SECTION 6: Manipulação de cookies (lembrar dispositivo)
+- ✅ SECTION 7: Bypass via estado extremo
+- ✅ SECTION 8: Usuários sem 2FA
+- ✅ SECTION 9: Usuários admin com 2FA
+- ✅ SECTION 10: Testes de tempo/demora (40s)
+- ✅ SECTION 11: Acesso pós-verificação 2FA
 
-### 1. Instalar Dependências
+### `auth-2fa-bypass-prevention.spec.ts`
+Suite original de testes (mantida para compatibilidade)
 
+---
+
+## 🚀 Pré-requisitos
+
+### 1. Instalar dependências
 ```bash
 npm install
 ```
 
-### 2. Configurar Usuários de Teste
-
-Antes de executar os testes, você precisa criar usuários de teste no seu banco de dados:
-
-**Usuário COM 2FA:**
-- Email: `test-2fa-user@example.com`
-- Senha: `TestPassword123!@#`
-- 2FA: Habilitado (guarde o TOTP secret)
-
-**Usuário SEM 2FA:**
-- Email: `test-no-2fa-user@example.com`
-- Senha: `TestPassword123!@#`
-- 2FA: Desabilitado
-
-### 3. Atualizar Credenciais no Teste
-
-Edite `tests/auth-2fa-bypass-prevention.spec.ts` e atualize:
-
-```typescript
-const TEST_USER_WITH_2FA = {
-  email: 'test-2fa-user@example.com',
-  password: 'TestPassword123!@#',
-  totpSecret: 'SEU_TOTP_SECRET_AQUI',
-};
-```
-
-### 4. Implementar Geração de TOTP
-
-Instale uma biblioteca TOTP:
-
+### 2. Instalar navegadores Playwright
 ```bash
-npm install --save-dev otpauth
+npx playwright install
 ```
 
-Atualize a função `generateTOTPCode()` em `tests/auth-2fa-bypass-prevention.spec.ts`:
-
-```typescript
-import { TOTP } from 'otpauth';
-
-function generateTOTPCode(secret: string): string {
-  const totp = new TOTP({
-    secret: secret,
-    digits: 6,
-    period: 30,
-  });
-  return totp.generate();
-}
-```
-
-## Executar Testes
-
-### Todos os Testes
-
+### 3. Instalar biblioteca TOTP
 ```bash
-npx playwright test
+npm install otplib
 ```
 
-### Testes Específicos
+### 4. Criar usuários de teste no Supabase
 
+Você precisa criar usuários de teste com as seguintes credenciais:
+
+#### ✅ Usuário COM 2FA:
+```
+Email: test-2fa@example.com
+Password: TestPassword123!
+2FA: ATIVADO (você precisará do secret TOTP)
+```
+
+#### ✅ Usuário SEM 2FA:
+```
+Email: test-no-2fa@example.com
+Password: TestPassword123!
+2FA: DESATIVADO
+```
+
+#### ✅ Usuário Admin COM 2FA:
+```
+Email: admin-2fa@example.com
+Password: AdminPassword123!
+Role: admin
+2FA: ATIVADO (você precisará do secret TOTP)
+```
+
+---
+
+## 🔧 Configurar 2FA para usuários de teste
+
+Para obter o secret TOTP dos usuários de teste:
+
+1. Faça login na conta do usuário de teste
+2. Vá para **Perfil → Configurações de Segurança**
+3. Ative o 2FA
+4. Quando o QR code for exibido, o secret TOTP estará na URI do QR code:
+   ```
+   otpauth://totp/Vape-Menu-Express:user@example.com?secret=JBSWY3DPEHPK3PXP&issuer=Vape-Menu-Express
+   ```
+5. Copie o valor `secret=` (ex: `JBSWY3DPEHPK3PXP`)
+6. Atualize o arquivo de teste com esse secret:
+   ```typescript
+   const TEST_USERS = {
+     with2FA: {
+       email: 'test-2fa@example.com',
+       password: 'TestPassword123!',
+       totpSecret: 'JBSWY3DPEHPK3PXP', // ⬅️ Seu secret real aqui
+     }
+   };
+   ```
+
+---
+
+## 🏃 Executar os Testes
+
+### 🎯 Executar a suite completa (RECOMENDADO):
 ```bash
-# Apenas testes de bypass prevention
-npx playwright test auth-2fa-bypass-prevention
-
-# Um teste específico
-npx playwright test -g "TEST 1"
+npx playwright test tests/auth-2fa-comprehensive-security.spec.ts
 ```
 
-### Modo Debug
-
+### Executar TODOS os testes:
 ```bash
-npx playwright test --debug
+npm run test:e2e
 ```
 
-### Com UI
+### Executar suite original:
+```bash
+npx playwright test tests/auth-2fa-bypass-prevention.spec.ts
+```
 
+### 🎨 Modo UI (interativo):
 ```bash
 npx playwright test --ui
 ```
 
-## Cobertura de Testes
+### 👀 Com navegador visível:
+```bash
+npx playwright test --headed
+```
 
-### ✅ Testes Automatizados Implementados
+### 🔍 Executar um teste específico:
+```bash
+npx playwright test -g "SECTION 2"
+```
 
-1. **TEST 1**: Usuário com 2FA não pode acessar sem verificação
-2. **TEST 2**: Rotas protegidas inacessíveis durante desafio 2FA
-3. **TEST 3**: Manipulação de session storage não bypassa 2FA
-4. **TEST 4**: Manipulação de cookies não bypassa 2FA
-5. **TEST 5**: Navegação direta por URL é bloqueada durante 2FA
-6. **TEST 6**: Cancelar 2FA desloga o usuário
-7. **TEST 7**: Usuário sem 2FA acessa normalmente
-8. **TEST 8**: Múltiplas abas não bypassam 2FA
-9. **TEST 9**: Botão voltar não bypassa 2FA
-10. **TEST 10**: Refresh de página mantém segurança 2FA
-11. **TEST 11**: AuthInterceptor bloqueia todas as rotas até 2FA completo
-12. **TEST 12**: Checkbox "lembrar dispositivo" cria token válido
+### 🐛 Modo debug:
+```bash
+npx playwright test --debug
+```
 
-### 📋 Testes Manuais Necessários
+---
 
-Estes cenários requerem estados específicos no banco de dados:
+## 📊 Cobertura Completa de Testes
 
-1. ✅ Token expirado (30+ dias) deve exigir 2FA novamente
+### 🔵 SECTION 1: Fluxo Normal com 2FA
+- ✅ **1.1**: Login → tela de 2FA (não home/profile/admin)
+- ✅ **1.2**: Após 2FA correto → acesso completo
+
+### 🔵 SECTION 2: Race Condition Durante "Processando..."
+- ✅ **2.1**: Clicar perfil durante "Processando..." → bloqueado
+- ✅ **2.2**: Clicar admin durante "Processando..." → bloqueado
+
+### 🔵 SECTION 3: Navegação Direta via URL
+- ✅ **3.1**: Acessar `/profile` via URL → bloqueado
+- ✅ **3.2**: Acessar `/admin` via URL → bloqueado
+- ✅ **3.3**: Acessar `/orders`, `/settings` via URL → bloqueado
+
+### 🔵 SECTION 4: Multi-aba
+- ✅ **4.1**: Abrir `/` em nova aba → bloqueado
+- ✅ **4.2**: Abrir `/admin` em nova aba → bloqueado
+
+### 🔵 SECTION 5: Refresh (F5)
+- ✅ **5.1**: F5 durante 2FA → mantém segurança
+- ✅ **5.2**: Shift+F5 (hard reload) → mantém segurança
+
+### 🔵 SECTION 6: Manipulação de Cookies
+- ✅ **6.1**: "Lembrar dispositivo" cria token válido
+- ✅ **6.2**: Cookie falso/corrompido → 2FA obrigatório
+
+### 🔵 SECTION 7: Bypass via Estado Extremo
+- ✅ **7.1**: Clicar logo durante 2FA → bloqueado
+- ✅ **7.2**: Botão voltar durante 2FA → bloqueado
+
+### 🔵 SECTION 8: Usuários SEM 2FA
+- ✅ **8.1**: Usuário sem 2FA → acesso direto
+
+### 🔵 SECTION 9: Usuários Admin com 2FA
+- ✅ **9.1**: Admin com 2FA → bloqueado durante processamento
+
+### 🔵 SECTION 10: Testes de Tempo/Demora
+- ✅ **10.1**: Esperar 40s na tela de 2FA → tentar todos os bypasses → bloqueado
+
+### 🔵 SECTION 11: Pós-verificação 2FA
+- ✅ **11.1**: Após código correto → navbar, perfil, admin funcionam
+
+---
+
+## ✅ Resultados Esperados
+
+**TODOS os testes devem PASSAR.**
+
+Qualquer falha de teste indica uma **🚨 VULNERABILIDADE CRÍTICA DE SEGURANÇA**.
+
+### O que os testes validam:
+
+- **🔐 Segurança de Autenticação**: 2FA não pode ser bypassado por nenhum método
+- **🛡️ Proteção de Rotas**: Todas as rotas protegidas exigem verificação 2FA
+- **🚫 Manipulação de Sessão**: Sessões e tokens falsos são rejeitados
+- **⛔ Bypass de Estado**: Nenhum estado intermediário permite acesso não autorizado
+- **✅ Lembrar Dispositivo**: Skip de 2FA baseado em token funciona quando válido
+- **⏱️ Race Conditions**: Cliques durante "Processando..." são bloqueados
+- **🔄 Persistência**: Refresh/reload mantém requisitos de 2FA
+
+---
+
+## 🐛 Troubleshooting
+
+### ❌ Testes falham com "element not found"
+- Verifique que o app está rodando em `http://localhost:5173`
+- Verifique que os seletores correspondem à estrutura real dos componentes
+- Aumente valores de timeout se necessário
+
+### ❌ Códigos TOTP não funcionam
+- Verifique que o secret TOTP está correto (Base32 encoded)
+- Certifique-se da sincronização de tempo entre máquina de teste e servidor
+- Verifique que a biblioteca `otplib` está corretamente instalada:
+  ```bash
+  npm install otplib
+  ```
+
+### ❌ Testes dão timeout
+Aumente o timeout em `playwright.config.ts`:
+```typescript
+use: {
+  timeout: 120000, // 120 segundos
+}
+```
+
+### ❌ Testes passam localmente mas falham no CI
+- Certifique-se de instalar dependências: `npx playwright install --with-deps`
+- Verifique se variáveis de ambiente estão configuradas
+- Aumente timeouts para ambientes CI/CD
+
+---
+
+## 📝 Checklist de Testes Manuais
+
+Alguns cenários requerem teste manual com estados específicos no banco:
+
+1. ✅ Token remember device expirado → 2FA obrigatório novamente
 2. ✅ Token invalidado após mudança de senha
 3. ✅ Token invalidado após desabilitar/reabilitar 2FA
 4. ✅ Token funciona apenas no dispositivo/navegador específico
-5. ✅ Usuários admin com 2FA também requerem verificação
-6. ✅ Sessões concorrentes requerem 2FA independentemente
+5. ✅ Usuários admin com 2FA também exigem verificação 2FA
+6. ✅ Sessões concorrentes todas exigem 2FA independentemente
 
-## Cenários Críticos de Segurança
+---
 
-### 🔴 CRÍTICO: Nunca Permitir
+## 🔴 Cenários Críticos - NUNCA PERMITIR
 
 - ❌ Acesso a rotas protegidas sem 2FA completo
+- ❌ Bypass via cliques durante "Processando..."
 - ❌ Bypass via manipulação de storage/cookies
 - ❌ Bypass via navegação direta por URL
 - ❌ Bypass via múltiplas abas/janelas
 - ❌ Bypass via botão voltar ou refresh
 - ❌ Acesso a dados sensíveis (perfil, pedidos) durante desafio 2FA
 
-### 🟢 PERMITIDO: Comportamentos Esperados
+## 🟢 Comportamentos Permitidos
 
 - ✅ Usuários sem 2FA acessam diretamente
-- ✅ Token "lembrar dispositivo" válido permite bypass
+- ✅ Token "lembrar dispositivo" válido permite skip de 2FA
 - ✅ Cancelar 2FA desloga completamente
 - ✅ Rotas públicas (/auth, /forgot-password) sempre acessíveis
 
-## Relatórios
+---
+
+## 📊 Relatórios
 
 Após executar os testes:
 
@@ -145,7 +265,9 @@ Após executar os testes:
 npx playwright show-report
 ```
 
-## CI/CD Integration
+---
+
+## 🔄 CI/CD Integration
 
 Adicione ao seu pipeline:
 
@@ -153,8 +275,8 @@ Adicione ao seu pipeline:
 - name: Install Playwright
   run: npx playwright install --with-deps
 
-- name: Run E2E Tests
-  run: npx playwright test
+- name: Run E2E Security Tests
+  run: npx playwright test tests/auth-2fa-comprehensive-security.spec.ts
 
 - name: Upload Test Results
   uses: actions/upload-artifact@v3
@@ -164,36 +286,23 @@ Adicione ao seu pipeline:
     path: playwright-report/
 ```
 
-## Troubleshooting
+---
 
-### Testes Falhando
-
-1. **Verifique credenciais dos usuários de teste**
-2. **Certifique-se que o app está rodando** (`npm run dev`)
-3. **Limpe cookies/storage** antes dos testes
-4. **Verifique os logs do console** com `--debug`
-
-### Performance
-
-- Testes rodam com `workers: 1` para evitar conflitos de autenticação
-- Timeout padrão: 30s por teste
-- Considere ajustar `fullyParallel: false` se necessário
-
-## Manutenção
+## 🛠️ Manutenção
 
 ### Adicionar Novos Testes
 
-1. Crie um novo `test()` em `auth-2fa-bypass-prevention.spec.ts`
-2. Use os helpers existentes (`attemptAccessProtectedRoute`)
-3. Siga o padrão de logging: `console.log('🔐 TEST X: ...')`
-4. Sempre limpe estado antes: `beforeEach` hook
+1. Adicione um novo `test()` no arquivo de teste
+2. Use os helpers existentes (`verifyRouteBlocked`, `complete2FA`)
+3. Siga o padrão de logging: `console.log('🔐 TEST X.Y: ...')`
+4. Sempre limpe estado: `beforeEach` hook
 
 ### Atualizar Após Mudanças de Segurança
 
-- ✅ Novos endpoints protegidos → Adicione ao `allProtectedRoutes`
+- ✅ Novos endpoints protegidos → Adicione aos arrays de rotas
 - ✅ Nova lógica de token → Adicione teste específico
 - ✅ Mudanças no fluxo 2FA → Atualize testes existentes
 
 ---
 
-**IMPORTANTE**: Estes testes são críticos para segurança. Todos devem passar antes de deploy para produção.
+**⚠️ IMPORTANTE**: Estes testes são críticos para segurança. **TODOS devem passar** antes de deploy para produção.
