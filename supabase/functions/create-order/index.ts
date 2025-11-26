@@ -352,16 +352,19 @@ serve(async (req) => {
     let discountId: string | null = null;
 
     if (orderData.discountCode) {
+      console.log('[create-order] Validating discount code:', orderData.discountCode);
       // Use secure RPC function to validate discount code (prevents enumeration)
       const { data: discounts, error: discountError } = await supabaseClient
         .rpc('validate_discount_code', { code_input: orderData.discountCode });
 
       if (discountError || !discounts || discounts.length === 0) {
+        console.error('[create-order] Discount validation failed:', discountError);
         return new Response(
           JSON.stringify({ error: 'Código de desconto inválido ou expirado' }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
+      console.log('[create-order] Discount code validated successfully');
 
       const discount = discounts[0];
 
@@ -430,6 +433,7 @@ serve(async (req) => {
     }
 
     // Buscar configuração de frete grátis
+    console.log('[create-order] Fetching free shipping settings...');
     const { data: freeShippingSettings, error: settingsError } = await supabaseClient
       .from('settings')
       .select('value')
@@ -437,7 +441,9 @@ serve(async (req) => {
       .maybeSingle();
 
     if (settingsError) {
-      console.error('Error fetching free shipping settings:', settingsError);
+      console.error('[create-order] Error fetching free shipping settings:', settingsError);
+    } else {
+      console.log('[create-order] Free shipping settings retrieved');
     }
 
     const freeShippingMinValue = freeShippingSettings ? parseFloat(freeShippingSettings.value) : 0;
@@ -449,6 +455,7 @@ serve(async (req) => {
     
     const finalAmount = subtotal + finalShippingCost;
 
+    console.log('[create-order] Creating order in database with total:', finalAmount);
     // Create the order with server-side validated data
     const { data: order, error: orderError } = await supabaseClient
       .from('orders')
@@ -468,14 +475,20 @@ serve(async (req) => {
       .single();
 
     if (orderError) {
-      console.error('Error creating order:', orderError);
+      console.error('[create-order] Error creating order:', JSON.stringify(orderError));
       return new Response(
-        JSON.stringify({ error: 'Failed to create order' }),
+        JSON.stringify({ 
+          error: 'Falha ao criar pedido. Por favor, tente novamente.',
+          details: orderError.message 
+        }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
+    console.log('[create-order] Order inserted successfully, ID:', order.id);
+
     // Create order items
+    console.log('[create-order] Creating order items...');
     const orderItems = validatedItems.map(item => ({
       order_id: order.id,
       product_id: item.product_id,
@@ -489,12 +502,17 @@ serve(async (req) => {
       .insert(orderItems);
 
     if (itemsError) {
-      console.error('Error creating order items:', itemsError);
+      console.error('[create-order] Error creating order items:', JSON.stringify(itemsError));
       return new Response(
-        JSON.stringify({ error: 'Failed to create order items' }),
+        JSON.stringify({ 
+          error: 'Falha ao criar itens do pedido',
+          details: itemsError.message 
+        }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    console.log('[create-order] Order items inserted successfully');
 
     // Stock will be decremented automatically by the database trigger
     // when the order status is changed to 'confirmed' or 'delivered'
