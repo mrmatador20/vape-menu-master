@@ -19,9 +19,10 @@ interface MFAVerificationGateProps {
     challengeId: string;
     operation: string;
   };
-  onVerified: () => void;
+  onVerified: (deviceRemembered: boolean) => void;
   onCancel: () => void;
   showRememberOption?: boolean;
+  presetRememberDevice?: boolean;
 }
 
 export const MFAVerificationGate = ({
@@ -31,12 +32,13 @@ export const MFAVerificationGate = ({
   challengeData,
   onVerified,
   onCancel,
-  showRememberOption = false
+  showRememberOption = false,
+  presetRememberDevice = false
 }: MFAVerificationGateProps) => {
   const [code, setCode] = useState('');
   const [verifying, setVerifying] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [rememberDevice, setRememberDevice] = useState(false);
+  const [rememberDevice, setRememberDevice] = useState(presetRememberDevice);
   const { verifyTOTPCode } = useAAL2Guard();
   const { rememberDevice: saveRememberedDevice } = useAuthGuard();
 
@@ -62,16 +64,16 @@ export const MFAVerificationGate = ({
     }
 
     // AAL2 achieved - save remembered device if requested
-    if (rememberDevice && showRememberOption) {
+    if (rememberDevice) {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        saveRememberedDevice(user.id);
+        await saveRememberedDevice(user.id);
       }
     }
 
-    console.log(`✅ MFA verified for ${operation}, session elevated to AAL2`);
+    console.log(`✅ MFA verified for ${operation}, session elevated to AAL2${rememberDevice ? ' (device remembered)' : ''}`);
     setVerifying(false);
-    onVerified();
+    onVerified(rememberDevice);
   };
 
   const handleClose = () => {
