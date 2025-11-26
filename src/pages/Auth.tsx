@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import { Loader2, Eye, EyeOff, AlertTriangle } from 'lucide-react';
 import Header from '@/components/Header';
@@ -30,6 +31,7 @@ const Auth = () => {
   const [passwordStrength, setPasswordStrength] = useState('');
   const [pwnedInfo, setPwnedInfo] = useState<{ isPwned: boolean; count: number } | null>(null);
   const [isCheckingPwned, setIsCheckingPwned] = useState(false);
+  const [rememberDevice, setRememberDevice] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -185,9 +187,9 @@ const Auth = () => {
     }
   };
 
-  const handleMFASuccess = async () => {
+  const handleMFASuccess = async (deviceRemembered: boolean) => {
     await logActivity('login', { 
-      metadata: { method: '2FA' }
+      metadata: { method: '2FA', deviceRemembered }
     });
     setShowMFAGate(false);
     toast.success('Login realizado com sucesso!');
@@ -340,6 +342,28 @@ const Auth = () => {
               )}
             </div>
 
+            {/* Remember Device Checkbox - Always visible for login */}
+            {!isSignUp && (
+              <div className="flex items-start space-x-2 pt-2">
+                <Checkbox
+                  id="remember-device"
+                  checked={rememberDevice}
+                  onCheckedChange={(checked) => setRememberDevice(checked as boolean)}
+                />
+                <div className="grid gap-1.5 leading-none">
+                  <Label
+                    htmlFor="remember-device"
+                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                  >
+                    Lembrar este dispositivo por 30 dias
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    ⓘ Não pediremos código 2FA neste dispositivo por 30 dias. Recomendado apenas para dispositivos pessoais.
+                  </p>
+                </div>
+              </div>
+            )}
+
             <Button
               type="submit"
               className="w-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-glow"
@@ -378,7 +402,7 @@ const Auth = () => {
           </div>
         </Card>
 
-        {/* MFA Verification Gate with Remember Device Option */}
+        {/* MFA Verification Gate */}
         {mfaChallengeData && (
           <MFAVerificationGate
             open={showMFAGate}
@@ -387,7 +411,8 @@ const Auth = () => {
             challengeData={mfaChallengeData}
             onVerified={handleMFASuccess}
             onCancel={handleMFACancel}
-            showRememberOption={true}
+            showRememberOption={false}
+            presetRememberDevice={rememberDevice}
           />
         )}
       </div>
