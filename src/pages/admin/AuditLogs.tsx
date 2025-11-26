@@ -81,6 +81,7 @@ const AuditLogs = () => {
       password_changed: 'Senha Alterada',
       mfa_enabled: 'MFA Ativado',
       mfa_disabled: 'MFA Desativado',
+      mfa_backup_code_used: 'Código de Backup MFA Usado',
       logout: 'Logout',
       profile_updated: 'Perfil Atualizado',
       address_added: 'Endereço Adicionado',

@@ -147,21 +147,12 @@ export const useMFA = () => {
         .update({ used_at: new Date().toISOString() })
         .eq('id', backupCode.id);
 
-      // CRITICAL: Elevate session to AAL2 after backup code verification
-      const factors = await listFactors();
-      const totpFactor = factors.totp?.[0];
+      // NOTE: Backup codes are emergency recovery mechanisms and do not elevate 
+      // the session to AAL2 (Authentication Assurance Level 2). This is by design.
+      // Operations requiring AAL2 must implement their own MFA verification step.
+      // For critical operations after backup code usage, prompt user to reconfigure TOTP.
       
-      if (totpFactor) {
-        const challenge = await supabase.auth.mfa.challenge({ factorId: totpFactor.id });
-        if (!challenge.error) {
-          // Use the backup code hash as verification for AAL2 elevation
-          await supabase.auth.mfa.verify({
-            factorId: totpFactor.id,
-            challengeId: challenge.data.id,
-            code: code.replace(/-/g, ''),
-          });
-        }
-      }
+      await logActivity('mfa_backup_code_used');
 
       return true;
     } catch (error: any) {
