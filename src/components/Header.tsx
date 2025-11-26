@@ -112,10 +112,13 @@ const Header = () => {
   };
 
   const handleNavigate = (path: string) => {
-    // Block navigation during authentication process
+    // CRITICAL: Block navigation during authentication process
+    // This prevents race conditions and ensures 2FA security
     if (isNavigationBlocked) {
       console.log('🔐 Navigation blocked - authentication in progress');
-      toast.error('Aguarde a conclusão do login');
+      toast.error('Aguarde a conclusão do login', {
+        description: 'Por favor, complete a autenticação antes de navegar.'
+      });
       return;
     }
     
@@ -151,8 +154,8 @@ const Header = () => {
     <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between">
         <div 
-          className="flex items-center space-x-2 cursor-pointer"
-          onClick={() => navigate('/')}
+          className={`flex items-center space-x-2 cursor-pointer ${isNavigationBlocked ? 'pointer-events-none opacity-50' : ''}`}
+          onClick={() => handleNavigate('/')}
         >
           <div className="h-8 w-8 rounded-lg bg-gradient-primary" />
           <span className="text-xl font-bold bg-gradient-primary bg-clip-text text-transparent">
@@ -238,7 +241,7 @@ const Header = () => {
             <Button
               variant="outline"
               size="sm"
-              className="border-primary/50 hover:bg-primary/10"
+              className={`border-primary/50 hover:bg-primary/10 ${isNavigationBlocked ? 'pointer-events-none opacity-50' : ''}`}
               onClick={() => handleNavigate('/admin')}
               disabled={isNavigationBlocked}
               aria-disabled={isNavigationBlocked}
@@ -250,7 +253,7 @@ const Header = () => {
           <Button
             variant="outline"
             size="sm"
-            className="border-primary/50 hover:bg-primary/10"
+            className={`border-primary/50 hover:bg-primary/10 ${isNavigationBlocked ? 'pointer-events-none opacity-50' : ''}`}
             onClick={() => handleNavigate('/my-orders')}
             disabled={isNavigationBlocked}
             aria-disabled={isNavigationBlocked}
@@ -261,8 +264,10 @@ const Header = () => {
           <Button
             variant="outline"
             size="sm"
-            className="relative border-primary/50 hover:bg-primary/10"
-            onClick={() => navigate('/cart')}
+            className={`relative border-primary/50 hover:bg-primary/10 ${isNavigationBlocked ? 'pointer-events-none opacity-50' : ''}`}
+            onClick={() => handleNavigate('/cart')}
+            disabled={isNavigationBlocked}
+            aria-disabled={isNavigationBlocked}
           >
             <ShoppingCart className="h-5 w-5 text-primary" />
             {totalItems > 0 && (
@@ -277,7 +282,7 @@ const Header = () => {
               <Button
                 variant="outline"
                 size="sm"
-                className="border-primary/50 hover:bg-primary/10"
+                className={`border-primary/50 hover:bg-primary/10 ${isNavigationBlocked ? 'pointer-events-none opacity-50' : ''}`}
                 onClick={() => handleNavigate('/profile')}
                 disabled={isNavigationBlocked}
                 aria-disabled={isNavigationBlocked}
@@ -287,8 +292,10 @@ const Header = () => {
               <Button
                 variant="outline"
                 size="sm"
-                className="border-destructive/50 hover:bg-destructive/10"
+                className={`border-destructive/50 hover:bg-destructive/10 ${isNavigationBlocked ? 'pointer-events-none opacity-50' : ''}`}
                 onClick={handleLogout}
+                disabled={isNavigationBlocked}
+                aria-disabled={isNavigationBlocked}
               >
                 <LogOut className="h-5 w-5 text-destructive" />
               </Button>
@@ -325,8 +332,10 @@ const Header = () => {
                   <h3 className="text-sm font-semibold text-muted-foreground mb-3 px-2">Categorias</h3>
                   <Button
                     variant="outline"
-                    className="w-full justify-start gap-3 mb-3 border-primary/50 hover:bg-primary/10"
+                    className={`w-full justify-start gap-3 mb-3 border-primary/50 hover:bg-primary/10 ${isNavigationBlocked ? 'pointer-events-none opacity-50' : ''}`}
                     onClick={() => handleNavigate('/')}
+                    disabled={isNavigationBlocked}
+                    aria-disabled={isNavigationBlocked}
                   >
                     Ver Todas as Categorias
                   </Button>
@@ -384,7 +393,7 @@ const Header = () => {
               {role === 'admin' && (
                 <Button
                   variant="outline"
-                  className="w-full justify-start gap-3 border-primary/50 hover:bg-primary/10 animate-fade-in"
+                  className={`w-full justify-start gap-3 border-primary/50 hover:bg-primary/10 animate-fade-in ${isNavigationBlocked ? 'pointer-events-none opacity-50' : ''}`}
                   style={{ animationDelay: `${50 + categories.length * 50}ms` }}
                   onClick={() => handleNavigate('/admin')}
                   disabled={isNavigationBlocked}
@@ -397,7 +406,7 @@ const Header = () => {
               
               <Button
                 variant="outline"
-                className="w-full justify-start gap-3 border-primary/50 hover:bg-primary/10 animate-fade-in"
+                className={`w-full justify-start gap-3 border-primary/50 hover:bg-primary/10 animate-fade-in ${isNavigationBlocked ? 'pointer-events-none opacity-50' : ''}`}
                 style={{ animationDelay: `${(role === 'admin' ? 100 : 50) + categories.length * 50}ms` }}
                 onClick={() => handleNavigate('/my-orders')}
                 disabled={isNavigationBlocked}
@@ -409,9 +418,11 @@ const Header = () => {
               
               <Button
                 variant="outline"
-                className="w-full justify-start gap-3 border-primary/50 hover:bg-primary/10 relative animate-fade-in"
+                className={`w-full justify-start gap-3 border-primary/50 hover:bg-primary/10 relative animate-fade-in ${isNavigationBlocked ? 'pointer-events-none opacity-50' : ''}`}
                 style={{ animationDelay: `${(role === 'admin' ? 150 : 100) + categories.length * 50}ms` }}
                 onClick={() => handleNavigate('/cart')}
+                disabled={isNavigationBlocked}
+                aria-disabled={isNavigationBlocked}
               >
                 <ShoppingCart className="h-5 w-5 text-primary" />
                 <span>Carrinho</span>
@@ -426,7 +437,7 @@ const Header = () => {
                 <>
                   <Button
                     variant="outline"
-                    className="w-full justify-start gap-3 border-primary/50 hover:bg-primary/10 animate-fade-in"
+                    className={`w-full justify-start gap-3 border-primary/50 hover:bg-primary/10 animate-fade-in ${isNavigationBlocked ? 'pointer-events-none opacity-50' : ''}`}
                     style={{ animationDelay: `${(role === 'admin' ? 200 : 150) + categories.length * 50}ms` }}
                     onClick={() => handleNavigate('/profile')}
                     disabled={isNavigationBlocked}
@@ -437,9 +448,11 @@ const Header = () => {
                   </Button>
                   <Button
                     variant="outline"
-                    className="w-full justify-start gap-3 border-destructive/50 hover:bg-destructive/10 animate-fade-in"
+                    className={`w-full justify-start gap-3 border-destructive/50 hover:bg-destructive/10 animate-fade-in ${isNavigationBlocked ? 'pointer-events-none opacity-50' : ''}`}
                     style={{ animationDelay: `${(role === 'admin' ? 250 : 200) + categories.length * 50}ms` }}
                     onClick={handleLogout}
+                    disabled={isNavigationBlocked}
+                    aria-disabled={isNavigationBlocked}
                   >
                     <LogOut className="h-5 w-5 text-destructive" />
                     <span>Sair</span>

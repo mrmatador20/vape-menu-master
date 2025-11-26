@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { flushSync } from 'react-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useMFA } from '@/hooks/useMFA';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
@@ -43,8 +44,13 @@ const Auth = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
-    setAuthState('AUTHENTICATING');
+    
+    // CRITICAL: Use flushSync to force synchronous state update
+    // This ensures the navbar is disabled BEFORE any async operations
+    flushSync(() => {
+      setIsLoading(true);
+      setAuthState('AUTHENTICATING');
+    });
 
     try {
       if (isSignUp) {
@@ -179,7 +185,10 @@ const Auth = () => {
       }
     } catch (error: any) {
       toast.error(error.message || 'Erro ao autenticar');
-      setAuthState('IDLE');
+      // CRITICAL: Use flushSync to immediately reset state on error
+      flushSync(() => {
+        setAuthState('IDLE');
+      });
     } finally {
       setIsLoading(false);
     }
