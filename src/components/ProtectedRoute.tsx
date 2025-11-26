@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
+import { useAuthState } from '@/context/AuthStateContext';
 import { Loader2 } from 'lucide-react';
 
 interface ProtectedRouteProps {
@@ -17,6 +18,7 @@ export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const [requires2FA, setRequires2FA] = useState(false);
   const location = useLocation();
   const { checkAuthRequires2FA } = useAuthGuard();
+  const { isNavigationBlocked } = useAuthState();
 
   useEffect(() => {
     const validateAccess = async () => {
@@ -72,6 +74,19 @@ export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
 
     return () => subscription.unsubscribe();
   }, [checkAuthRequires2FA]);
+
+  // Block access during authentication process
+  if (isNavigationBlocked) {
+    console.log('🔐 ProtectedRoute: Navigation blocked during authentication');
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gradient-hero">
+        <div className="text-center space-y-4">
+          <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto" />
+          <p className="text-muted-foreground">Processando autenticação...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (

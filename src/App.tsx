@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { CartProvider } from "./context/CartContext";
+import { AuthStateProvider } from "./context/AuthStateContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { AuthInterceptor } from "./components/AuthInterceptor";
 import Index from "./pages/Index";
@@ -50,8 +51,9 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
-          <AuthInterceptor>
-            <Routes>
+          <AuthStateProvider>
+            <AuthInterceptor>
+              <Routes>
               <Route path="/" element={
                 <ResetFlowGuard>
                   <Index />
@@ -135,8 +137,9 @@ const App = () => (
                   <NotFound />
                 </ResetFlowGuard>
               } />
-            </Routes>
-          </AuthInterceptor>
+              </Routes>
+            </AuthInterceptor>
+          </AuthStateProvider>
         </BrowserRouter>
       </CartProvider>
     </TooltipProvider>

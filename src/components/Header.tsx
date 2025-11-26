@@ -7,6 +7,7 @@ import { useUserRole } from '@/hooks/useUserRole';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useState, useEffect, useMemo } from 'react';
+import { useAuthState } from '@/context/AuthStateContext';
 import {
   Sheet,
   SheetContent,
@@ -40,6 +41,7 @@ const Header = () => {
   const navigate = useNavigate();
   const { data: role } = useUserRole();
   const { data: products } = useProducts();
+  const { isNavigationBlocked } = useAuthState();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isCategoriesOpen, setIsCategoriesOpen] = useState(false);
@@ -110,6 +112,13 @@ const Header = () => {
   };
 
   const handleNavigate = (path: string) => {
+    // Block navigation during authentication process
+    if (isNavigationBlocked) {
+      console.log('🔐 Navigation blocked - authentication in progress');
+      toast.error('Aguarde a conclusão do login');
+      return;
+    }
+    
     navigate(path);
     setIsMenuOpen(false);
     setIsCategoriesOpen(false);
@@ -230,7 +239,9 @@ const Header = () => {
               variant="outline"
               size="sm"
               className="border-primary/50 hover:bg-primary/10"
-              onClick={() => navigate('/admin')}
+              onClick={() => handleNavigate('/admin')}
+              disabled={isNavigationBlocked}
+              aria-disabled={isNavigationBlocked}
             >
               <Settings className="h-5 w-5 text-primary" />
             </Button>
@@ -240,7 +251,9 @@ const Header = () => {
             variant="outline"
             size="sm"
             className="border-primary/50 hover:bg-primary/10"
-            onClick={() => navigate('/my-orders')}
+            onClick={() => handleNavigate('/my-orders')}
+            disabled={isNavigationBlocked}
+            aria-disabled={isNavigationBlocked}
           >
             <Package className="h-5 w-5 text-primary" />
           </Button>
@@ -265,7 +278,9 @@ const Header = () => {
                 variant="outline"
                 size="sm"
                 className="border-primary/50 hover:bg-primary/10"
-                onClick={() => navigate('/profile')}
+                onClick={() => handleNavigate('/profile')}
+                disabled={isNavigationBlocked}
+                aria-disabled={isNavigationBlocked}
               >
                 <User className="h-5 w-5 text-primary" />
               </Button>
@@ -372,6 +387,8 @@ const Header = () => {
                   className="w-full justify-start gap-3 border-primary/50 hover:bg-primary/10 animate-fade-in"
                   style={{ animationDelay: `${50 + categories.length * 50}ms` }}
                   onClick={() => handleNavigate('/admin')}
+                  disabled={isNavigationBlocked}
+                  aria-disabled={isNavigationBlocked}
                 >
                   <Settings className="h-5 w-5 text-primary" />
                   <span>Admin</span>
@@ -383,6 +400,8 @@ const Header = () => {
                 className="w-full justify-start gap-3 border-primary/50 hover:bg-primary/10 animate-fade-in"
                 style={{ animationDelay: `${(role === 'admin' ? 100 : 50) + categories.length * 50}ms` }}
                 onClick={() => handleNavigate('/my-orders')}
+                disabled={isNavigationBlocked}
+                aria-disabled={isNavigationBlocked}
               >
                 <Package className="h-5 w-5 text-primary" />
                 <span>Meus Pedidos</span>
@@ -410,6 +429,8 @@ const Header = () => {
                     className="w-full justify-start gap-3 border-primary/50 hover:bg-primary/10 animate-fade-in"
                     style={{ animationDelay: `${(role === 'admin' ? 200 : 150) + categories.length * 50}ms` }}
                     onClick={() => handleNavigate('/profile')}
+                    disabled={isNavigationBlocked}
+                    aria-disabled={isNavigationBlocked}
                   >
                     <User className="h-5 w-5 text-primary" />
                     <span>Perfil</span>

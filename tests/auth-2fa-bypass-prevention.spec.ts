@@ -493,6 +493,122 @@ test.describe('2FA Remember Device Tests', () => {
     // For now, this is a placeholder - you'll need to implement token creation in the test database
     console.log('⚠️  TEST 13 SKIPPED: Requires pre-existing valid device token in database');
   });
+
+  // Test 14: Block navigation during "Processando..." state
+  test('TEST 14: Block navbar navigation during authentication processing', async ({ page }) => {
+    console.log('🔐 TEST 14: Block navbar navigation during authentication processing');
+    
+    await page.goto('/auth');
+
+    // Fill credentials
+    await page.fill('input[type="email"]', TEST_USER_WITH_2FA.email);
+    await page.fill('input[type="password"]', TEST_USER_WITH_2FA.password);
+
+    // Click login and immediately try to navigate via profile icon
+    const loginPromise = page.click('button[type="submit"]');
+    
+    // Wait for "Processando..." state
+    await page.waitForSelector('text=Processando...', { timeout: 2000 });
+    
+    // Try to click profile button in navbar (desktop)
+    const profileButton = page.locator('button:has(svg.lucide-user)').first();
+    
+    // Attempt multiple clicks during processing
+    for (let i = 0; i < 5; i++) {
+      await profileButton.click({ force: true }).catch(() => {});
+      await page.waitForTimeout(100);
+    }
+
+    await loginPromise;
+
+    // Verify we're still on auth page or 2FA verification
+    await page.waitForTimeout(500);
+    const currentUrl = page.url();
+    
+    // Should NOT be on profile page
+    expect(currentUrl).not.toContain('/profile');
+    
+    // Should either be on auth page or showing 2FA dialog
+    const is2FAVisible = await page.locator('text=/Autenticação de 2 Fatores|Digite o código de autenticação/i').isVisible().catch(() => false);
+    const isAuthPage = currentUrl.includes('/auth');
+    
+    expect(is2FAVisible || isAuthPage).toBeTruthy();
+    
+    console.log('✅ TEST 14 PASSED: Navbar navigation blocked during processing');
+  });
+
+  // Test 15: Verify forced URL navigation is blocked during AWAITING_2FA
+  test('TEST 15: Block direct URL navigation during 2FA verification', async ({ page }) => {
+    console.log('🔐 TEST 15: Block direct URL navigation during 2FA verification');
+    
+    await page.goto('/auth');
+
+    // Login to enter AWAITING_2FA state
+    await page.fill('input[type="email"]', TEST_USER_WITH_2FA.email);
+    await page.fill('input[type="password"]', TEST_USER_WITH_2FA.password);
+    await page.click('button[type="submit"]');
+
+    // Wait for 2FA dialog
+    await page.waitForSelector('text=/Digite o código de autenticação|Autenticação de 2 Fatores/i', { timeout: 5000 });
+
+    // Try to force navigation to protected routes via URL
+    const protectedRoutes = ['/profile', '/admin', '/my-orders'];
+    
+    for (const route of protectedRoutes) {
+      await page.goto(route);
+      await page.waitForTimeout(1000);
+      
+      // Should be redirected back or blocked
+      const currentUrl = page.url();
+      
+      // Verify we're not actually on the protected page
+      // (should be on auth or showing verification gate)
+      const is2FAVisible = await page.locator('text=/Digite o código de autenticação|Autenticação de 2 Fatores|Verificando segurança/i').isVisible().catch(() => false);
+      const isAuthPage = currentUrl.includes('/auth');
+      const isHomePage = currentUrl.endsWith('/') && !currentUrl.includes('/profile');
+      
+      expect(is2FAVisible || isAuthPage || isHomePage).toBeTruthy();
+    }
+    
+    console.log('✅ TEST 15 PASSED: Direct URL navigation blocked during 2FA');
+  });
+
+  // Test 16: Verify mobile menu navigation is also blocked
+  test('TEST 16: Block mobile menu navigation during authentication', async ({ page }) => {
+    console.log('🔐 TEST 16: Block mobile menu navigation during authentication');
+    
+    // Set mobile viewport
+    await page.setViewportSize({ width: 375, height: 667 });
+    
+    await page.goto('/auth');
+
+    // Fill credentials
+    await page.fill('input[type="email"]', TEST_USER_WITH_2FA.email);
+    await page.fill('input[type="password"]', TEST_USER_WITH_2FA.password);
+
+    // Click login
+    const loginPromise = page.click('button[type="submit"]');
+    
+    // Wait for processing state
+    await page.waitForSelector('text=Processando...', { timeout: 2000 });
+    
+    // Try to open mobile menu and navigate
+    const menuButton = page.locator('button:has(svg.lucide-menu)');
+    await menuButton.click({ force: true }).catch(() => {});
+    
+    // Try to click profile in mobile menu
+    const mobileProfileButton = page.locator('text=Perfil').first();
+    await mobileProfileButton.click({ force: true }).catch(() => {});
+
+    await loginPromise;
+
+    // Verify we're not on profile
+    await page.waitForTimeout(500);
+    const currentUrl = page.url();
+    expect(currentUrl).not.toContain('/profile');
+    
+    console.log('✅ TEST 16 PASSED: Mobile menu navigation blocked during processing');
+  });
 });
 
 /**
