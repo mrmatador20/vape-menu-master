@@ -37,20 +37,24 @@ export const AuthInterceptor = ({ children }: AuthInterceptorProps) => {
     const checkAuthentication = async () => {
       console.log('🛡️ AuthInterceptor: Starting authentication check for route:', location.pathname);
 
-      // Skip check for public routes
-      if (isPublicRoute) {
-        console.log('🛡️ AuthInterceptor: Public route, skipping check');
-        setAuthState('authenticated');
-        return;
-      }
+      // CRITICAL: Even public routes must be checked if user has active session
+      // A user with 2FA enabled CANNOT access ANY page without verification
 
       try {
         // Check if user has a session
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
-        if (sessionError || !session) {
+        // If no session and trying to access protected route, redirect to login
+        if ((sessionError || !session) && !isPublicRoute) {
           console.log('🛡️ AuthInterceptor: No session found, redirecting to login');
           navigate('/auth');
+          return;
+        }
+
+        // If no session and on public route, allow access
+        if (!session && isPublicRoute) {
+          console.log('🛡️ AuthInterceptor: No session, public route, allowing access');
+          setAuthState('authenticated');
           return;
         }
 
@@ -125,7 +129,24 @@ export const AuthInterceptor = ({ children }: AuthInterceptorProps) => {
     return () => {
       isMounted = false;
     };
-  }, [location.pathname]);
+  }, [location.pathname, isPublicRoute, navigate, checkAuthRequires2FA, rememberDevice]);
+
+  // CRITICAL: Also run on component mount to catch initial page load
+  useEffect(() => {
+    const checkInitialAuth = async () => {
+      console.log('🛡️ AuthInterceptor: Initial mount check');
+      
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      // If there's a session, force authentication check immediately
+      if (session) {
+        console.log('🛡️ AuthInterceptor: Session detected on mount, forcing auth check');
+        setAuthState('checking'); // Reset to checking to trigger full validation
+      }
+    };
+    
+    checkInitialAuth();
+  }, []);
 
   const handle2FASuccess = async (deviceRemembered: boolean) => {
     console.log('🛡️ AuthInterceptor: 2FA verification successful');
