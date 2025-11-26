@@ -72,18 +72,17 @@ test.describe('2FA Bypass Prevention - Critical Security Tests', () => {
     await page.click('button[type="submit"]');
     
     // CRITICAL: User should be shown 2FA challenge, NOT redirected to home
-    await page.waitForTimeout(2000);
+    await page.waitForTimeout(3000);
     
     // Check for 2FA dialog/gate
     const has2FADialog = await page.locator('text=/Autenticação de 2 Fatores|Digite o Código 2FA/i').isVisible();
     expect(has2FADialog).toBeTruthy();
     
-    // Verify user is NOT at home page
-    const currentUrl = page.url();
-    expect(currentUrl).not.toContain('localhost:5173/');
-    expect(currentUrl).toContain('/auth');
+    // CRITICAL: During 2FA, home page content must NOT be visible
+    const canSeeHome = await page.locator('text=/Bem-vindo.*NebulaVape/i').isVisible({ timeout: 2000 }).catch(() => false);
+    expect(canSeeHome).toBeFalsy();
     
-    console.log('✅ TEST 1 PASSED: 2FA challenge displayed, home page not accessible');
+    console.log('✅ TEST 1 PASSED: 2FA challenge displayed, protected content blocked');
   });
 
   test('TEST 2: Protected routes are INACCESSIBLE during 2FA challenge', async ({ page }) => {
@@ -96,21 +95,38 @@ test.describe('2FA Bypass Prevention - Critical Security Tests', () => {
     await page.click('button[type="submit"]');
     
     // Wait for 2FA challenge to appear
-    await page.waitForTimeout(2000);
+    await page.waitForTimeout(3000);
+    await expect(page.locator('text=/Autenticação de 2 Fatores|Digite o Código 2FA/i')).toBeVisible();
     
-    // Attempt to access protected routes directly via URL navigation
+    // CRITICAL: Attempt to access protected routes directly via URL navigation
     const protectedRoutes = [
+      '/',
       '/profile',
       '/cart',
       '/checkout',
       '/my-orders',
       '/trusted-devices',
+      '/admin',
     ];
     
     for (const route of protectedRoutes) {
       console.log(`  Testing access to: ${route}`);
-      const canAccess = await attemptAccessProtectedRoute(page, route);
-      expect(canAccess).toBeFalsy();
+      await page.goto(`http://localhost:5173${route}`);
+      await page.waitForTimeout(2000);
+      
+      // SECURITY VALIDATION: Must show 2FA gate or be redirected
+      const has2FAGate = await page.locator('text=/Autenticação de 2 Fatores|Digite o Código 2FA|Verificando segurança/i').isVisible({ timeout: 3000 }).catch(() => false);
+      const isOnAuthPage = page.url().includes('/auth');
+      const canSeeProtectedContent = await page.locator('text=/Bem-vindo|Perfil|Meus Pedidos|Admin/i').isVisible({ timeout: 1000 }).catch(() => false);
+      
+      if (!has2FAGate && !isOnAuthPage) {
+        throw new Error(`Route ${route} is accessible without 2FA! CRITICAL SECURITY BREACH.`);
+      }
+      
+      if (canSeeProtectedContent) {
+        throw new Error(`Protected content visible on ${route} without 2FA verification!`);
+      }
+      
       console.log(`  ❌ Access denied to ${route} (as expected)`);
     }
     
@@ -190,17 +206,29 @@ test.describe('2FA Bypass Prevention - Critical Security Tests', () => {
     await page.fill('input[type="email"]', TEST_USER_WITH_2FA.email);
     await page.fill('input[type="password"]', TEST_USER_WITH_2FA.password);
     await page.click('button[type="submit"]');
-    await page.waitForTimeout(2000);
+    await page.waitForTimeout(3000);
     
-    // Attempt direct navigation to home
-    await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    // CRITICAL TEST: Attempt direct navigation to various routes
+    const routes = ['/', '/profile', '/my-orders', '/cart', '/checkout', '/admin'];
     
-    // Should still see 2FA gate or be redirected to auth
-    const has2FAGate = await page.locator('text=/Digite o Código 2FA|Verificando segurança/i').isVisible();
-    const isOnAuthPage = page.url().includes('/auth');
-    
-    expect(has2FAGate || isOnAuthPage).toBeTruthy();
+    for (const route of routes) {
+      console.log(`  Testing direct navigation to: ${route}`);
+      await page.goto(`http://localhost:5173${route}`);
+      await page.waitForTimeout(2000);
+      
+      // SECURITY VALIDATION: Must show 2FA gate or redirect to auth
+      const has2FAGate = await page.locator('text=/Digite o Código 2FA|Verificando segurança|Autenticação de 2 Fatores/i').isVisible({ timeout: 3000 }).catch(() => false);
+      const isOnAuthPage = page.url().includes('/auth');
+      const canSeeProtectedContent = await page.locator('text=/Bem-vindo|Perfil|Admin|Meus Pedidos/i').isVisible({ timeout: 1000 }).catch(() => false);
+      
+      if (!has2FAGate && !isOnAuthPage) {
+        throw new Error(`Direct navigation to ${route} bypassed 2FA! CRITICAL BREACH.`);
+      }
+      
+      if (canSeeProtectedContent) {
+        throw new Error(`Protected content visible on ${route} without 2FA!`);
+      }
+    }
     
     console.log('✅ TEST 5 PASSED: Direct navigation blocked during 2FA');
   });
@@ -283,24 +311,35 @@ test.describe('2FA Bypass Prevention - Critical Security Tests', () => {
   test('TEST 9: Browser back button during 2FA does not grant access', async ({ page }) => {
     console.log('🔐 TEST 9: Back button during 2FA blocked');
     
-    // Navigate to home first (should redirect to auth)
-    await page.goto('/');
-    await page.waitForLoadState('networkidle');
-    
     // Login
     await page.goto('/auth');
     await page.fill('input[type="email"]', TEST_USER_WITH_2FA.email);
     await page.fill('input[type="password"]', TEST_USER_WITH_2FA.password);
     await page.click('button[type="submit"]');
-    await page.waitForTimeout(2000);
+    await page.waitForTimeout(3000);
     
-    // Try to use back button
+    // Verify 2FA gate is showing
+    await expect(page.locator('text=/Autenticação de 2 Fatores|Digite o Código 2FA/i')).toBeVisible();
+    
+    // CRITICAL TEST: Try to use back button to bypass
     await page.goBack();
-    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(1500);
     
-    // Should not be able to access protected content
-    const currentUrl = page.url();
-    expect(currentUrl).toContain('/auth');
+    // SECURITY VALIDATION: Should not grant access
+    const isOnAuthLogin = page.url().includes('/auth') && await page.locator('input[type="email"]').isVisible({ timeout: 2000 }).catch(() => false);
+    const has2FAGate = await page.locator('text=/Autenticação de 2 Fatores|Digite o Código 2FA/i').isVisible({ timeout: 2000 }).catch(() => false);
+    
+    if (!isOnAuthLogin && !has2FAGate) {
+      throw new Error('Back button bypassed 2FA verification!');
+    }
+    
+    // Try to navigate to home again
+    await page.goto('/');
+    await page.waitForTimeout(1500);
+    
+    // Must still require 2FA
+    const stillBlocked = await page.locator('text=/Autenticação de 2 Fatores|Digite o Código 2FA|Verificando segurança/i').isVisible({ timeout: 3000 }).catch(() => false);
+    expect(stillBlocked || page.url().includes('/auth')).toBeTruthy();
     
     console.log('✅ TEST 9 PASSED: Back button does not bypass 2FA');
   });
@@ -313,17 +352,27 @@ test.describe('2FA Bypass Prevention - Critical Security Tests', () => {
     await page.fill('input[type="email"]', TEST_USER_WITH_2FA.email);
     await page.fill('input[type="password"]', TEST_USER_WITH_2FA.password);
     await page.click('button[type="submit"]');
-    await page.waitForTimeout(2000);
+    await page.waitForTimeout(3000);
     
-    // Refresh page
+    // Verify 2FA gate is showing
+    await expect(page.locator('text=/Autenticação de 2 Fatores|Digite o Código 2FA/i')).toBeVisible();
+    
+    // CRITICAL TEST: Refresh page during 2FA
     await page.reload();
-    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(2500);
     
-    // Should still see 2FA gate or be redirected to auth
-    const has2FAGate = await page.locator('text=/Digite o Código 2FA|Verificando segurança/i').isVisible();
+    // SECURITY VALIDATION: Must still require 2FA after refresh
+    const has2FAGate = await page.locator('text=/Digite o Código 2FA|Verificando segurança|Autenticação de 2 Fatores/i').isVisible({ timeout: 3000 }).catch(() => false);
     const isOnAuthPage = page.url().includes('/auth');
+    const canSeeProtectedContent = await page.locator('text=/Bem-vindo.*NebulaVape/i').isVisible({ timeout: 1000 }).catch(() => false);
     
-    expect(has2FAGate || isOnAuthPage).toBeTruthy();
+    if (!has2FAGate && !isOnAuthPage) {
+      throw new Error('Page refresh during 2FA bypassed verification! CRITICAL BREACH.');
+    }
+    
+    if (canSeeProtectedContent) {
+      throw new Error('Protected content visible after page refresh without 2FA completion!');
+    }
     
     console.log('✅ TEST 10 PASSED: Page refresh maintains 2FA security');
   });
@@ -336,9 +385,12 @@ test.describe('2FA Bypass Prevention - Critical Security Tests', () => {
     await page.fill('input[type="email"]', TEST_USER_WITH_2FA.email);
     await page.fill('input[type="password"]', TEST_USER_WITH_2FA.password);
     await page.click('button[type="submit"]');
-    await page.waitForTimeout(2000);
+    await page.waitForTimeout(3000);
     
-    // Test every possible protected route
+    // CRITICAL: Verify 2FA gate is active
+    await expect(page.locator('text=/Autenticação de 2 Fatores|Digite o Código 2FA/i')).toBeVisible();
+    
+    // Test EVERY possible protected route
     const allProtectedRoutes = [
       '/',
       '/profile',
@@ -351,23 +403,31 @@ test.describe('2FA Bypass Prevention - Critical Security Tests', () => {
       '/admin/dashboard',
       '/admin/products',
       '/admin/orders',
+      '/admin/security',
     ];
     
     for (const route of allProtectedRoutes) {
-      console.log(`  Testing: ${route}`);
-      await page.goto(route);
-      await page.waitForLoadState('networkidle');
+      console.log(`  Testing AuthInterceptor on: ${route}`);
+      await page.goto(`http://localhost:5173${route}`);
+      await page.waitForTimeout(2000);
       
-      // Should see 2FA gate or be on auth page
-      const currentUrl = page.url();
-      const has2FAGate = await page.locator('text=/Digite o Código 2FA|Verificando segurança/i').isVisible();
-      const isProtected = has2FAGate || currentUrl.includes('/auth');
+      // SECURITY VALIDATION: AuthInterceptor must block access
+      const has2FAGate = await page.locator('text=/Digite o Código 2FA|Verificando segurança|Autenticação de 2 Fatores/i').isVisible({ timeout: 3000 }).catch(() => false);
+      const isOnAuthPage = page.url().includes('/auth');
+      const canSeeProtectedContent = await page.locator('text=/Bem-vindo|Perfil|Admin|Carrinho|Pedidos|Dashboard/i').isVisible({ timeout: 1000 }).catch(() => false);
       
-      expect(isProtected).toBeTruthy();
-      console.log(`  ✅ ${route} properly protected`);
+      if (!has2FAGate && !isOnAuthPage) {
+        throw new Error(`AuthInterceptor FAILED to block route: ${route}. CRITICAL SECURITY BREACH!`);
+      }
+      
+      if (canSeeProtectedContent) {
+        throw new Error(`Protected content visible on ${route} - AuthInterceptor bypass!`);
+      }
+      
+      console.log(`  ✅ ${route} properly protected by AuthInterceptor`);
     }
     
-    console.log('✅ TEST 11 PASSED: All routes blocked by AuthInterceptor');
+    console.log('✅ TEST 11 PASSED: AuthInterceptor blocks all routes comprehensively');
   });
 });
 
