@@ -69,10 +69,12 @@ export const useAuthGuard = () => {
   // Register device in database (replaces cookie-based rememberDevice)
   const rememberDevice = async (userId: string) => {
     try {
+      console.log(`🔒 rememberDevice: Registering device for user ${userId}`);
       await registerDevice();
-      console.log(`🔒 Device registered in database for user ${userId}`);
+      console.log(`🔒 rememberDevice: Device registered successfully`);
     } catch (error) {
-      console.error('Error registering device:', error);
+      console.error('🔒 rememberDevice: Error registering device:', error);
+      throw error;
     }
   };
 

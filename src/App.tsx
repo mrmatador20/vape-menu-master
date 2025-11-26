@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { CartProvider } from "./context/CartContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
+import { AuthInterceptor } from "./components/AuthInterceptor";
 import Index from "./pages/Index";
 import Cart from "./pages/Cart";
 import Checkout from "./pages/Checkout";
@@ -49,91 +50,93 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
-          <Routes>
-            <Route path="/" element={
-              <ResetFlowGuard>
-                <Index />
-              </ResetFlowGuard>
-            } />
-            <Route path="/cart" element={
-              <ResetFlowGuard>
-                <ProtectedRoute>
-                  <Cart />
-                </ProtectedRoute>
-              </ResetFlowGuard>
-            } />
-            <Route path="/checkout" element={
-              <ResetFlowGuard>
-                <ProtectedRoute>
-                  <Checkout />
-                </ProtectedRoute>
-              </ResetFlowGuard>
-            } />
-            <Route path="/order-confirmation" element={
-              <ResetFlowGuard>
-                <ProtectedRoute>
-                  <OrderConfirmation />
-                </ProtectedRoute>
-              </ResetFlowGuard>
-            } />
-            <Route path="/auth" element={
-              <ResetFlowGuard>
-                <Auth />
-              </ResetFlowGuard>
-            } />
-            <Route path="/forgot-password" element={
-              <ResetFlowGuard>
-                <ForgotPassword />
-              </ResetFlowGuard>
-            } />
-            <Route path="/reset-password" element={<ResetPassword />} />
-            <Route path="/my-orders" element={
-              <ResetFlowGuard>
-                <ProtectedRoute>
-                  <MyOrders />
-                </ProtectedRoute>
-              </ResetFlowGuard>
-            } />
-            <Route path="/profile" element={
-              <ResetFlowGuard>
-                <ProtectedRoute>
-                  <Profile />
-                </ProtectedRoute>
-              </ResetFlowGuard>
-            } />
-            <Route path="/trusted-devices" element={
-              <ResetFlowGuard>
-                <ProtectedRoute>
-                  <TrustedDevices />
-                </ProtectedRoute>
-              </ResetFlowGuard>
-            } />
-            <Route path="/admin" element={
-              <ResetFlowGuard>
-                <ProtectedRoute>
-                  <AdminLayout />
-                </ProtectedRoute>
-              </ResetFlowGuard>
-            }>
-              <Route index element={<AdminDashboard />} />
-              <Route path="security" element={<AdminSecurityDashboard />} />
-              <Route path="products" element={<AdminProducts />} />
-              <Route path="orders" element={<AdminOrders />} />
-              <Route path="reviews" element={<AdminReviews />} />
-              <Route path="stats" element={<AdminStats />} />
-              <Route path="discounts" element={<AdminDiscounts />} />
-              <Route path="shipping-rates" element={<AdminShippingRates />} />
-              <Route path="banners" element={<AdminBanners />} />
-              <Route path="audit-logs" element={<AdminAuditLogs />} />
-              <Route path="settings" element={<AdminSettings />} />
-            </Route>
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={
-              <ResetFlowGuard>
-                <NotFound />
-              </ResetFlowGuard>
-            } />
-          </Routes>
+          <AuthInterceptor>
+            <Routes>
+              <Route path="/" element={
+                <ResetFlowGuard>
+                  <Index />
+                </ResetFlowGuard>
+              } />
+              <Route path="/cart" element={
+                <ResetFlowGuard>
+                  <ProtectedRoute>
+                    <Cart />
+                  </ProtectedRoute>
+                </ResetFlowGuard>
+              } />
+              <Route path="/checkout" element={
+                <ResetFlowGuard>
+                  <ProtectedRoute>
+                    <Checkout />
+                  </ProtectedRoute>
+                </ResetFlowGuard>
+              } />
+              <Route path="/order-confirmation" element={
+                <ResetFlowGuard>
+                  <ProtectedRoute>
+                    <OrderConfirmation />
+                  </ProtectedRoute>
+                </ResetFlowGuard>
+              } />
+              <Route path="/auth" element={
+                <ResetFlowGuard>
+                  <Auth />
+                </ResetFlowGuard>
+              } />
+              <Route path="/forgot-password" element={
+                <ResetFlowGuard>
+                  <ForgotPassword />
+                </ResetFlowGuard>
+              } />
+              <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/my-orders" element={
+                <ResetFlowGuard>
+                  <ProtectedRoute>
+                    <MyOrders />
+                  </ProtectedRoute>
+                </ResetFlowGuard>
+              } />
+              <Route path="/profile" element={
+                <ResetFlowGuard>
+                  <ProtectedRoute>
+                    <Profile />
+                  </ProtectedRoute>
+                </ResetFlowGuard>
+              } />
+              <Route path="/trusted-devices" element={
+                <ResetFlowGuard>
+                  <ProtectedRoute>
+                    <TrustedDevices />
+                  </ProtectedRoute>
+                </ResetFlowGuard>
+              } />
+              <Route path="/admin" element={
+                <ResetFlowGuard>
+                  <ProtectedRoute>
+                    <AdminLayout />
+                  </ProtectedRoute>
+                </ResetFlowGuard>
+              }>
+                <Route index element={<AdminDashboard />} />
+                <Route path="security" element={<AdminSecurityDashboard />} />
+                <Route path="products" element={<AdminProducts />} />
+                <Route path="orders" element={<AdminOrders />} />
+                <Route path="reviews" element={<AdminReviews />} />
+                <Route path="stats" element={<AdminStats />} />
+                <Route path="discounts" element={<AdminDiscounts />} />
+                <Route path="shipping-rates" element={<AdminShippingRates />} />
+                <Route path="banners" element={<AdminBanners />} />
+                <Route path="audit-logs" element={<AdminAuditLogs />} />
+                <Route path="settings" element={<AdminSettings />} />
+              </Route>
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="*" element={
+                <ResetFlowGuard>
+                  <NotFound />
+                </ResetFlowGuard>
+              } />
+            </Routes>
+          </AuthInterceptor>
         </BrowserRouter>
       </CartProvider>
     </TooltipProvider>

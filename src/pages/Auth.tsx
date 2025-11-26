@@ -37,33 +37,7 @@ const Auth = () => {
     password: '',
   });
 
-  // Check initial auth state with 2FA verification
-  useEffect(() => {
-    const checkInitialAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) return;
-
-      // User has a session - check if 2FA verification is needed
-      console.log('🔐 Initial session detected, checking 2FA requirements...');
-      const authCheck = await checkAuthRequires2FA();
-      console.log('🔐 Initial auth check result:', authCheck);
-
-      if (authCheck.requires2FA) {
-        // 2FA is required but user somehow has a session - force logout for security
-        console.log('⚠️ 2FA required but session exists - forcing logout for security');
-        await supabase.auth.signOut();
-        toast.error('Por segurança, faça login novamente');
-        return;
-      }
-
-      // No 2FA required or device is remembered - allow access
-      console.log('🔐 No 2FA required on initial load, redirecting to home');
-      navigate('/');
-    };
-
-    checkInitialAuth();
-  }, [navigate]);
+  // AuthInterceptor now handles all auth state checks and 2FA verification
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

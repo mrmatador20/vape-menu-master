@@ -165,22 +165,64 @@ export const useTrustedDevices = () => {
   // Check if current device is trusted
   const checkCurrentDevice = async (): Promise<boolean> => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return false;
+      console.log('🔐 checkCurrentDevice: Starting device check');
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      
+      if (userError || !user) {
+        console.log('🔐 checkCurrentDevice: No user found');
+        return false;
+      }
 
       const deviceFingerprint = generateDeviceFingerprint();
+      console.log('🔐 checkCurrentDevice: Generated fingerprint:', deviceFingerprint.substring(0, 16) + '...');
 
-      const { data } = await supabase
+      const { data, error: queryError } = await supabase
         .from('trusted_devices')
-        .select('id')
+        .select('id, last_used_at, created_at')
         .eq('user_id', user.id)
         .eq('device_fingerprint', deviceFingerprint)
         .eq('is_trusted', true)
         .maybeSingle();
 
-      return !!data;
+      if (queryError) {
+        console.error('🔐 checkCurrentDevice: Query error:', queryError);
+        // CONSERVATIVE: Return false on query error for security
+        return false;
+      }
+
+      if (!data) {
+        console.log('🔐 checkCurrentDevice: Device not found in trusted devices');
+        return false;
+      }
+
+      // Check if device token has expired (30 days)
+      const lastUsed = new Date(data.last_used_at);
+      const now = new Date();
+      const daysSinceLastUse = (now.getTime() - lastUsed.getTime()) / (1000 * 60 * 60 * 24);
+      
+      console.log('🔐 checkCurrentDevice: Days since last use:', daysSinceLastUse.toFixed(2));
+
+      if (daysSinceLastUse > 30) {
+        console.log('🔐 checkCurrentDevice: Device token expired (>30 days)');
+        // Revoke expired device
+        await supabase
+          .from('trusted_devices')
+          .update({ is_trusted: false })
+          .eq('id', data.id);
+        return false;
+      }
+
+      // Update last_used_at
+      await supabase
+        .from('trusted_devices')
+        .update({ last_used_at: new Date().toISOString() })
+        .eq('id', data.id);
+
+      console.log('🔐 checkCurrentDevice: Device is trusted and valid');
+      return true;
     } catch (error) {
-      console.error('Error checking device:', error);
+      console.error('🔐 checkCurrentDevice: Unexpected error:', error);
+      // CONSERVATIVE: Return false on any unexpected error for security
       return false;
     }
   };
