@@ -292,7 +292,7 @@ const Checkout = () => {
         return;
       }
 
-      const { data, error } = await supabase.functions.invoke('create-order', {
+      const response = await supabase.functions.invoke('create-order', {
         body: {
           items: items.map(item => ({
             id: item.id,
@@ -313,41 +313,41 @@ const Checkout = () => {
         }
       });
 
-      if (error) {
-        // Tentar extrair mensagem de erro específica do edge function
+      // Verificar se houve erro na chamada
+      if (response.error) {
+        console.error('Edge function error:', response.error);
         let errorMessage = 'Erro ao processar pedido. Tente novamente.';
         
-        try {
-          // O erro do edge function pode vir no context
-          if (error.context?.body) {
-            const errorBody = typeof error.context.body === 'string' 
-              ? JSON.parse(error.context.body) 
-              : error.context.body;
+        // Tentar extrair mensagem específica
+        if (response.error.context?.body) {
+          try {
+            const errorBody = typeof response.error.context.body === 'string' 
+              ? JSON.parse(response.error.context.body) 
+              : response.error.context.body;
             if (errorBody?.error) {
               errorMessage = errorBody.error;
             }
-          } else if (error.message) {
-            // Tentar parsear a mensagem se for JSON
-            try {
-              const parsed = JSON.parse(error.message);
-              if (parsed?.error) {
-                errorMessage = parsed.error;
-              }
-            } catch {
-              // Se não for JSON, usar a mensagem direta
-              errorMessage = error.message;
-            }
+          } catch (e) {
+            console.error('Erro ao parsear body:', e);
           }
-        } catch (parseError) {
-          console.error('Erro ao parsear mensagem de erro:', parseError);
+        } else if (response.error.message) {
+          errorMessage = response.error.message;
         }
         
         toast.error(errorMessage);
         return;
       }
 
+      const data = response.data;
+
+      // Verificar se a resposta tem erro mesmo sem error object
+      if (data?.error && !data?.success) {
+        toast.error(data.error);
+        return;
+      }
+
       if (!data?.success) {
-        toast.error(data?.error || 'Erro ao processar pedido. Tente novamente.');
+        toast.error('Erro ao processar pedido. Tente novamente.');
         return;
       }
 
