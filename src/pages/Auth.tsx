@@ -141,10 +141,13 @@ const Auth = () => {
           await resetRateLimit('login');
 
           // Check if 2FA verification is required (universal check)
+          console.log('🔐 Checking if 2FA is required after login...');
           const authCheck = await checkAuthRequires2FA();
+          console.log('🔐 Auth check result:', authCheck);
           
           if (authCheck.requires2FA && authCheck.factors && authCheck.factors.length > 0) {
             // 2FA is enabled and device not remembered - create challenge
+            console.log('🔐 2FA required, creating challenge...');
             const totpFactor = authCheck.factors[0];
             
             const { data: challenge, error: challengeError } = await supabase.auth.mfa.challenge({
@@ -152,12 +155,13 @@ const Auth = () => {
             });
 
             if (challengeError) {
-              console.error('Failed to create MFA challenge:', challengeError);
+              console.error('🔐 Failed to create MFA challenge:', challengeError);
               toast.error('Erro ao criar verificação 2FA');
               setIsLoading(false);
               return;
             }
 
+            console.log('🔐 MFA challenge created, showing verification gate');
             // Show MFA verification gate with remember option
             setMfaChallengeData({
               factorId: totpFactor.id,
@@ -170,6 +174,7 @@ const Auth = () => {
           }
           
           // No MFA required or device is remembered - proceed with login
+          console.log('🔐 No 2FA required, proceeding with login');
           await logActivity('login');
           toast.success('Login realizado com sucesso!');
           navigate('/');
