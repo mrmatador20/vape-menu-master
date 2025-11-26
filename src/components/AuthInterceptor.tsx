@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
+import { useAuthState } from '@/context/AuthStateContext';
 import { MFAVerificationGate } from './MFAVerificationGate';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -21,9 +22,10 @@ interface AuthInterceptorProps {
  * SECURITY CRITICAL: This is the last line of defense against 2FA bypass
  */
 export const AuthInterceptor = ({ children }: AuthInterceptorProps) => {
-  const [authState, setAuthState] = useState<'checking' | 'requires_2fa' | 'authenticated'>('checking');
+  const [interceptorState, setInterceptorState] = useState<'checking' | 'requires_2fa' | 'authenticated'>('checking');
   const [challengeData, setChallengeData] = useState<any>(null);
   const { checkAuthRequires2FA, rememberDevice } = useAuthGuard();
+  const { setAuthState: setGlobalAuthState } = useAuthState();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -54,7 +56,8 @@ export const AuthInterceptor = ({ children }: AuthInterceptorProps) => {
         // If no session and on public route, allow access
         if (!session && isPublicRoute) {
           console.log('🛡️ AuthInterceptor: No session, public route, allowing access');
-          setAuthState('authenticated');
+          setGlobalAuthState('IDLE');
+          setInterceptorState('authenticated');
           return;
         }
 
@@ -69,14 +72,16 @@ export const AuthInterceptor = ({ children }: AuthInterceptorProps) => {
         // If 2FA is not enabled, allow access
         if (!authCheck.has2FAEnabled) {
           console.log('🛡️ AuthInterceptor: 2FA not enabled, allowing access');
-          setAuthState('authenticated');
+          setGlobalAuthState('AUTHENTICATED');
+          setInterceptorState('authenticated');
           return;
         }
 
         // If device is remembered, allow access
         if (authCheck.isDeviceRemembered) {
           console.log('🛡️ AuthInterceptor: Device is trusted, allowing access');
-          setAuthState('authenticated');
+          setGlobalAuthState('AUTHENTICATED');
+          setInterceptorState('authenticated');
           return;
         }
 
@@ -107,12 +112,13 @@ export const AuthInterceptor = ({ children }: AuthInterceptorProps) => {
         if (!isMounted) return;
 
         console.log('🛡️ AuthInterceptor: Challenge created, showing verification gate');
+        setGlobalAuthState('AWAITING_2FA');
         setChallengeData({
           factorId: totpFactor.id,
           challengeId: challenge.id,
           operation: 'access'
         });
-        setAuthState('requires_2fa');
+        setInterceptorState('requires_2fa');
 
       } catch (error) {
         console.error('🛡️ AuthInterceptor: Critical error during auth check:', error);
@@ -141,7 +147,7 @@ export const AuthInterceptor = ({ children }: AuthInterceptorProps) => {
       // If there's a session, force authentication check immediately
       if (session) {
         console.log('🛡️ AuthInterceptor: Session detected on mount, forcing auth check');
-        setAuthState('checking'); // Reset to checking to trigger full validation
+        setInterceptorState('checking'); // Reset to checking to trigger full validation
       }
     };
     
@@ -159,19 +165,21 @@ export const AuthInterceptor = ({ children }: AuthInterceptorProps) => {
       }
     }
 
-    setAuthState('authenticated');
+    setGlobalAuthState('AUTHENTICATED');
+    setInterceptorState('authenticated');
     toast.success('Verificação 2FA concluída com sucesso!');
   };
 
   const handle2FACancel = async () => {
     console.log('🛡️ AuthInterceptor: User cancelled 2FA verification, logging out');
+    setGlobalAuthState('IDLE');
     await supabase.auth.signOut();
     navigate('/auth');
     toast.error('Verificação 2FA cancelada. Faça login novamente.');
   };
 
   // Show loading state while checking
-  if (authState === 'checking') {
+  if (interceptorState === 'checking') {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gradient-hero">
         <div className="text-center space-y-4">
@@ -183,7 +191,7 @@ export const AuthInterceptor = ({ children }: AuthInterceptorProps) => {
   }
 
   // Show 2FA verification gate if required
-  if (authState === 'requires_2fa' && challengeData) {
+  if (interceptorState === 'requires_2fa' && challengeData) {
     return (
       <div className="min-h-screen bg-gradient-hero flex items-center justify-center">
         <MFAVerificationGate

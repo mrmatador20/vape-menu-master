@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useMFA } from '@/hooks/useMFA';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
 import { logActivity } from '@/hooks/useActivityLogs';
+import { useAuthState } from '@/context/AuthStateContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -23,6 +24,7 @@ const Auth = () => {
   const navigate = useNavigate();
   const { listFactors } = useMFA();
   const { checkAuthRequires2FA } = useAuthGuard();
+  const { setAuthState } = useAuthState();
   const [isLoading, setIsLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
   const [showMFAGate, setShowMFAGate] = useState(false);
@@ -42,6 +44,7 @@ const Auth = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setAuthState('AUTHENTICATING');
 
     try {
       if (isSignUp) {
@@ -97,6 +100,7 @@ const Auth = () => {
           description: 'Você já pode fazer login.'
         });
         setIsSignUp(false);
+        setAuthState('IDLE');
       } else {
         // Check rate limit for login
         const rateLimitResult = await checkRateLimit({
@@ -133,6 +137,7 @@ const Auth = () => {
           if (authCheck.requires2FA && authCheck.factors && authCheck.factors.length > 0) {
             // 2FA is enabled and device not remembered - create challenge
             console.log('🔐 2FA required, creating challenge...');
+            setAuthState('AWAITING_2FA');
             const totpFactor = authCheck.factors[0];
             
             const { data: challenge, error: challengeError } = await supabase.auth.mfa.challenge({
@@ -142,6 +147,7 @@ const Auth = () => {
             if (challengeError) {
               console.error('🔐 Failed to create MFA challenge:', challengeError);
               toast.error('Erro ao criar verificação 2FA');
+              setAuthState('IDLE');
               setIsLoading(false);
               return;
             }
@@ -160,6 +166,7 @@ const Auth = () => {
           
           // No MFA required or device is remembered - proceed with login
           console.log('🔐 No 2FA required, proceeding with login');
+          setAuthState('AUTHENTICATED');
           await logActivity('login');
           toast.success('Login realizado com sucesso!');
           navigate('/');
@@ -172,12 +179,14 @@ const Auth = () => {
       }
     } catch (error: any) {
       toast.error(error.message || 'Erro ao autenticar');
+      setAuthState('IDLE');
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleMFASuccess = async (deviceRemembered: boolean) => {
+    setAuthState('AUTHENTICATED');
     await logActivity('login', { 
       metadata: { method: '2FA', deviceRemembered }
     });
@@ -187,6 +196,7 @@ const Auth = () => {
   };
 
   const handleMFACancel = () => {
+    setAuthState('IDLE');
     setShowMFAGate(false);
     setMfaChallengeData(null);
     // Log out the user since they cancelled 2FA
