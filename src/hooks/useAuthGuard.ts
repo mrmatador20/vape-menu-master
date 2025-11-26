@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import { useTrustedDevices } from './useTrustedDevices';
 
 export interface AuthGuardResult {
   requires2FA: boolean;
@@ -8,6 +9,8 @@ export interface AuthGuardResult {
 }
 
 export const useAuthGuard = () => {
+  const { checkCurrentDevice, registerDevice } = useTrustedDevices();
+
   const checkAuthRequires2FA = async (): Promise<AuthGuardResult> => {
     try {
       const { data: { user }, error } = await supabase.auth.getUser();
@@ -16,8 +19,8 @@ export const useAuthGuard = () => {
         return { requires2FA: false, has2FAEnabled: false, isDeviceRemembered: false };
       }
 
-      // Check if device is remembered
-      const isDeviceRemembered = checkRememberedDevice(user.id);
+      // Check if device is remembered in database
+      const isDeviceRemembered = await checkCurrentDevice();
       
       // Check if user has 2FA enabled
       const { data: factorsData } = await supabase.auth.mfa.listFactors();
@@ -38,38 +41,19 @@ export const useAuthGuard = () => {
     }
   };
 
-  const rememberDevice = (userId: string) => {
-    const expires = new Date();
-    expires.setDate(expires.getDate() + 30); // 30 days
-    
-    const cookieValue = `device_remembered_${userId}=true; expires=${expires.toUTCString()}; path=/; secure; samesite=strict`;
-    document.cookie = cookieValue;
-    
-    console.log(`🔒 Device remembered for user ${userId} for 30 days`);
-  };
-
-  const checkRememberedDevice = (userId: string): boolean => {
-    const cookieName = `device_remembered_${userId}`;
-    const cookies = document.cookie.split(';');
-    
-    const isRemembered = cookies.some(cookie => {
-      const [name, value] = cookie.trim().split('=');
-      return name === cookieName && value === 'true';
-    });
-
-    return isRemembered;
-  };
-
-  const forgetDevice = (userId: string) => {
-    // Set cookie expiration to past date to delete it
-    document.cookie = `device_remembered_${userId}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; secure; samesite=strict`;
-    console.log(`🔓 Device forgotten for user ${userId}`);
+  // Register device in database (replaces cookie-based rememberDevice)
+  const rememberDevice = async (userId: string) => {
+    try {
+      await registerDevice();
+      console.log(`🔒 Device registered in database for user ${userId}`);
+    } catch (error) {
+      console.error('Error registering device:', error);
+    }
   };
 
   return { 
     checkAuthRequires2FA, 
-    rememberDevice, 
-    checkRememberedDevice,
-    forgetDevice 
+    rememberDevice,
+    checkCurrentDevice
   };
 };

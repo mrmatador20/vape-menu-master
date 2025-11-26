@@ -27,6 +27,7 @@ import AdminSettings from "./pages/admin/Settings";
 import AdminBanners from "./pages/admin/Banners";
 import AdminAuditLogs from "./pages/admin/AuditLogs";
 import AdminSecurityDashboard from "./pages/admin/SecurityDashboard";
+import TrustedDevices from "./pages/TrustedDevices";
 
 const queryClient = new QueryClient();
 
@@ -97,6 +98,13 @@ const App = () => (
               <ResetFlowGuard>
                 <ProtectedRoute>
                   <Profile />
+                </ProtectedRoute>
+              </ResetFlowGuard>
+            } />
+            <Route path="/trusted-devices" element={
+              <ResetFlowGuard>
+                <ProtectedRoute>
+                  <TrustedDevices />
                 </ProtectedRoute>
               </ResetFlowGuard>
             } />
