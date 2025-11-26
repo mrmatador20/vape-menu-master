@@ -500,10 +500,34 @@ const Profile = () => {
                       size="sm"
                       onClick={() => setShowEnrollDialog(true)}
                     >
-                      Ativar 2FA
+                       Ativar 2FA
                     </Button>
                   )}
-        </div>
+                </div>
+              </div>
+
+              {/* Trusted Devices Management */}
+              {mfaFactors.length > 0 && (
+                <div className="flex items-start justify-between p-4 border rounded-lg bg-muted/30">
+                  <div className="flex-1 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <h4 className="font-medium">Dispositivos Confiáveis</h4>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Gerencie dispositivos onde você não precisa de verificação 2FA por 30 dias
+                    </p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => navigate('/trusted-devices')}
+                  >
+                    Gerenciar
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
         {/* MFA Enrollment Dialog */}
         <MFAEnrollDialog
