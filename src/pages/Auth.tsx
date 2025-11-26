@@ -37,30 +37,7 @@ const Auth = () => {
     password: '',
   });
 
-  // Prevent authenticated users from accessing login page
-  useEffect(() => {
-    const checkExistingSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        console.log('🔐 Auth.tsx: User already has session, checking 2FA status before redirect');
-        const authCheck = await checkAuthRequires2FA();
-        
-        // If user has 2FA enabled and device is not remembered, don't redirect - let them see login page
-        if (authCheck.has2FAEnabled && !authCheck.isDeviceRemembered) {
-          console.log('🔐 Auth.tsx: User needs 2FA, staying on login page');
-          // Sign out the incomplete session
-          await supabase.auth.signOut();
-          return;
-        }
-        
-        // If user doesn't need 2FA or device is remembered, redirect to home
-        console.log('🔐 Auth.tsx: User authenticated and 2FA not required, redirecting to home');
-        navigate('/');
-      }
-    };
-    
-    checkExistingSession();
-  }, [navigate, checkAuthRequires2FA]);
+  // AuthInterceptor now handles all auth state checks and 2FA verification
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

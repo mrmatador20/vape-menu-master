@@ -50,10 +50,7 @@ export const AuthInterceptor = ({ children }: AuthInterceptorProps) => {
 
         if (sessionError || !session) {
           console.log('🛡️ AuthInterceptor: No session found, redirecting to login');
-          if (isMounted) {
-            setAuthState('checking');
-            navigate('/auth');
-          }
+          navigate('/auth');
           return;
         }
 
@@ -61,68 +58,57 @@ export const AuthInterceptor = ({ children }: AuthInterceptorProps) => {
         
         // Check if 2FA verification is required
         const authCheck = await checkAuthRequires2FA();
-        console.log('🛡️ AuthInterceptor: Auth check result:', JSON.stringify(authCheck, null, 2));
+        console.log('🛡️ AuthInterceptor: Auth check result:', authCheck);
 
         if (!isMounted) return;
 
-        // CRITICAL: If user has 2FA enabled but device is NOT remembered, BLOCK ACCESS
-        if (authCheck.has2FAEnabled && !authCheck.isDeviceRemembered) {
-          console.log('🛡️ AuthInterceptor: 2FA REQUIRED - User has 2FA enabled and device is not remembered');
-          
-          const totpFactor = authCheck.factors?.[0];
-          
-          if (!totpFactor) {
-            console.error('🛡️ AuthInterceptor: SECURITY VIOLATION - No TOTP factor found despite 2FA being enabled');
-            toast.error('Erro na configuração 2FA. Faça login novamente.');
-            await supabase.auth.signOut();
-            navigate('/auth');
-            return;
-          }
-
-          // Create MFA challenge
-          const { data: challenge, error: challengeError } = await supabase.auth.mfa.challenge({
-            factorId: totpFactor.id
-          });
-
-          if (challengeError) {
-            console.error('🛡️ AuthInterceptor: Failed to create MFA challenge:', challengeError);
-            toast.error('Erro ao criar verificação 2FA. Faça login novamente.');
-            await supabase.auth.signOut();
-            navigate('/auth');
-            return;
-          }
-
-          if (!isMounted) return;
-
-          console.log('🛡️ AuthInterceptor: Challenge created, BLOCKING ACCESS and showing verification gate');
-          setChallengeData({
-            factorId: totpFactor.id,
-            challengeId: challenge.id,
-            operation: 'access'
-          });
-          setAuthState('requires_2fa');
-          return;
-        }
-
         // If 2FA is not enabled, allow access
         if (!authCheck.has2FAEnabled) {
-          console.log('🛡️ AuthInterceptor: 2FA not enabled for this user, allowing access');
+          console.log('🛡️ AuthInterceptor: 2FA not enabled, allowing access');
           setAuthState('authenticated');
           return;
         }
 
-        // If device is remembered and user has 2FA, allow access
+        // If device is remembered, allow access
         if (authCheck.isDeviceRemembered) {
-          console.log('🛡️ AuthInterceptor: Device is trusted and verified, allowing access');
+          console.log('🛡️ AuthInterceptor: Device is trusted, allowing access');
           setAuthState('authenticated');
           return;
         }
 
-        // FALLBACK: If we reach here, something is wrong - block access
-        console.error('🛡️ AuthInterceptor: UNEXPECTED STATE - blocking access by default');
-        setAuthState('checking');
-        await supabase.auth.signOut();
-        navigate('/auth');
+        // 2FA is required - create challenge
+        console.log('🛡️ AuthInterceptor: 2FA required, creating challenge');
+        const totpFactor = authCheck.factors?.[0];
+        
+        if (!totpFactor) {
+          console.error('🛡️ AuthInterceptor: No TOTP factor found despite 2FA being enabled');
+          toast.error('Erro na configuração 2FA. Faça login novamente.');
+          await supabase.auth.signOut();
+          navigate('/auth');
+          return;
+        }
+
+        const { data: challenge, error: challengeError } = await supabase.auth.mfa.challenge({
+          factorId: totpFactor.id
+        });
+
+        if (challengeError) {
+          console.error('🛡️ AuthInterceptor: Failed to create MFA challenge:', challengeError);
+          toast.error('Erro ao criar verificação 2FA. Faça login novamente.');
+          await supabase.auth.signOut();
+          navigate('/auth');
+          return;
+        }
+
+        if (!isMounted) return;
+
+        console.log('🛡️ AuthInterceptor: Challenge created, showing verification gate');
+        setChallengeData({
+          factorId: totpFactor.id,
+          challengeId: challenge.id,
+          operation: 'access'
+        });
+        setAuthState('requires_2fa');
 
       } catch (error) {
         console.error('🛡️ AuthInterceptor: Critical error during auth check:', error);
@@ -136,22 +122,8 @@ export const AuthInterceptor = ({ children }: AuthInterceptorProps) => {
 
     checkAuthentication();
 
-    // CRITICAL: Also listen to auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log('🛡️ AuthInterceptor: Auth state changed:', event);
-      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
-        // Re-check authentication when state changes
-        checkAuthentication();
-      }
-      if (event === 'SIGNED_OUT') {
-        setAuthState('checking');
-        navigate('/auth');
-      }
-    });
-
     return () => {
       isMounted = false;
-      subscription.unsubscribe();
     };
   }, [location.pathname]);
 
