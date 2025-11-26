@@ -37,21 +37,32 @@ const Auth = () => {
     password: '',
   });
 
+  // Check initial auth state with 2FA verification
   useEffect(() => {
-    // Check if user is already logged in
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        navigate('/');
-      }
-    });
+    const checkInitialAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) return;
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (session) {
-        navigate('/');
-      }
-    });
+      // User has a session - check if 2FA verification is needed
+      console.log('🔐 Initial session detected, checking 2FA requirements...');
+      const authCheck = await checkAuthRequires2FA();
+      console.log('🔐 Initial auth check result:', authCheck);
 
-    return () => subscription.unsubscribe();
+      if (authCheck.requires2FA) {
+        // 2FA is required but user somehow has a session - force logout for security
+        console.log('⚠️ 2FA required but session exists - forcing logout for security');
+        await supabase.auth.signOut();
+        toast.error('Por segurança, faça login novamente');
+        return;
+      }
+
+      // No 2FA required or device is remembered - allow access
+      console.log('🔐 No 2FA required on initial load, redirecting to home');
+      navigate('/');
+    };
+
+    checkInitialAuth();
   }, [navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
