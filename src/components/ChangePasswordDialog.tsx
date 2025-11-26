@@ -1,15 +1,17 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, Key, Eye, EyeOff, Check, X, Shield, AlertTriangle } from 'lucide-react';
+import { Loader2, Key, Eye, EyeOff, Check, X, AlertTriangle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { logActivity } from '@/hooks/useActivityLogs';
 import { z } from 'zod';
 import { checkPwnedPassword, formatPwnedCount } from '@/lib/pwnedPassword';
+import { useAAL2Guard, AAL2Challenge } from '@/hooks/useAAL2Guard';
+import { MFAVerificationGate } from '@/components/MFAVerificationGate';
 
 interface ChangePasswordDialogProps {
   open: boolean;
@@ -33,6 +35,7 @@ const passwordSchema = z.object({
 type PasswordStrength = 'weak' | 'medium' | 'strong';
 
 export const ChangePasswordDialog = ({ open, onOpenChange }: ChangePasswordDialogProps) => {
+  const { verifyAAL2 } = useAAL2Guard();
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -41,11 +44,8 @@ export const ChangePasswordDialog = ({ open, onOpenChange }: ChangePasswordDialo
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isChanging, setIsChanging] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [hasMFA, setHasMFA] = useState(false);
-  const [showMFAVerification, setShowMFAVerification] = useState(false);
-  const [mfaCode, setMfaCode] = useState('');
-  const [factorId, setFactorId] = useState<string | null>(null);
-  const [isVerifyingMFA, setIsVerifyingMFA] = useState(false);
+  const [showAAL2Gate, setShowAAL2Gate] = useState(false);
+  const [aal2Challenge, setAAL2Challenge] = useState<AAL2Challenge | null>(null);
   const [pwnedInfo, setPwnedInfo] = useState<{ isPwned: boolean; count: number } | null>(null);
   const [isCheckingPwned, setIsCheckingPwned] = useState(false);
 
@@ -93,54 +93,10 @@ export const ChangePasswordDialog = ({ open, onOpenChange }: ChangePasswordDialo
     }
   };
 
-  useEffect(() => {
-    const checkMFA = async () => {
-      if (open) {
-        const { data } = await supabase.auth.mfa.listFactors();
-        const hasTOTP = data?.totp && data.totp.length > 0;
-        setHasMFA(hasTOTP);
-        if (hasTOTP) {
-          setFactorId(data.totp[0].id);
-        }
-      }
-    };
-    checkMFA();
-  }, [open]);
-
-  const handleVerifyMFA = async () => {
-    if (!factorId || !mfaCode) return;
-
-    setIsVerifyingMFA(true);
-    try {
-      const challenge = await supabase.auth.mfa.challenge({ factorId });
-      if (challenge.error) throw challenge.error;
-
-      const verify = await supabase.auth.mfa.verify({
-        factorId,
-        challengeId: challenge.data.id,
-        code: mfaCode,
-      });
-
-      if (verify.error) {
-        toast({
-          title: 'Código incorreto',
-          description: 'Verifique o código e tente novamente.',
-          variant: 'destructive',
-        });
-        return;
-      }
-
-      // Now proceed with password change
-      await performPasswordChange();
-    } catch (error: any) {
-      toast({
-        title: 'Erro na verificação MFA',
-        description: error.message,
-        variant: 'destructive',
-      });
-    } finally {
-      setIsVerifyingMFA(false);
-    }
+  const handleAAL2Verified = async () => {
+    setShowAAL2Gate(false);
+    setAAL2Challenge(null);
+    await performPasswordChange();
   };
 
   const performPasswordChange = async () => {
@@ -202,14 +158,29 @@ export const ChangePasswordDialog = ({ open, onOpenChange }: ChangePasswordDialo
         return;
       }
 
-      // If user has MFA, show verification step
-      if (hasMFA) {
-        setShowMFAVerification(true);
+      // Verify AAL2 before proceeding with password change
+      const { allowed, challenge, error: aal2Error } = await verifyAAL2('alteração de senha');
+
+      if (!allowed) {
+        if (challenge) {
+          // Need AAL2 elevation - show MFA verification gate
+          setAAL2Challenge(challenge);
+          setShowAAL2Gate(true);
+          setIsChanging(false);
+          return;
+        }
+        
+        // No TOTP factor or other error
+        toast({
+          title: 'Verificação de segurança necessária',
+          description: aal2Error || 'Configure autenticação de dois fatores para realizar esta operação.',
+          variant: 'destructive',
+        });
         setIsChanging(false);
         return;
       }
 
-      // If no MFA, proceed directly
+      // AAL2 verified - proceed directly
       await performPasswordChange();
     } catch (error: any) {
       toast({
@@ -229,8 +200,9 @@ export const ChangePasswordDialog = ({ open, onOpenChange }: ChangePasswordDialo
     setShowNewPassword(false);
     setShowConfirmPassword(false);
     setErrors({});
-    setShowMFAVerification(false);
-    setMfaCode('');
+    setShowAAL2Gate(false);
+    setAAL2Challenge(null);
+    setPwnedInfo(null);
     onOpenChange(false);
   };
 
@@ -243,247 +215,208 @@ export const ChangePasswordDialog = ({ open, onOpenChange }: ChangePasswordDialo
   ];
 
   return (
-    <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Key className="h-5 w-5 text-primary" />
-            {showMFAVerification ? 'Verificação de Segurança' : 'Alterar Senha'}
-          </DialogTitle>
-          <DialogDescription>
-            {showMFAVerification 
-              ? 'Para garantir a segurança da sua conta, digite o código de autenticação de 2 fatores'
-              : 'Digite sua senha atual e escolha uma nova senha forte'}
-          </DialogDescription>
-        </DialogHeader>
+    <>
+      {aal2Challenge && (
+        <MFAVerificationGate
+          open={showAAL2Gate}
+          operation="password_change"
+          operationLabel="alterar sua senha"
+          challengeData={aal2Challenge}
+          onVerified={handleAAL2Verified}
+          onCancel={() => {
+            setShowAAL2Gate(false);
+            setAAL2Challenge(null);
+          }}
+        />
+      )}
+      
+      <Dialog open={open && !showAAL2Gate} onOpenChange={handleClose}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Key className="h-5 w-5 text-primary" />
+              Alterar Senha
+            </DialogTitle>
+            <DialogDescription>
+              Digite sua senha atual e escolha uma nova senha forte
+            </DialogDescription>
+          </DialogHeader>
 
-        {showMFAVerification ? (
           <div className="space-y-4">
-            <Alert>
-              <Shield className="h-4 w-4" />
-              <AlertDescription>
-                Abra seu aplicativo autenticador e digite o código de 6 dígitos para confirmar esta alteração.
-              </AlertDescription>
-            </Alert>
+            <div className="space-y-2">
+              <Label htmlFor="current-password">Senha Atual</Label>
+              <div className="relative">
+                <Input
+                  id="current-password"
+                  type={showCurrentPassword ? 'text' : 'password'}
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  className={errors.currentPassword ? 'border-destructive' : ''}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  {showCurrentPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+              {errors.currentPassword && (
+                <p className="text-xs text-destructive">{errors.currentPassword}</p>
+              )}
+            </div>
 
             <div className="space-y-2">
-              <Label htmlFor="mfa-code">Código de Autenticação</Label>
-              <Input
-                id="mfa-code"
-                placeholder="000000"
-                maxLength={6}
-                value={mfaCode}
-                onChange={(e) => setMfaCode(e.target.value.replace(/\D/g, ''))}
-                className="text-center text-lg tracking-widest"
-              />
-              <p className="text-xs text-muted-foreground">
-                Problemas com o autenticador? <a href="#" className="text-primary hover:underline">Entre em contato com o suporte</a>
-              </p>
+              <Label htmlFor="new-password">Nova Senha</Label>
+              <div className="relative">
+                <Input
+                  id="new-password"
+                  type={showNewPassword ? 'text' : 'password'}
+                  value={newPassword}
+                  onChange={async (e) => {
+                    setNewPassword(e.target.value);
+                    
+                    // Check for pwned password
+                    if (e.target.value.length >= 8) {
+                      setIsCheckingPwned(true);
+                      setPwnedInfo(null);
+                      setTimeout(async () => {
+                        const result = await checkPwnedPassword(e.target.value);
+                        setPwnedInfo({ isPwned: result.isPwned, count: result.count });
+                        setIsCheckingPwned(false);
+                      }, 800);
+                    }
+                  }}
+                  className={errors.newPassword ? 'border-destructive' : ''}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowNewPassword(!showNewPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+              {errors.newPassword && (
+                <p className="text-xs text-destructive">{errors.newPassword}</p>
+              )}
+              
+              {newPassword && (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                      <div 
+                        className={`h-full transition-all ${getStrengthColor(passwordStrength)}`}
+                        style={{ width: passwordStrength === 'weak' ? '33%' : passwordStrength === 'medium' ? '66%' : '100%' }}
+                      />
+                    </div>
+                    <span className="text-xs font-medium capitalize">
+                      {passwordStrength === 'weak' ? 'Fraca' : passwordStrength === 'medium' ? 'Média' : 'Forte'}
+                    </span>
+                  </div>
+
+                  {/* Pwned Password Warning */}
+                  {isCheckingPwned && (
+                    <Alert className="bg-muted/50">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <AlertDescription className="text-xs">
+                        Verificando segurança da senha...
+                      </AlertDescription>
+                    </Alert>
+                  )}
+
+                  {pwnedInfo?.isPwned && !isCheckingPwned && (
+                    <Alert variant="destructive">
+                      <AlertTriangle className="h-4 w-4" />
+                      <AlertDescription className="text-xs">
+                        <strong>⚠️ Senha comprometida!</strong><br/>
+                        Esta senha foi exposta em <strong>{formatPwnedCount(pwnedInfo.count)}</strong> vazamentos de dados.
+                      </AlertDescription>
+                    </Alert>
+                  )}
+
+                  {pwnedInfo && !pwnedInfo.isPwned && !isCheckingPwned && (
+                    <Alert className="bg-green-500/10 border-green-500/20">
+                      <AlertDescription className="text-xs text-green-700 dark:text-green-400">
+                        ✓ Senha segura - não encontrada em vazamentos conhecidos
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                </div>
+              )}
             </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="confirm-password">Confirmar Nova Senha</Label>
+              <div className="relative">
+                <Input
+                  id="confirm-password"
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className={errors.confirmPassword ? 'border-destructive' : ''}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+              {errors.confirmPassword && (
+                <p className="text-xs text-destructive">{errors.confirmPassword}</p>
+              )}
+            </div>
+
+            {newPassword && (
+              <Alert>
+                <AlertDescription>
+                  <div className="space-y-1">
+                    <p className="text-xs font-medium mb-2">Requisitos da senha:</p>
+                    {passwordRequirements.map((req, index) => (
+                      <div key={index} className="flex items-center gap-2 text-xs">
+                        {req.met ? (
+                          <Check className="h-3 w-3 text-green-500" />
+                        ) : (
+                          <X className="h-3 w-3 text-muted-foreground" />
+                        )}
+                        <span className={req.met ? 'text-green-500' : 'text-muted-foreground'}>
+                          {req.label}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </AlertDescription>
+              </Alert>
+            )}
 
             <div className="flex gap-2">
               <Button
                 variant="outline"
-                onClick={() => {
-                  setShowMFAVerification(false);
-                  setMfaCode('');
-                }}
+                onClick={handleClose}
                 className="flex-1"
               >
-                Voltar
+                Cancelar
               </Button>
               <Button
-                onClick={handleVerifyMFA}
-                disabled={isVerifyingMFA || mfaCode.length !== 6}
+                onClick={handleChangePassword}
+                disabled={isChanging || !currentPassword || !newPassword || !confirmPassword}
                 className="flex-1"
               >
-                {isVerifyingMFA ? (
+                {isChanging ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Verificando...
+                    Alterando...
                   </>
                 ) : (
-                  'Confirmar Código MFA'
+                  'Alterar Senha'
                 )}
               </Button>
             </div>
           </div>
-        ) : (
-          <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="current-password">Senha Atual</Label>
-            <div className="relative">
-              <Input
-                id="current-password"
-                type={showCurrentPassword ? 'text' : 'password'}
-                value={currentPassword}
-                onChange={(e) => setCurrentPassword(e.target.value)}
-                className={errors.currentPassword ? 'border-destructive' : ''}
-              />
-              <button
-                type="button"
-                onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-              >
-                {showCurrentPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </button>
-            </div>
-            {errors.currentPassword && (
-              <p className="text-xs text-destructive">{errors.currentPassword}</p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="new-password">Nova Senha</Label>
-            <div className="relative">
-              <Input
-                id="new-password"
-                type={showNewPassword ? 'text' : 'password'}
-                value={newPassword}
-                onChange={async (e) => {
-                  setNewPassword(e.target.value);
-                  
-                  // Check for pwned password
-                  if (e.target.value.length >= 8) {
-                    setIsCheckingPwned(true);
-                    setPwnedInfo(null);
-                    setTimeout(async () => {
-                      const result = await checkPwnedPassword(e.target.value);
-                      setPwnedInfo({ isPwned: result.isPwned, count: result.count });
-                      setIsCheckingPwned(false);
-                    }, 800);
-                  }
-                }}
-                className={errors.newPassword ? 'border-destructive' : ''}
-              />
-              <button
-                type="button"
-                onClick={() => setShowNewPassword(!showNewPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-              >
-                {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </button>
-            </div>
-            {errors.newPassword && (
-              <p className="text-xs text-destructive">{errors.newPassword}</p>
-            )}
-            
-            {newPassword && (
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
-                    <div 
-                      className={`h-full transition-all ${getStrengthColor(passwordStrength)}`}
-                      style={{ width: passwordStrength === 'weak' ? '33%' : passwordStrength === 'medium' ? '66%' : '100%' }}
-                    />
-                  </div>
-                  <span className="text-xs font-medium capitalize">
-                    {passwordStrength === 'weak' ? 'Fraca' : passwordStrength === 'medium' ? 'Média' : 'Forte'}
-                  </span>
-                </div>
-
-                {/* Pwned Password Warning */}
-                {isCheckingPwned && (
-                  <Alert className="bg-muted/50">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    <AlertDescription className="text-xs">
-                      Verificando segurança da senha...
-                    </AlertDescription>
-                  </Alert>
-                )}
-
-                {pwnedInfo?.isPwned && !isCheckingPwned && (
-                  <Alert variant="destructive">
-                    <AlertTriangle className="h-4 w-4" />
-                    <AlertDescription className="text-xs">
-                      <strong>⚠️ Senha comprometida!</strong><br/>
-                      Esta senha foi exposta em <strong>{formatPwnedCount(pwnedInfo.count)}</strong> vazamentos de dados.
-                    </AlertDescription>
-                  </Alert>
-                )}
-
-                {pwnedInfo && !pwnedInfo.isPwned && !isCheckingPwned && (
-                  <Alert className="bg-green-500/10 border-green-500/20">
-                    <AlertDescription className="text-xs text-green-700 dark:text-green-400">
-                      ✓ Senha segura - não encontrada em vazamentos conhecidos
-                    </AlertDescription>
-                  </Alert>
-                )}
-              </div>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="confirm-password">Confirmar Nova Senha</Label>
-            <div className="relative">
-              <Input
-                id="confirm-password"
-                type={showConfirmPassword ? 'text' : 'password'}
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                className={errors.confirmPassword ? 'border-destructive' : ''}
-              />
-              <button
-                type="button"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-              >
-                {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </button>
-            </div>
-            {errors.confirmPassword && (
-              <p className="text-xs text-destructive">{errors.confirmPassword}</p>
-            )}
-          </div>
-
-          {newPassword && (
-            <Alert>
-              <AlertDescription>
-                <div className="space-y-1">
-                  <p className="text-xs font-medium mb-2">Requisitos da senha:</p>
-                  {passwordRequirements.map((req, index) => (
-                    <div key={index} className="flex items-center gap-2 text-xs">
-                      {req.met ? (
-                        <Check className="h-3 w-3 text-green-500" />
-                      ) : (
-                        <X className="h-3 w-3 text-muted-foreground" />
-                      )}
-                      <span className={req.met ? 'text-green-500' : 'text-muted-foreground'}>
-                        {req.label}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </AlertDescription>
-            </Alert>
-          )}
-
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              onClick={handleClose}
-              className="flex-1"
-            >
-              Cancelar
-            </Button>
-            <Button
-              onClick={handleChangePassword}
-              disabled={isChanging || !currentPassword || !newPassword || !confirmPassword}
-              className="flex-1"
-            >
-              {isChanging ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Alterando...
-                </>
-              ) : (
-                'Alterar Senha'
-              )}
-            </Button>
-          </div>
-        </div>
-        )}
-      </DialogContent>
-    </Dialog>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
