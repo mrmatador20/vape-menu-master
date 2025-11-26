@@ -526,50 +526,12 @@ const Profile = () => {
                   </Button>
                 </div>
               )}
-            </CardContent>
-          </Card>
-
-        {/* MFA Enrollment Dialog */}
-        <MFAEnrollDialog
-          open={showEnrollDialog}
-          onOpenChange={setShowEnrollDialog}
-          onSuccess={handleEnrollSuccess}
-        />
-
-        {/* MFA Unenroll Confirmation Dialog */}
-        <AlertDialog open={showUnenrollDialog} onOpenChange={setShowUnenrollDialog}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Desativar Autenticação de Dois Fatores?</AlertDialogTitle>
-              <AlertDialogDescription>
-                Isso removerá a proteção extra da sua conta. Você não precisará mais fornecer 
-                códigos de verificação ao fazer login, mas sua conta ficará menos segura.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancelar</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={handleUnenroll}
-                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              >
-                Desativar 2FA
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-
-        {/* Change Password Dialog */}
-        <ChangePasswordDialog
-          open={showChangePasswordDialog}
-          onOpenChange={setShowChangePasswordDialog}
-        />
-      </div>
 
               {mfaFactors.length === 0 && (
                 <div className="bg-muted/50 p-4 rounded-lg space-y-2">
                   <h5 className="font-medium text-sm">Por que usar 2FA?</h5>
                   <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
-                    <li>Protege sua conta mesmo se sua senha for comprometida</li>
+                    <li>Protege sua conta mesmo se sua senha foi comprometida</li>
                     <li>Impede acessos não autorizados</li>
                     <li>Adiciona uma camada extra de segurança</li>
                     <li>Recomendado para contas com informações sensíveis</li>
@@ -640,6 +602,41 @@ const Profile = () => {
             </CardContent>
           </Card>
         </div>
+
+        {/* MFA Enrollment Dialog */}
+        <MFAEnrollDialog
+          open={showEnrollDialog}
+          onOpenChange={setShowEnrollDialog}
+          onSuccess={handleEnrollSuccess}
+        />
+
+        {/* MFA Unenroll Confirmation Dialog */}
+        <AlertDialog open={showUnenrollDialog} onOpenChange={setShowUnenrollDialog}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Desativar Autenticação de Dois Fatores?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Isso removerá a proteção extra da sua conta. Você não precisará mais fornecer 
+                códigos de verificação ao fazer login, mas sua conta ficará menos segura.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleUnenroll}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                Desativar 2FA
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {/* Change Password Dialog */}
+        <ChangePasswordDialog
+          open={showChangePasswordDialog}
+          onOpenChange={setShowChangePasswordDialog}
+        />
       </div>
     </div>
   );
