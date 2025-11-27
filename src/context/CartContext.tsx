@@ -1,6 +1,7 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useCallback } from 'react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { useCartSync } from '@/hooks/useCartSync';
 
 export interface Product {
   id: string;
@@ -39,19 +40,86 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 export const CartProvider = ({ children }: { children: React.ReactNode }) => {
   const [items, setItems] = useState<CartItem[]>([]);
 
+  // ✅ CORREÇÃO 3: Sincronização periódica com servidor
+  const handlePriceChange = useCallback((productId: string, newPrice: number) => {
+    setItems(currentItems =>
+      currentItems.map(item =>
+        item.id === productId ? { ...item, price: newPrice } : item
+      )
+    );
+  }, []);
+
+  const handleStockChange = useCallback((productId: string, inStock: boolean) => {
+    if (!inStock) {
+      // Remove produtos esgotados do carrinho
+      setItems(currentItems => currentItems.filter(item => item.id !== productId));
+    }
+  }, []);
+
+  useCartSync({
+    items,
+    onPriceChange: handlePriceChange,
+    onStockChange: handleStockChange,
+    intervalMs: 30000, // Sincronizar a cada 30 segundos
+  });
+
   const addToCart = async (product: Product, flavor?: string) => {
-    // Se tem sabor, busca o preço da variante
-    let variantPrice = product.price;
+    // ✅ CORREÇÃO 2: Validar estoque antes de adicionar ao carrinho
+    
+    // Buscar dados atualizados do produto
+    const { data: currentProduct, error: productError } = await supabase
+      .from('products')
+      .select('stock, price, discount_value, discount_type')
+      .eq('id', product.id)
+      .single();
+
+    if (productError || !currentProduct) {
+      toast.error('Erro ao verificar disponibilidade do produto');
+      return;
+    }
+
+    // Se tem sabor, busca o preço e estoque da variante
+    let variantPrice = Number(currentProduct.price);
+    let stockToCheck = currentProduct.stock;
+
     if (flavor) {
-      const { data: flavors } = await supabase
+      const { data: flavors, error: flavorError } = await supabase
         .from('flavors')
         .select('*')
         .eq('product_id', product.id)
         .eq('name', flavor);
       
-      if (flavors && flavors.length > 0 && flavors[0].price) {
-        variantPrice = Number(flavors[0].price);
+      if (flavorError) {
+        toast.error('Erro ao verificar sabor');
+        return;
       }
+
+      if (flavors && flavors.length > 0) {
+        const selectedFlavor = flavors[0];
+        stockToCheck = selectedFlavor.stock;
+        
+        if (selectedFlavor.price) {
+          variantPrice = Number(selectedFlavor.price);
+        }
+      } else {
+        toast.error(`Sabor "${flavor}" não encontrado`);
+        return;
+      }
+    }
+
+    // Aplicar desconto ao preço
+    if (currentProduct.discount_value && currentProduct.discount_value > 0) {
+      if (currentProduct.discount_type === 'percent') {
+        variantPrice = variantPrice * (1 - currentProduct.discount_value / 100);
+      } else if (currentProduct.discount_type === 'fixed') {
+        variantPrice = Math.max(0, variantPrice - currentProduct.discount_value);
+      }
+    }
+
+    // Verificar estoque disponível
+    if (stockToCheck === 0) {
+      toast.error(`${product.name}${flavor ? ` (${flavor})` : ''} está esgotado`);
+      return;
     }
 
     setItems(currentItems => {
@@ -60,19 +128,42 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
       );
       
       if (existingItem) {
+        // Verificar se há estoque suficiente para mais uma unidade
+        const newQuantity = existingItem.quantity + 1;
+        if (newQuantity > stockToCheck) {
+          toast.error(
+            `Estoque insuficiente. Disponível: ${stockToCheck} unidade${stockToCheck > 1 ? 's' : ''}`
+          );
+          return currentItems; // Não atualiza o carrinho
+        }
+
         toast.success('Quantidade atualizada no carrinho!');
         return currentItems.map(item =>
           item.id === product.id && item.flavor === flavor
-            ? { ...item, quantity: item.quantity + 1 }
+            ? { ...item, quantity: newQuantity, price: variantPrice }
             : item
         );
       }
       
+      // Novo item - verificar estoque mínimo de 1
+      if (stockToCheck < 1) {
+        toast.error(`${product.name}${flavor ? ` (${flavor})` : ''} está esgotado`);
+        return currentItems;
+      }
+
       const cartItemId = `${product.id}-${flavor || 'no-flavor'}`;
       toast.success('Produto adicionado ao carrinho!');
-      // Atualiza o preço do produto com o preço da variante
-      const productWithVariantPrice = { ...product, price: variantPrice };
-      return [...currentItems, { ...productWithVariantPrice, quantity: 1, flavor, cartItemId }];
+      
+      // Criar produto com preço correto e atualizado
+      const productWithCorrectData = { 
+        ...product, 
+        price: variantPrice,
+        stock: stockToCheck,
+        discount_value: currentProduct.discount_value,
+        discount_type: currentProduct.discount_type as 'percent' | 'fixed' | undefined,
+      };
+      
+      return [...currentItems, { ...productWithCorrectData, quantity: 1, flavor, cartItemId }];
     });
   };
 

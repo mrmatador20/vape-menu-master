@@ -313,28 +313,51 @@ const Checkout = () => {
         }
       });
 
-      // Verificar se houve erro na chamada
+      // ✅ CORREÇÃO 5: Melhor tratamento de erros para mobile
       if (response.error) {
-        console.error('Edge function error:', response.error);
-        let errorMessage = 'Erro ao processar pedido. Tente novamente.';
+        console.error('[Checkout] Edge function error:', response.error);
         
-        // Tentar extrair mensagem específica
+        let errorMessage = 'Erro ao processar pedido. Tente novamente.';
+        let errorDetails = '';
+        
+        // Extrair mensagem específica do erro
         if (response.error.context?.body) {
           try {
             const errorBody = typeof response.error.context.body === 'string' 
               ? JSON.parse(response.error.context.body) 
               : response.error.context.body;
+            
             if (errorBody?.error) {
               errorMessage = errorBody.error;
             }
+            
+            if (errorBody?.details) {
+              errorDetails = Array.isArray(errorBody.details) 
+                ? errorBody.details.join(', ')
+                : String(errorBody.details);
+            }
           } catch (e) {
-            console.error('Erro ao parsear body:', e);
+            console.error('[Checkout] Error parsing response body:', e);
           }
         } else if (response.error.message) {
           errorMessage = response.error.message;
         }
         
-        toast.error(errorMessage);
+        // Log detalhado para debug mobile
+        console.error('[Checkout] Error details:', {
+          message: errorMessage,
+          details: errorDetails,
+          status: response.error.context?.status,
+          headers: response.error.context?.headers,
+        });
+        
+        // Mostrar erro ao usuário
+        if (errorDetails) {
+          toast.error(`${errorMessage}: ${errorDetails}`);
+        } else {
+          toast.error(errorMessage);
+        }
+        
         return;
       }
 
