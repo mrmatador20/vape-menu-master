@@ -48,9 +48,10 @@ export const AuthInterceptor = ({ children }: AuthInterceptorProps) => {
         return;
       }
       
-      // Skip if already verified this session and on same route
-      if (verificationCompletedRef.current && lastCheckedRouteRef.current === location.pathname) {
-        console.log('🛡️ AuthInterceptor: Already verified for this route, skipping');
+      // Skip if already verified this session (regardless of route)
+      if (verificationCompletedRef.current) {
+        console.log('🛡️ AuthInterceptor: Already verified for this session, skipping');
+        setInterceptorState('authenticated');
         return;
       }
 
