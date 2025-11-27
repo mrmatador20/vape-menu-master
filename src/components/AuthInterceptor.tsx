@@ -85,7 +85,12 @@ export const AuthInterceptor = ({ children }: AuthInterceptorProps) => {
           return;
         }
 
-        // 2FA is required - create challenge
+        // 2FA is required - create challenge ONLY if not already in 2FA state
+        if (interceptorState === 'requires_2fa') {
+          console.log('🛡️ AuthInterceptor: Already showing 2FA gate, skipping duplicate challenge');
+          return;
+        }
+
         console.log('🛡️ AuthInterceptor: 2FA required, creating challenge');
         const totpFactor = authCheck.factors?.[0];
         
@@ -135,24 +140,7 @@ export const AuthInterceptor = ({ children }: AuthInterceptorProps) => {
     return () => {
       isMounted = false;
     };
-  }, [location.pathname, isPublicRoute, navigate, checkAuthRequires2FA, rememberDevice]);
-
-  // CRITICAL: Also run on component mount to catch initial page load
-  useEffect(() => {
-    const checkInitialAuth = async () => {
-      console.log('🛡️ AuthInterceptor: Initial mount check');
-      
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      // If there's a session, force authentication check immediately
-      if (session) {
-        console.log('🛡️ AuthInterceptor: Session detected on mount, forcing auth check');
-        setInterceptorState('checking'); // Reset to checking to trigger full validation
-      }
-    };
-    
-    checkInitialAuth();
-  }, []);
+  }, [location.pathname, isPublicRoute, navigate, checkAuthRequires2FA, rememberDevice, interceptorState]);
 
   const handle2FASuccess = async (deviceRemembered: boolean) => {
     console.log('🛡️ AuthInterceptor: 2FA verification successful');
