@@ -63,23 +63,26 @@ export const AuthInterceptor = ({ children }: AuthInterceptorProps) => {
         // Check if user has a session
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
-        // If no session and trying to access protected route, redirect to login
-        if ((sessionError || !session) && !isPublicRoute) {
-          console.log('🛡️ AuthInterceptor: No session found, redirecting to login');
-          if (isMounted) {
-            setInterceptorState('authenticated'); // Set to authenticated to stop checking
-            navigate('/auth');
+        // If no session, reset verification flag
+        if (!session) {
+          console.log('🛡️ AuthInterceptor: No session detected, resetting verification flag');
+          verificationCompletedRef.current = false;
+          
+          if (!isPublicRoute) {
+            console.log('🛡️ AuthInterceptor: No session on protected route, redirecting to login');
+            if (isMounted) {
+              setGlobalAuthState('IDLE');
+              setInterceptorState('authenticated'); // Set to authenticated to stop checking
+              navigate('/auth');
+            }
+            return;
           }
-          return;
-        }
-
-        // If no session and on public route, allow access
-        if (!session && isPublicRoute) {
+          
+          // Public route without session
           console.log('🛡️ AuthInterceptor: No session, public route, allowing access');
           if (isMounted) {
             setGlobalAuthState('IDLE');
             setInterceptorState('authenticated');
-            verificationCompletedRef.current = true;
           }
           return;
         }
