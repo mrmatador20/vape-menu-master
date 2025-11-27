@@ -15,6 +15,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import { Loader2, Eye, EyeOff, AlertTriangle } from 'lucide-react';
 import Header from '@/components/Header';
+import { MFAVerificationGate } from '@/components/MFAVerificationGate';
 import { validatePassword, getPasswordStrength, getStrengthColor, passwordRequirements } from '@/lib/passwordValidation';
 import { checkRateLimit, resetRateLimit } from '@/lib/rateLimit';
 import { checkPwnedPassword, formatPwnedCount } from '@/lib/pwnedPassword';
@@ -22,7 +23,7 @@ import { checkPwnedPassword, formatPwnedCount } from '@/lib/pwnedPassword';
 const Auth = () => {
   const navigate = useNavigate();
   const { listFactors } = useMFA();
-  const { checkAuthRequires2FA } = useAuthGuard();
+  const { checkAuthRequires2FA, rememberDevice: saveRememberDevice } = useAuthGuard();
   const { setAuthState } = useAuthState();
   const [isLoading, setIsLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
@@ -35,8 +36,10 @@ const Auth = () => {
     email: '',
     password: '',
   });
-
-  // AuthInterceptor now handles all auth state checks and 2FA verification
+  
+  // 2FA verification state
+  const [show2FAGate, setShow2FAGate] = useState(false);
+  const [challengeData, setChallengeData] = useState<any>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -137,17 +140,58 @@ const Auth = () => {
         await resetRateLimit('login');
         await logActivity('login');
         
-        // Store remember device preference for AuthInterceptor
-        if (rememberDevice) {
-          sessionStorage.setItem('remember_device_pending', 'true');
+        console.log('🔐 Login successful, checking if 2FA is required');
+        toast.success('Credenciais validadas!');
+        
+        // Check if 2FA verification is required
+        const authCheck = await checkAuthRequires2FA();
+        
+        if (!authCheck.has2FAEnabled) {
+          // No 2FA, go directly to home
+          console.log('🔐 No 2FA enabled, proceeding to home');
+          sessionStorage.setItem('2fa_verified', 'true');
+          setAuthState('AUTHENTICATED');
+          navigate('/');
+          return;
         }
         
-        console.log('🔐 Login successful, redirecting to home (AuthInterceptor will handle 2FA if needed)');
+        if (authCheck.isDeviceRemembered) {
+          // Device is remembered, skip 2FA
+          console.log('🔐 Device is trusted, skipping 2FA');
+          sessionStorage.setItem('2fa_verified', 'true');
+          setAuthState('AUTHENTICATED');
+          navigate('/');
+          return;
+        }
         
-        // Don't set AUTHENTICATED yet - let AuthInterceptor determine that
-        setAuthState('IDLE');
-        toast.success('Credenciais validadas!');
-        navigate('/');
+        // 2FA is required - show verification gate on login page
+        console.log('🔐 2FA required, showing verification gate');
+        setAuthState('AWAITING_2FA');
+        
+        const totpFactor = authCheck.factors?.[0];
+        if (!totpFactor) {
+          toast.error('Erro na configuração 2FA');
+          setIsLoading(false);
+          return;
+        }
+
+        const { data: challenge, error: challengeError } = await supabase.auth.mfa.challenge({
+          factorId: totpFactor.id
+        });
+
+        if (challengeError) {
+          console.error('🔐 Failed to create MFA challenge:', challengeError);
+          toast.error('Erro ao criar verificação 2FA');
+          setIsLoading(false);
+          return;
+        }
+
+        setChallengeData({
+          factorId: totpFactor.id,
+          challengeId: challenge.id,
+          operation: 'login'
+        });
+        setShow2FAGate(true);
       }
     } catch (error: any) {
       toast.error(error.message || 'Erro ao autenticar');
@@ -159,7 +203,56 @@ const Auth = () => {
       setIsLoading(false);
     }
   };
+  
+  const handle2FASuccess = async (deviceRemembered: boolean) => {
+    console.log('🔐 2FA verification successful on login page');
+    
+    // Save remembered device if user chose to
+    const shouldRemember = deviceRemembered || rememberDevice;
+    if (shouldRemember) {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await saveRememberDevice(user.id);
+      }
+    }
+    
+    // Mark as verified and navigate to home
+    sessionStorage.setItem('2fa_verified', 'true');
+    setAuthState('AUTHENTICATED');
+    setShow2FAGate(false);
+    toast.success('Login realizado com sucesso!');
+    navigate('/');
+  };
 
+  const handle2FACancel = async () => {
+    console.log('🔐 User cancelled 2FA verification');
+    setShow2FAGate(false);
+    setChallengeData(null);
+    setAuthState('IDLE');
+    await supabase.auth.signOut();
+    toast.error('Verificação 2FA cancelada');
+  };
+
+  // If showing 2FA gate, render only that
+  if (show2FAGate && challengeData) {
+    return (
+      <>
+        <Header />
+        <div className="min-h-[calc(100vh-4rem)] bg-gradient-hero flex items-center justify-center">
+          <MFAVerificationGate
+            open={true}
+            operation="login"
+            operationLabel="entrar na sua conta"
+            challengeData={challengeData}
+            onVerified={handle2FASuccess}
+            onCancel={handle2FACancel}
+            showRememberOption={!rememberDevice}
+            presetRememberDevice={rememberDevice}
+          />
+        </div>
+      </>
+    );
+  }
 
   return (
     <>
