@@ -5,6 +5,7 @@ export interface AAL2Challenge {
   factorId: string;
   challengeId: string;
   operation: string;
+  createdAt: number;
 }
 
 export interface AAL2VerificationResult {
@@ -87,7 +88,8 @@ export const useAAL2Guard = () => {
         challenge: {
           factorId: totpFactor.id,
           challengeId: challengeData.id,
-          operation: operation
+          operation: operation,
+          createdAt: Date.now(),
         }
       };
     } catch (error: any) {

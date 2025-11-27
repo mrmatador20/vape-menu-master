@@ -227,6 +227,26 @@ export const ChangePasswordDialog = ({ open, onOpenChange }: ChangePasswordDialo
             setShowAAL2Gate(false);
             setAAL2Challenge(null);
           }}
+          onExpired={async () => {
+            toast({
+              title: 'Código expirado',
+              description: 'Gerando novo código de verificação...',
+              variant: 'destructive',
+            });
+            
+            // Create new challenge
+            const { allowed, challenge } = await verifyAAL2('alteração de senha');
+            if (challenge) {
+              setAAL2Challenge(challenge);
+            } else {
+              setShowAAL2Gate(false);
+              toast({
+                title: 'Erro ao gerar novo código',
+                description: 'Tente novamente',
+                variant: 'destructive',
+              });
+            }
+          }}
         />
       )}
       

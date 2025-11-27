@@ -80,7 +80,8 @@ export default function AdminLayout() {
         setChallengeData({
           factorId: totpFactor.id,
           challengeId: challenge.id,
-          operation: 'admin_access'
+          operation: 'admin_access',
+          createdAt: Date.now(),
         });
         setAdminAuthState('requires_2fa');
         
@@ -108,6 +109,45 @@ export default function AdminLayout() {
     sessionStorage.removeItem('admin_2fa_verified');
     navigate('/');
     toast.error('Verificação 2FA cancelada');
+  };
+
+  const handleAdmin2FAExpired = async () => {
+    console.log('🔐 Admin: 2FA challenge expired, regenerating');
+    toast.error('Código expirado', {
+      description: 'Gerando novo código de verificação...',
+    });
+
+    try {
+      const authCheck = await checkAuthRequires2FA();
+      const totpFactor = authCheck.factors?.[0];
+      
+      if (!totpFactor) {
+        toast.error('Erro na configuração 2FA');
+        navigate('/');
+        return;
+      }
+
+      const { data: challenge, error: challengeError } = await supabase.auth.mfa.challenge({
+        factorId: totpFactor.id
+      });
+
+      if (challengeError) {
+        toast.error('Erro ao gerar novo código');
+        navigate('/');
+        return;
+      }
+
+      setChallengeData({
+        factorId: totpFactor.id,
+        challengeId: challenge.id,
+        operation: 'admin_access',
+        createdAt: Date.now(),
+      });
+    } catch (error) {
+      console.error('🔐 Admin: Error regenerating challenge:', error);
+      toast.error('Erro ao gerar novo código');
+      navigate('/');
+    }
   };
 
   // Wait for both authentication and role checks
@@ -138,6 +178,7 @@ export default function AdminLayout() {
           challengeData={challengeData}
           onVerified={handleAdmin2FASuccess}
           onCancel={handleAdmin2FACancel}
+          onExpired={handleAdmin2FAExpired}
           showRememberOption={false}
         />
       </div>
