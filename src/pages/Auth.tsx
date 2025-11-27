@@ -39,7 +39,12 @@ const Auth = () => {
   
   // 2FA verification state
   const [show2FAGate, setShow2FAGate] = useState(false);
-  const [challengeData, setChallengeData] = useState<any>(null);
+  const [challengeData, setChallengeData] = useState<{
+    factorId: string;
+    challengeId: string;
+    operation: string;
+    createdAt: number;
+  } | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -189,7 +194,8 @@ const Auth = () => {
         setChallengeData({
           factorId: totpFactor.id,
           challengeId: challenge.id,
-          operation: 'login'
+          operation: 'login',
+          createdAt: Date.now(),
         });
         setShow2FAGate(true);
       }
@@ -233,6 +239,38 @@ const Auth = () => {
     toast.error('Verificação 2FA cancelada');
   };
 
+  const handle2FAExpired = async () => {
+    console.log('🔐 2FA challenge expired, creating new one');
+    toast.error('Código expirado', {
+      description: 'Gerando novo código de verificação...',
+    });
+
+    // Create new challenge
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { data: factors } = await supabase.auth.mfa.listFactors();
+    const totpFactor = factors?.totp?.[0];
+    if (!totpFactor) return;
+
+    const { data: challenge, error } = await supabase.auth.mfa.challenge({
+      factorId: totpFactor.id
+    });
+
+    if (error) {
+      toast.error('Erro ao gerar novo código');
+      handle2FACancel();
+      return;
+    }
+
+    setChallengeData({
+      factorId: totpFactor.id,
+      challengeId: challenge.id,
+      operation: 'login',
+      createdAt: Date.now(),
+    });
+  };
+
   // If showing 2FA gate, render only that
   if (show2FAGate && challengeData) {
     return (
@@ -246,6 +284,7 @@ const Auth = () => {
             challengeData={challengeData}
             onVerified={handle2FASuccess}
             onCancel={handle2FACancel}
+            onExpired={handle2FAExpired}
             showRememberOption={!rememberDevice}
             presetRememberDevice={rememberDevice}
           />

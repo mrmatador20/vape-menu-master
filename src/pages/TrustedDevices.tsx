@@ -351,6 +351,16 @@ const TrustedDevices = () => {
               setShowMFAGate(false);
               setPendingAction(null);
             }}
+            onExpired={async () => {
+              // Regenerate challenge when expired
+              const { allowed, challenge } = await verifyAAL2('manage_trusted_devices');
+              if (challenge) {
+                setMfaChallengeData(challenge);
+              } else {
+                setShowMFAGate(false);
+                setPendingAction(null);
+              }
+            }}
           />
         )}
       </div>

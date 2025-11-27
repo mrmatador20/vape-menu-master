@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAAL2Guard } from '@/hooks/useAAL2Guard';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
 import { supabase } from '@/integrations/supabase/client';
@@ -9,6 +9,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Shield, Loader2, Info } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface MFAVerificationGateProps {
   open: boolean;
@@ -18,9 +19,11 @@ interface MFAVerificationGateProps {
     factorId: string;
     challengeId: string;
     operation: string;
+    createdAt: number;
   };
   onVerified: (deviceRemembered: boolean) => void;
   onCancel: () => void;
+  onExpired?: () => void;
   showRememberOption?: boolean;
   presetRememberDevice?: boolean;
 }
@@ -32,6 +35,7 @@ export const MFAVerificationGate = ({
   challengeData,
   onVerified,
   onCancel,
+  onExpired,
   showRememberOption = false,
   presetRememberDevice = false
 }: MFAVerificationGateProps) => {
@@ -42,9 +46,48 @@ export const MFAVerificationGate = ({
   const { verifyTOTPCode } = useAAL2Guard();
   const { rememberDevice: saveRememberedDevice } = useAuthGuard();
 
+  // Challenge expiration: 5 minutes
+  const CHALLENGE_EXPIRATION_MS = 5 * 60 * 1000;
+
+  // Monitor challenge expiration
+  useEffect(() => {
+    if (!open || !challengeData || !onExpired) return;
+
+    const checkExpiration = () => {
+      const elapsed = Date.now() - challengeData.createdAt;
+      if (elapsed > CHALLENGE_EXPIRATION_MS) {
+        console.log('🔐 Challenge expired, triggering new challenge');
+        setCode('');
+        setError(null);
+        onExpired();
+      }
+    };
+
+    // Check immediately
+    checkExpiration();
+
+    // Check every 10 seconds
+    const interval = setInterval(checkExpiration, 10000);
+
+    return () => clearInterval(interval);
+  }, [open, challengeData, onExpired, CHALLENGE_EXPIRATION_MS]);
+
   const handleVerify = async () => {
     if (!code || code.length !== 6) {
       setError('Digite um código válido de 6 dígitos');
+      return;
+    }
+
+    // Check if challenge has expired before attempting verification
+    const elapsed = Date.now() - challengeData.createdAt;
+    if (elapsed > CHALLENGE_EXPIRATION_MS) {
+      setError('Código expirado');
+      toast.error('Código expirado', {
+        description: 'O tempo para inserir o código expirou. Gerando novo código...',
+      });
+      if (onExpired) {
+        onExpired();
+      }
       return;
     }
 
@@ -58,7 +101,7 @@ export const MFAVerificationGate = ({
     );
 
     if (!success) {
-      setError(verifyError || 'Código inválido');
+      setError(verifyError || 'Código inválido ou expirado');
       setVerifying(false);
       return;
     }
