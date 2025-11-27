@@ -32,7 +32,9 @@ export const AuthInterceptor = ({ children }: AuthInterceptorProps) => {
   // Refs to prevent duplicate checks and loops
   const isCheckingRef = useRef(false);
   const lastCheckedRouteRef = useRef<string>('');
-  const verificationCompletedRef = useRef(false);
+  const verificationCompletedRef = useRef(
+    sessionStorage.getItem('2fa_verified') === 'true'
+  );
 
   // Public routes that don't require authentication
   const publicRoutes = ['/auth', '/forgot-password', '/reset-password'];
@@ -98,6 +100,7 @@ export const AuthInterceptor = ({ children }: AuthInterceptorProps) => {
           setGlobalAuthState('AUTHENTICATED');
           setInterceptorState('authenticated');
           verificationCompletedRef.current = true;
+          sessionStorage.setItem('2fa_verified', 'true');
           return;
         }
 
@@ -107,6 +110,7 @@ export const AuthInterceptor = ({ children }: AuthInterceptorProps) => {
           setGlobalAuthState('AUTHENTICATED');
           setInterceptorState('authenticated');
           verificationCompletedRef.current = true;
+          sessionStorage.setItem('2fa_verified', 'true');
           return;
         }
 
@@ -174,6 +178,7 @@ export const AuthInterceptor = ({ children }: AuthInterceptorProps) => {
   useEffect(() => {
     if (location.pathname === '/auth') {
       verificationCompletedRef.current = false;
+      sessionStorage.removeItem('2fa_verified');
       setInterceptorState('checking');
     }
   }, [location.pathname]);
@@ -196,6 +201,7 @@ export const AuthInterceptor = ({ children }: AuthInterceptorProps) => {
 
     // Mark as completed and authenticated
     verificationCompletedRef.current = true;
+    sessionStorage.setItem('2fa_verified', 'true');
     setGlobalAuthState('AUTHENTICATED');
     setInterceptorState('authenticated');
     toast.success('Login realizado com sucesso!');
@@ -206,6 +212,7 @@ export const AuthInterceptor = ({ children }: AuthInterceptorProps) => {
     
     // Reset verification state
     verificationCompletedRef.current = false;
+    sessionStorage.removeItem('2fa_verified');
     lastCheckedRouteRef.current = '';
     
     setGlobalAuthState('IDLE');
