@@ -48,9 +48,9 @@ export const AuthInterceptor = ({ children }: AuthInterceptorProps) => {
         return;
       }
       
-      // Skip if already verified this session (regardless of route)
-      if (verificationCompletedRef.current) {
-        console.log('🛡️ AuthInterceptor: Already verified this session, skipping check');
+      // Skip if already verified this session and on same route
+      if (verificationCompletedRef.current && lastCheckedRouteRef.current === location.pathname) {
+        console.log('🛡️ AuthInterceptor: Already verified for this route, skipping');
         return;
       }
 
@@ -157,11 +157,11 @@ export const AuthInterceptor = ({ children }: AuthInterceptorProps) => {
       }
     };
 
-    // Only check if we haven't verified yet
-    if (!verificationCompletedRef.current) {
+    // Only check if we haven't verified yet or route changed
+    if (!verificationCompletedRef.current || lastCheckedRouteRef.current !== location.pathname) {
       checkAuthentication();
     } else {
-      console.log('🛡️ AuthInterceptor: Skipping check - already authenticated this session');
+      console.log('🛡️ AuthInterceptor: Skipping check - already verified');
     }
 
     return () => {
