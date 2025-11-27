@@ -34,6 +34,7 @@ export const AuthStateProvider = ({ children }: { children: ReactNode }) => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === 'SIGNED_OUT') {
         console.log('🔐 User signed out, resetting auth state to IDLE');
+        sessionStorage.removeItem('admin_2fa_verified');
         setAuthState('IDLE');
       }
     });
