@@ -41,15 +41,21 @@ export const AuthInterceptor = ({ children }: AuthInterceptorProps) => {
     let isMounted = true;
 
     const checkAuthentication = async () => {
-      // Prevent duplicate checks
+      // Prevent duplicate checks for the same state
       if (isCheckingRef.current) {
         console.log('🛡️ AuthInterceptor: Already checking, skipping duplicate');
         return;
       }
       
-      // If already authenticated, skip check unless route changed to public
-      if (hasCheckedRef.current && interceptorState === 'authenticated' && !isPublicRoute) {
+      // If already authenticated, skip check
+      if (interceptorState === 'authenticated') {
         console.log('🛡️ AuthInterceptor: Already authenticated, skipping check');
+        return;
+      }
+      
+      // If already showing 2FA gate, skip check
+      if (interceptorState === 'requires_2fa') {
+        console.log('🛡️ AuthInterceptor: Already showing 2FA gate, skipping check');
         return;
       }
 
@@ -75,7 +81,6 @@ export const AuthInterceptor = ({ children }: AuthInterceptorProps) => {
           if (isMounted) {
             setGlobalAuthState('IDLE');
             setInterceptorState('authenticated');
-            hasCheckedRef.current = true;
           }
           return;
         }
@@ -93,7 +98,6 @@ export const AuthInterceptor = ({ children }: AuthInterceptorProps) => {
           console.log('🛡️ AuthInterceptor: 2FA not enabled, allowing access');
           setGlobalAuthState('AUTHENTICATED');
           setInterceptorState('authenticated');
-          hasCheckedRef.current = true;
           return;
         }
 
@@ -102,16 +106,10 @@ export const AuthInterceptor = ({ children }: AuthInterceptorProps) => {
           console.log('🛡️ AuthInterceptor: Device is trusted, allowing access');
           setGlobalAuthState('AUTHENTICATED');
           setInterceptorState('authenticated');
-          hasCheckedRef.current = true;
           return;
         }
 
-        // 2FA is required - create challenge ONLY if not already showing gate
-        if (hasCheckedRef.current && interceptorState === 'requires_2fa') {
-          console.log('🛡️ AuthInterceptor: Already showing 2FA gate, skipping duplicate challenge');
-          return;
-        }
-
+        // 2FA is required - create challenge
         console.log('🛡️ AuthInterceptor: 2FA required, creating challenge');
         const totpFactor = authCheck.factors?.[0];
         
@@ -145,7 +143,6 @@ export const AuthInterceptor = ({ children }: AuthInterceptorProps) => {
           operation: 'access'
         });
         setInterceptorState('requires_2fa');
-        hasCheckedRef.current = true;
 
       } catch (error) {
         console.error('🛡️ AuthInterceptor: Critical error during auth check:', error);
@@ -159,12 +156,27 @@ export const AuthInterceptor = ({ children }: AuthInterceptorProps) => {
       }
     };
 
-    checkAuthentication();
+    // Only run check if in 'checking' state
+    if (interceptorState === 'checking') {
+      checkAuthentication();
+    }
 
     return () => {
       isMounted = false;
     };
-  }, [location.pathname, isPublicRoute, navigate, checkAuthRequires2FA]);
+  }, [location.pathname, interceptorState, isPublicRoute, navigate]);
+  
+  // Reset to checking state when route changes (only if already authenticated)
+  useEffect(() => {
+    if (interceptorState === 'authenticated') {
+      // Reset checking only when navigating to different route types
+      const wasPublic = publicRoutes.includes(location.pathname);
+      if (!wasPublic) {
+        // Stay authenticated for protected routes
+        return;
+      }
+    }
+  }, [location.pathname]);
 
   const handle2FASuccess = async (deviceRemembered: boolean) => {
     console.log('🛡️ AuthInterceptor: 2FA verification successful');
