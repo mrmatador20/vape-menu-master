@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
@@ -28,6 +28,10 @@ export const AuthInterceptor = ({ children }: AuthInterceptorProps) => {
   const { setAuthState: setGlobalAuthState } = useAuthState();
   const location = useLocation();
   const navigate = useNavigate();
+  
+  // Use refs to prevent duplicate checks
+  const isCheckingRef = useRef(false);
+  const hasCheckedRef = useRef(false);
 
   // Public routes that don't require authentication
   const publicRoutes = ['/auth', '/forgot-password', '/reset-password'];
@@ -37,10 +41,20 @@ export const AuthInterceptor = ({ children }: AuthInterceptorProps) => {
     let isMounted = true;
 
     const checkAuthentication = async () => {
-      console.log('🛡️ AuthInterceptor: Starting authentication check for route:', location.pathname);
+      // Prevent duplicate checks
+      if (isCheckingRef.current) {
+        console.log('🛡️ AuthInterceptor: Already checking, skipping duplicate');
+        return;
+      }
+      
+      // If already authenticated, skip check unless route changed to public
+      if (hasCheckedRef.current && interceptorState === 'authenticated' && !isPublicRoute) {
+        console.log('🛡️ AuthInterceptor: Already authenticated, skipping check');
+        return;
+      }
 
-      // CRITICAL: Even public routes must be checked if user has active session
-      // A user with 2FA enabled CANNOT access ANY page without verification
+      isCheckingRef.current = true;
+      console.log('🛡️ AuthInterceptor: Starting authentication check for route:', location.pathname);
 
       try {
         // Check if user has a session
@@ -49,15 +63,20 @@ export const AuthInterceptor = ({ children }: AuthInterceptorProps) => {
         // If no session and trying to access protected route, redirect to login
         if ((sessionError || !session) && !isPublicRoute) {
           console.log('🛡️ AuthInterceptor: No session found, redirecting to login');
-          navigate('/auth');
+          if (isMounted) {
+            navigate('/auth');
+          }
           return;
         }
 
         // If no session and on public route, allow access
         if (!session && isPublicRoute) {
           console.log('🛡️ AuthInterceptor: No session, public route, allowing access');
-          setGlobalAuthState('IDLE');
-          setInterceptorState('authenticated');
+          if (isMounted) {
+            setGlobalAuthState('IDLE');
+            setInterceptorState('authenticated');
+            hasCheckedRef.current = true;
+          }
           return;
         }
 
@@ -74,6 +93,7 @@ export const AuthInterceptor = ({ children }: AuthInterceptorProps) => {
           console.log('🛡️ AuthInterceptor: 2FA not enabled, allowing access');
           setGlobalAuthState('AUTHENTICATED');
           setInterceptorState('authenticated');
+          hasCheckedRef.current = true;
           return;
         }
 
@@ -82,11 +102,12 @@ export const AuthInterceptor = ({ children }: AuthInterceptorProps) => {
           console.log('🛡️ AuthInterceptor: Device is trusted, allowing access');
           setGlobalAuthState('AUTHENTICATED');
           setInterceptorState('authenticated');
+          hasCheckedRef.current = true;
           return;
         }
 
-        // 2FA is required - create challenge ONLY if not already in 2FA state
-        if (interceptorState === 'requires_2fa') {
+        // 2FA is required - create challenge ONLY if not already showing gate
+        if (hasCheckedRef.current && interceptorState === 'requires_2fa') {
           console.log('🛡️ AuthInterceptor: Already showing 2FA gate, skipping duplicate challenge');
           return;
         }
@@ -124,6 +145,7 @@ export const AuthInterceptor = ({ children }: AuthInterceptorProps) => {
           operation: 'access'
         });
         setInterceptorState('requires_2fa');
+        hasCheckedRef.current = true;
 
       } catch (error) {
         console.error('🛡️ AuthInterceptor: Critical error during auth check:', error);
@@ -132,6 +154,8 @@ export const AuthInterceptor = ({ children }: AuthInterceptorProps) => {
           await supabase.auth.signOut();
           navigate('/auth');
         }
+      } finally {
+        isCheckingRef.current = false;
       }
     };
 
@@ -140,7 +164,7 @@ export const AuthInterceptor = ({ children }: AuthInterceptorProps) => {
     return () => {
       isMounted = false;
     };
-  }, [location.pathname, isPublicRoute, navigate, checkAuthRequires2FA, rememberDevice, interceptorState]);
+  }, [location.pathname, isPublicRoute, navigate, checkAuthRequires2FA]);
 
   const handle2FASuccess = async (deviceRemembered: boolean) => {
     console.log('🛡️ AuthInterceptor: 2FA verification successful');
