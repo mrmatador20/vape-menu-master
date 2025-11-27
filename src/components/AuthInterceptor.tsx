@@ -14,10 +14,10 @@ interface AuthInterceptorProps {
 /**
  * AuthInterceptor - Security component that enforces 2FA verification
  * 
- * This component intercepts ALL authenticated sessions and ensures that:
- * 1. Users with 2FA enabled MUST complete 2FA verification
- * 2. Users can bypass 2FA ONLY if they have a valid trusted device token
- * 3. Sessions are properly elevated to AAL2 after 2FA verification
+ * ARCHITECTURE:
+ * - Single verification per session/route using refs
+ * - No circular dependencies in useEffect
+ * - State changes don't trigger re-verification
  * 
  * SECURITY CRITICAL: This is the last line of defense against 2FA bypass
  */
@@ -29,9 +29,10 @@ export const AuthInterceptor = ({ children }: AuthInterceptorProps) => {
   const location = useLocation();
   const navigate = useNavigate();
   
-  // Use refs to prevent duplicate checks
+  // Refs to prevent duplicate checks and loops
   const isCheckingRef = useRef(false);
-  const hasCheckedRef = useRef(false);
+  const lastCheckedRouteRef = useRef<string>('');
+  const verificationCompletedRef = useRef(false);
 
   // Public routes that don't require authentication
   const publicRoutes = ['/auth', '/forgot-password', '/reset-password'];
@@ -41,25 +42,20 @@ export const AuthInterceptor = ({ children }: AuthInterceptorProps) => {
     let isMounted = true;
 
     const checkAuthentication = async () => {
-      // Prevent duplicate checks for the same state
+      // Skip if already checking
       if (isCheckingRef.current) {
-        console.log('🛡️ AuthInterceptor: Already checking, skipping duplicate');
+        console.log('🛡️ AuthInterceptor: Check already in progress, skipping');
         return;
       }
       
-      // If already authenticated, skip check
-      if (interceptorState === 'authenticated') {
-        console.log('🛡️ AuthInterceptor: Already authenticated, skipping check');
-        return;
-      }
-      
-      // If already showing 2FA gate, skip check
-      if (interceptorState === 'requires_2fa') {
-        console.log('🛡️ AuthInterceptor: Already showing 2FA gate, skipping check');
+      // Skip if already verified this session and on same route
+      if (verificationCompletedRef.current && lastCheckedRouteRef.current === location.pathname) {
+        console.log('🛡️ AuthInterceptor: Already verified for this route, skipping');
         return;
       }
 
       isCheckingRef.current = true;
+      lastCheckedRouteRef.current = location.pathname;
       console.log('🛡️ AuthInterceptor: Starting authentication check for route:', location.pathname);
 
       try {
@@ -70,6 +66,7 @@ export const AuthInterceptor = ({ children }: AuthInterceptorProps) => {
         if ((sessionError || !session) && !isPublicRoute) {
           console.log('🛡️ AuthInterceptor: No session found, redirecting to login');
           if (isMounted) {
+            setInterceptorState('authenticated'); // Set to authenticated to stop checking
             navigate('/auth');
           }
           return;
@@ -81,6 +78,7 @@ export const AuthInterceptor = ({ children }: AuthInterceptorProps) => {
           if (isMounted) {
             setGlobalAuthState('IDLE');
             setInterceptorState('authenticated');
+            verificationCompletedRef.current = true;
           }
           return;
         }
@@ -98,6 +96,7 @@ export const AuthInterceptor = ({ children }: AuthInterceptorProps) => {
           console.log('🛡️ AuthInterceptor: 2FA not enabled, allowing access');
           setGlobalAuthState('AUTHENTICATED');
           setInterceptorState('authenticated');
+          verificationCompletedRef.current = true;
           return;
         }
 
@@ -106,6 +105,7 @@ export const AuthInterceptor = ({ children }: AuthInterceptorProps) => {
           console.log('🛡️ AuthInterceptor: Device is trusted, allowing access');
           setGlobalAuthState('AUTHENTICATED');
           setInterceptorState('authenticated');
+          verificationCompletedRef.current = true;
           return;
         }
 
@@ -143,6 +143,7 @@ export const AuthInterceptor = ({ children }: AuthInterceptorProps) => {
           operation: 'access'
         });
         setInterceptorState('requires_2fa');
+        verificationCompletedRef.current = true; // Mark as completed to prevent re-check
 
       } catch (error) {
         console.error('🛡️ AuthInterceptor: Critical error during auth check:', error);
@@ -156,25 +157,23 @@ export const AuthInterceptor = ({ children }: AuthInterceptorProps) => {
       }
     };
 
-    // Only run check if in 'checking' state
-    if (interceptorState === 'checking') {
+    // Only check if we haven't verified yet or route changed
+    if (!verificationCompletedRef.current || lastCheckedRouteRef.current !== location.pathname) {
       checkAuthentication();
+    } else {
+      console.log('🛡️ AuthInterceptor: Skipping check - already verified');
     }
 
     return () => {
       isMounted = false;
     };
-  }, [location.pathname, interceptorState, isPublicRoute, navigate]);
+  }, [location.pathname]); // ONLY depend on route changes
   
-  // Reset to checking state when route changes (only if already authenticated)
+  // Reset verification when user explicitly navigates to auth page
   useEffect(() => {
-    if (interceptorState === 'authenticated') {
-      // Reset checking only when navigating to different route types
-      const wasPublic = publicRoutes.includes(location.pathname);
-      if (!wasPublic) {
-        // Stay authenticated for protected routes
-        return;
-      }
+    if (location.pathname === '/auth') {
+      verificationCompletedRef.current = false;
+      setInterceptorState('checking');
     }
   }, [location.pathname]);
 
@@ -194,6 +193,8 @@ export const AuthInterceptor = ({ children }: AuthInterceptorProps) => {
       }
     }
 
+    // Mark as completed and authenticated
+    verificationCompletedRef.current = true;
     setGlobalAuthState('AUTHENTICATED');
     setInterceptorState('authenticated');
     toast.success('Login realizado com sucesso!');
@@ -201,6 +202,11 @@ export const AuthInterceptor = ({ children }: AuthInterceptorProps) => {
 
   const handle2FACancel = async () => {
     console.log('🛡️ AuthInterceptor: User cancelled 2FA verification, logging out');
+    
+    // Reset verification state
+    verificationCompletedRef.current = false;
+    lastCheckedRouteRef.current = '';
+    
     setGlobalAuthState('IDLE');
     await supabase.auth.signOut();
     navigate('/auth');
