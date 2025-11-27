@@ -79,7 +79,7 @@ export const AuthInterceptor = ({ children }: AuthInterceptorProps) => {
           if (isMounted) {
             setGlobalAuthState('IDLE');
             setInterceptorState('authenticated');
-            verificationCompletedRef.current = true;
+            // Don't mark as verified when no session - user hasn't authenticated yet
           }
           return;
         }
