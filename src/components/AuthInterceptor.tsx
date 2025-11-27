@@ -157,17 +157,22 @@ export const AuthInterceptor = ({ children }: AuthInterceptorProps) => {
   const handle2FASuccess = async (deviceRemembered: boolean) => {
     console.log('🛡️ AuthInterceptor: 2FA verification successful');
     
-    if (deviceRemembered) {
+    // Check if there was a pending remember device request from login
+    const rememberPending = sessionStorage.getItem('remember_device_pending');
+    const shouldRemember = deviceRemembered || rememberPending === 'true';
+    
+    if (shouldRemember) {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         console.log('🛡️ AuthInterceptor: Registering device as trusted');
         await rememberDevice(user.id);
+        sessionStorage.removeItem('remember_device_pending');
       }
     }
 
     setGlobalAuthState('AUTHENTICATED');
     setInterceptorState('authenticated');
-    toast.success('Verificação 2FA concluída com sucesso!');
+    toast.success('Login realizado com sucesso!');
   };
 
   const handle2FACancel = async () => {
@@ -192,6 +197,9 @@ export const AuthInterceptor = ({ children }: AuthInterceptorProps) => {
 
   // Show 2FA verification gate if required
   if (interceptorState === 'requires_2fa' && challengeData) {
+    // Check if user wants to remember device from login
+    const rememberPending = sessionStorage.getItem('remember_device_pending') === 'true';
+    
     return (
       <div className="min-h-screen bg-gradient-hero flex items-center justify-center">
         <MFAVerificationGate
@@ -201,8 +209,8 @@ export const AuthInterceptor = ({ children }: AuthInterceptorProps) => {
           challengeData={challengeData}
           onVerified={handle2FASuccess}
           onCancel={handle2FACancel}
-          showRememberOption={true}
-          presetRememberDevice={false}
+          showRememberOption={!rememberPending}
+          presetRememberDevice={rememberPending}
         />
       </div>
     );

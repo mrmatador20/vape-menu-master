@@ -15,8 +15,6 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import { Loader2, Eye, EyeOff, AlertTriangle } from 'lucide-react';
 import Header from '@/components/Header';
-import { MFAVerifyDialog } from '@/components/MFAVerifyDialog';
-import { MFAVerificationGate } from '@/components/MFAVerificationGate';
 import { validatePassword, getPasswordStrength, getStrengthColor, passwordRequirements } from '@/lib/passwordValidation';
 import { checkRateLimit, resetRateLimit } from '@/lib/rateLimit';
 import { checkPwnedPassword, formatPwnedCount } from '@/lib/pwnedPassword';
@@ -28,8 +26,6 @@ const Auth = () => {
   const { setAuthState } = useAuthState();
   const [isLoading, setIsLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
-  const [showMFAGate, setShowMFAGate] = useState(false);
-  const [mfaChallengeData, setMfaChallengeData] = useState<any>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState('');
   const [pwnedInfo, setPwnedInfo] = useState<{ isPwned: boolean; count: number } | null>(null);
@@ -130,58 +126,28 @@ const Auth = () => {
           password: formData.password,
         });
 
-        // If sign in was successful, check if MFA is required
-        if (!signInError && signInData.user) {
-          // Reset login rate limit on successful login
-          await resetRateLimit('login');
-
-          // Check if 2FA verification is required (universal check)
-          console.log('🔐 Checking if 2FA is required after login...');
-          const authCheck = await checkAuthRequires2FA();
-          console.log('🔐 Auth check result:', authCheck);
-          
-          if (authCheck.requires2FA && authCheck.factors && authCheck.factors.length > 0) {
-            // 2FA is enabled and device not remembered - create challenge
-            console.log('🔐 2FA required, creating challenge...');
-            setAuthState('AWAITING_2FA');
-            const totpFactor = authCheck.factors[0];
-            
-            const { data: challenge, error: challengeError } = await supabase.auth.mfa.challenge({
-              factorId: totpFactor.id
-            });
-
-            if (challengeError) {
-              console.error('🔐 Failed to create MFA challenge:', challengeError);
-              toast.error('Erro ao criar verificação 2FA');
-              setAuthState('IDLE');
-              setIsLoading(false);
-              return;
-            }
-
-            console.log('🔐 MFA challenge created, showing verification gate');
-            // Show MFA verification gate with remember option
-            setMfaChallengeData({
-              factorId: totpFactor.id,
-              challengeId: challenge.id,
-              operation: 'login'
-            });
-            setShowMFAGate(true);
-            setIsLoading(false);
-            return;
-          }
-          
-          // No MFA required or device is remembered - proceed with login
-          console.log('🔐 No 2FA required, proceeding with login');
-          setAuthState('AUTHENTICATED');
-          await logActivity('login');
-          toast.success('Login realizado com sucesso!');
-          navigate('/');
-        } else if (signInError) {
+        if (signInError) {
           await logActivity('login_failed', { 
             metadata: { error: signInError.message }
           });
           throw signInError;
         }
+
+        // Login successful - reset rate limit
+        await resetRateLimit('login');
+        await logActivity('login');
+        
+        // Store remember device preference for AuthInterceptor
+        if (rememberDevice) {
+          sessionStorage.setItem('remember_device_pending', 'true');
+        }
+        
+        console.log('🔐 Login successful, redirecting to home (AuthInterceptor will handle 2FA if needed)');
+        
+        // Don't set AUTHENTICATED yet - let AuthInterceptor determine that
+        setAuthState('IDLE');
+        toast.success('Credenciais validadas!');
+        navigate('/');
       }
     } catch (error: any) {
       toast.error(error.message || 'Erro ao autenticar');
@@ -194,23 +160,6 @@ const Auth = () => {
     }
   };
 
-  const handleMFASuccess = async (deviceRemembered: boolean) => {
-    setAuthState('AUTHENTICATED');
-    await logActivity('login', { 
-      metadata: { method: '2FA', deviceRemembered }
-    });
-    setShowMFAGate(false);
-    toast.success('Login realizado com sucesso!');
-    navigate('/');
-  };
-
-  const handleMFACancel = () => {
-    setAuthState('IDLE');
-    setShowMFAGate(false);
-    setMfaChallengeData(null);
-    // Log out the user since they cancelled 2FA
-    supabase.auth.signOut();
-  };
 
   return (
     <>
@@ -410,20 +359,6 @@ const Auth = () => {
             )}
           </div>
         </Card>
-
-        {/* MFA Verification Gate */}
-        {mfaChallengeData && (
-          <MFAVerificationGate
-            open={showMFAGate}
-            operation="login"
-            operationLabel="fazer login"
-            challengeData={mfaChallengeData}
-            onVerified={handleMFASuccess}
-            onCancel={handleMFACancel}
-            showRememberOption={false}
-            presetRememberDevice={rememberDevice}
-          />
-        )}
       </div>
     </>
   );
