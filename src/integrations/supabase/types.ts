@@ -416,6 +416,7 @@ export type Database = {
           cep: string | null
           change_amount: number | null
           created_at: string | null
+          expires_at: string | null
           id: string
           payment_method: string
           shipping_cost: number | null
@@ -431,6 +432,7 @@ export type Database = {
           cep?: string | null
           change_amount?: number | null
           created_at?: string | null
+          expires_at?: string | null
           id?: string
           payment_method: string
           shipping_cost?: number | null
@@ -446,6 +448,7 @@ export type Database = {
           cep?: string | null
           change_amount?: number | null
           created_at?: string | null
+          expires_at?: string | null
           id?: string
           payment_method?: string
           shipping_cost?: number | null

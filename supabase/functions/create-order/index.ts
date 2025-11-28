@@ -473,6 +473,11 @@ serve(async (req) => {
     // PIX orders start as pending_payment, others as pending
     const initialStatus = orderData.paymentMethod === 'pix' ? 'pending_payment' : 'pending';
     
+    // PIX QR codes expire after 30 minutes
+    const expiresAt = orderData.paymentMethod === 'pix' 
+      ? new Date(Date.now() + 30 * 60 * 1000).toISOString()
+      : null;
+    
     const { data: order, error: orderError } = await supabaseClient
       .from('orders')
       .insert({
@@ -487,6 +492,7 @@ serve(async (req) => {
         shipping_cost: finalShippingCost,
         total_amount: finalAmount,
         status: initialStatus,
+        expires_at: expiresAt,
       })
       .select()
       .single();
