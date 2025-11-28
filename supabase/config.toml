@@ -3,9 +3,6 @@ project_id = "bupbucfdisqedteazifs"
 [functions.create-order]
 verify_jwt = true
 
-[functions.create-pix-payment]
-verify_jwt = true
-
 [functions.audit-log]
 verify_jwt = false
 
