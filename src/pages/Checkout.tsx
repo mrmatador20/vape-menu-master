@@ -327,7 +327,8 @@ const Checkout = () => {
           items: items.map(item => ({
             id: item.id,
             quantity: item.quantity,
-            flavor: item.flavor
+            flavor: item.flavor,
+            price: getFinalPrice(item) // ✅ Enviar preço já com desconto aplicado
           })),
           address: {
             street: validatedData.rua,
