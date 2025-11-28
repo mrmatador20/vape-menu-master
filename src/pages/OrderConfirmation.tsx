@@ -58,11 +58,14 @@ const OrderConfirmation = () => {
       return;
     }
 
+    console.log('[OrderConfirmation] Received data:', JSON.stringify(data, null, 2));
+
     // Validate data format
     const validationResult = orderDataSchema.safeParse(data);
     
     if (!validationResult.success) {
       console.error('[OrderConfirmation] Invalid order data format:', validationResult.error.errors);
+      console.error('[OrderConfirmation] Received data that failed validation:', data);
       toast.error('Formato de dados do pedido inválido. Por favor, tente novamente.');
       navigate('/');
       return;

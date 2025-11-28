@@ -496,7 +496,9 @@ const Checkout = () => {
             cep: formData.cep
           },
           paymentMethod: formData.paymentMethod,
-          changeAmount: validatedData.changeAmount ? Number(validatedData.changeAmount) : undefined,
+          changeAmount: validatedData.changeAmount && validatedData.changeAmount !== '' 
+            ? Number(validatedData.changeAmount) 
+            : undefined,
           whatsappMessage: message,
           pixData: pixData || undefined
         }
