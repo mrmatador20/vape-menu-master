@@ -30,25 +30,20 @@ serve(async (req) => {
       );
     }
 
-    // Chamar API da AbacatePay para criar cobrança PIX
-    const abacateResponse = await fetch('https://api.abacatepay.com/v1/billing/create', {
+    // Chamar API da AbacatePay para criar QR Code PIX
+    const abacateResponse = await fetch('https://api.abacatepay.com/v1/pixQrCode/create', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${ABACATEPAY_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        frequency: 'one-time',
-        methods: ['pix'],
-        products: [{
+        amount: amount,
+        expiresIn: 900, // 15 minutos
+        description: `Pedido #${orderId} - Vape-Menu-Express`,
+        metadata: {
           externalId: orderId,
-          name: 'Pedido Vape-Menu-Express',
-          description: `Pedido #${orderId}`,
-          quantity: 1,
-          price: Math.round(amount * 100), // Converter para centavos
-        }],
-        returnUrl: `${Deno.env.get('SUPABASE_URL')}/order-confirmation/${orderId}`,
-        completionUrl: `${Deno.env.get('SUPABASE_URL')}/order-confirmation/${orderId}`,
+        }
       }),
     });
 
@@ -66,10 +61,9 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
-        billingId: abacateData.id,
-        pixCode: abacateData.pix?.qrCode,
-        pixQrCodeUrl: abacateData.pix?.qrCodeUrl,
-        expiresAt: abacateData.pix?.expiresAt,
+        pixCode: abacateData.payload,
+        pixQrCodeUrl: abacateData.imageUrl,
+        expiresAt: abacateData.expiresAt,
       }),
       { 
         status: 200, 
