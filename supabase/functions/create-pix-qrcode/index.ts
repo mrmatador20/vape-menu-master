@@ -42,7 +42,6 @@ serve(async (req) => {
         name: customerName,
         cellphone: customerPhone,
         email: customerEmail,
-        taxId: "000.000.000-00" // CPF genérico (AbacatePay pode não exigir)
       },
       metadata: {
         externalId: orderId
