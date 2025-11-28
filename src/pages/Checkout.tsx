@@ -25,6 +25,7 @@ const checkoutSchema = z.object({
   bairro: z.string().trim().min(1, 'Bairro é obrigatório').max(100, 'Bairro deve ter no máximo 100 caracteres'),
   cidade: z.string().trim().min(1, 'Cidade é obrigatória').max(100, 'Cidade deve ter no máximo 100 caracteres'),
   cep: z.string().trim().min(8, 'CEP é obrigatório').max(9, 'CEP inválido'),
+  cpf: z.string().optional(),
   paymentMethod: z.enum(['pix', 'dinheiro']),
   changeAmount: z.string().optional(),
 });
@@ -51,6 +52,7 @@ const Checkout = () => {
     bairro: '',
     cidade: '',
     cep: '',
+    cpf: '',
     paymentMethod: 'pix',
     changeAmount: '',
     discountCode: '',
@@ -117,6 +119,7 @@ const Checkout = () => {
         bairro: '',
         cidade: '',
         cep: '',
+        cpf: '',
       }));
     }
   };
@@ -142,6 +145,23 @@ const Checkout = () => {
         }));
       }
     }
+  };
+
+  const handleCpfChange = (cpf: string) => {
+    const cleanCpf = cpf.replace(/\D/g, '');
+    let formatted = cleanCpf;
+    
+    if (cleanCpf.length <= 11) {
+      if (cleanCpf.length > 9) {
+        formatted = `${cleanCpf.slice(0, 3)}.${cleanCpf.slice(3, 6)}.${cleanCpf.slice(6, 9)}-${cleanCpf.slice(9, 11)}`;
+      } else if (cleanCpf.length > 6) {
+        formatted = `${cleanCpf.slice(0, 3)}.${cleanCpf.slice(3, 6)}.${cleanCpf.slice(6)}`;
+      } else if (cleanCpf.length > 3) {
+        formatted = `${cleanCpf.slice(0, 3)}.${cleanCpf.slice(3)}`;
+      }
+    }
+    
+    setFormData(prev => ({ ...prev, cpf: formatted }));
   };
 
   const handlePaymentChange = (value: string) => {
@@ -279,6 +299,15 @@ const Checkout = () => {
       return;
     }
 
+    // Validação condicional do CPF para PIX
+    if (formData.paymentMethod === 'pix') {
+      const cleanCpf = formData.cpf.replace(/\D/g, '');
+      if (cleanCpf.length !== 11) {
+        toast.error('CPF é obrigatório para pagamento via PIX');
+        return;
+      }
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -404,12 +433,15 @@ const Checkout = () => {
             .eq('id', user?.id || '')
             .single();
 
+          const cleanCpf = formData.cpf.replace(/\D/g, '');
+
           const pixResponse = await supabase.functions.invoke('create-pix-qrcode', {
             body: {
               amount: order.total,
               customerName: profile?.full_name || 'Cliente',
               customerPhone: profile?.phone || '(00) 00000-0000',
               customerEmail: user?.email || '',
+              customerCpf: cleanCpf,
               orderId: order.id
             }
           });
@@ -610,6 +642,26 @@ const Checkout = () => {
                     </p>
                   )
                 )}
+              </div>
+
+              {/* Campo CPF - Obrigatório para PIX */}
+              <div>
+                <Label htmlFor="cpf">
+                  CPF {formData.paymentMethod === 'pix' && <span className="text-red-500">*</span>}
+                  {formData.paymentMethod === 'pix' && (
+                    <span className="text-xs text-muted-foreground ml-2">(obrigatório para PIX)</span>
+                  )}
+                </Label>
+                <Input
+                  id="cpf"
+                  name="cpf"
+                  value={formData.cpf}
+                  onChange={(e) => handleCpfChange(e.target.value)}
+                  placeholder="000.000.000-00"
+                  maxLength={14}
+                  required={formData.paymentMethod === 'pix'}
+                  disabled={isSubmitting}
+                />
               </div>
 
               {/* Opção para salvar endereço */}

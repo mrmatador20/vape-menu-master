@@ -11,7 +11,7 @@ serve(async (req) => {
   }
 
   try {
-    const { amount, customerName, customerPhone, customerEmail, orderId } = await req.json();
+    const { amount, customerName, customerPhone, customerEmail, customerCpf, orderId } = await req.json();
 
     console.log('[create-pix-qrcode] Iniciando criação de QR code PIX');
 
@@ -19,6 +19,14 @@ serve(async (req) => {
     if (!amount || !customerName || !customerPhone || !customerEmail || !orderId) {
       return new Response(
         JSON.stringify({ error: 'Dados incompletos para gerar QR code PIX' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Validação do CPF se fornecido
+    if (customerCpf && customerCpf.length !== 11) {
+      return new Response(
+        JSON.stringify({ error: 'CPF inválido. Deve conter 11 dígitos.' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -34,7 +42,7 @@ serve(async (req) => {
 
     // Chamar API da AbacatePay
     const abacatePayUrl = 'https://api.abacatepay.com/v1/pixQrCode/create';
-    const abacatePayBody = {
+    const abacatePayBody: any = {
       amount: Number(amount),
       expiresIn: 3600, // 1 hora de validade
       description: `Pedido ${orderId}`,
@@ -47,6 +55,12 @@ serve(async (req) => {
         externalId: orderId
       }
     };
+
+    // Adicionar CPF se fornecido
+    if (customerCpf) {
+      const formattedCpf = customerCpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+      abacatePayBody.customer.taxId = formattedCpf;
+    }
 
     console.log('[create-pix-qrcode] Chamando API AbacatePay');
 
