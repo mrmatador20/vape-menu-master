@@ -67,101 +67,54 @@ async function verifyWebhookSignature(req: Request, body: any): Promise<boolean>
   }
 }
 
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
+// Retry configuration
+const MAX_RETRIES = 3;
+const RETRY_DELAY = 2000; // 2 seconds
+
+async function processWebhookWithRetry(body: any, attempt = 1): Promise<Response> {
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+  const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+  const supabase = createClient(supabaseUrl, supabaseKey);
 
   try {
-    let body;
-    try {
-      body = await req.json();
-    } catch (jsonError) {
-      console.log('[MercadoPago Webhook] Empty or invalid JSON body - likely a test request');
-      return new Response(JSON.stringify({ received: true }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    }
-    
-    console.log('[MercadoPago Webhook] Received:', JSON.stringify(body, null, 2));
-
-    // Verify webhook signature
-    const isValidSignature = await verifyWebhookSignature(req, body);
-    if (!isValidSignature) {
-      console.error('[MercadoPago Webhook] Invalid webhook signature');
-      return new Response(JSON.stringify({ error: 'Invalid signature' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    }
-
-    // MercadoPago sends different event types
-    if (body.type !== 'payment') {
-      console.log('[MercadoPago Webhook] Ignoring non-payment event:', body.type);
-      return new Response(JSON.stringify({ received: true }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    }
+    console.log(`[MercadoPago Webhook] Processing attempt ${attempt}/${MAX_RETRIES}`);
 
     const paymentId = body.data?.id;
     if (!paymentId) {
-      console.error('[MercadoPago Webhook] No payment ID in webhook');
       return new Response(JSON.stringify({ error: 'No payment ID' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
 
-    // Get payment details from MercadoPago API
     const accessToken = Deno.env.get('MERCADOPAGO_ACCESS_TOKEN');
     if (!accessToken) {
-      console.error('[MercadoPago Webhook] Access token not configured');
-      return new Response(JSON.stringify({ error: 'Configuration error' }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
+      throw new Error('Access token not configured');
     }
 
     const paymentResponse = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
-      headers: {
-        'Authorization': `Bearer ${accessToken}`,
-      },
+      headers: { 'Authorization': `Bearer ${accessToken}` },
     });
 
     if (!paymentResponse.ok) {
-      console.error('[MercadoPago Webhook] Failed to fetch payment:', paymentResponse.status);
-      return new Response(JSON.stringify({ error: 'Failed to fetch payment' }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
+      throw new Error(`Failed to fetch payment: ${paymentResponse.status}`);
     }
 
     const payment = await paymentResponse.json();
-    console.log('[MercadoPago Webhook] Payment status:', payment.status);
-
     const orderId = payment.external_reference;
+    
     if (!orderId) {
-      console.error('[MercadoPago Webhook] No order ID in payment');
       return new Response(JSON.stringify({ error: 'No order reference' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
 
-    // Update order status based on payment status
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
-
     let orderStatus = 'pending_payment';
     if (payment.status === 'approved') {
       orderStatus = 'confirmed';
-      console.log('[MercadoPago Webhook] Payment approved, updating to confirmed');
     } else if (payment.status === 'rejected' || payment.status === 'cancelled') {
       orderStatus = 'cancelled';
-      console.log('[MercadoPago Webhook] Payment rejected/cancelled');
-    } else {
-      console.log('[MercadoPago Webhook] Payment status:', payment.status, '- keeping as pending_payment');
     }
 
     const { error: updateError } = await supabase
@@ -170,16 +123,10 @@ serve(async (req) => {
       .eq('id', orderId);
 
     if (updateError) {
-      console.error('[MercadoPago Webhook] Error updating order:', updateError);
-      return new Response(JSON.stringify({ error: 'Database error' }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
+      throw updateError;
     }
 
-    console.log('[MercadoPago Webhook] Order updated:', orderId, 'status:', orderStatus);
-    
-    // Send confirmation email if payment approved
+    // Send confirmation email and push notification if payment approved
     if (orderStatus === 'confirmed') {
       try {
         const { data: orderData } = await supabase
@@ -231,16 +178,6 @@ serve(async (req) => {
                         Falar com a Loja
                       </a>
                     </div>
-                    
-                    <div style="background: rgba(0, 204, 255, 0.15); padding: 15px; border-radius: 6px; margin-top: 25px;">
-                      <p style="font-size: 13px; margin: 5px 0; color: #a3d9e6;">
-                        <strong>Dica de Segurança:</strong>
-                      </p>
-                      <p style="font-size: 13px; margin: 5px 0; color: #a3d9e6;">
-                        ✓ Nunca compartilhe códigos de verificação<br/>
-                        ✓ Guarde este email como comprovante
-                      </p>
-                    </div>
                   </div>
                   
                   <div style="text-align: center; margin-top: 30px;">
@@ -252,12 +189,11 @@ serve(async (req) => {
               `,
             });
             
-            console.log('[MercadoPago Webhook] Confirmation email sent to:', userData.user.email);
+            console.log('[MercadoPago Webhook] Confirmation email sent');
           }
         }
       } catch (emailError) {
-        console.error('[MercadoPago Webhook] Error sending confirmation email:', emailError);
-        // Don't throw - email is non-critical
+        console.error('[MercadoPago Webhook] Email error (non-critical):', emailError);
       }
     }
 
@@ -265,6 +201,58 @@ serve(async (req) => {
       JSON.stringify({ success: true, orderId, status: orderStatus }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
+
+  } catch (error) {
+    console.error(`[MercadoPago Webhook] Attempt ${attempt} failed:`, error);
+    
+    if (attempt < MAX_RETRIES) {
+      console.log(`[MercadoPago Webhook] Retrying in ${RETRY_DELAY}ms...`);
+      await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
+      return processWebhookWithRetry(body, attempt + 1);
+    }
+    
+    console.error('[MercadoPago Webhook] All retry attempts failed');
+    throw error;
+  }
+}
+
+serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    let body;
+    try {
+      body = await req.json();
+    } catch (jsonError) {
+      console.log('[MercadoPago Webhook] Empty or invalid JSON body - likely a test request');
+      return new Response(JSON.stringify({ received: true }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+    
+    console.log('[MercadoPago Webhook] Received:', JSON.stringify(body, null, 2));
+
+    // Verify webhook signature
+    const isValidSignature = await verifyWebhookSignature(req, body);
+    if (!isValidSignature) {
+      console.error('[MercadoPago Webhook] Invalid webhook signature');
+      return new Response(JSON.stringify({ error: 'Invalid signature' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    // MercadoPago sends different event types
+    if (body.type !== 'payment') {
+      console.log('[MercadoPago Webhook] Ignoring non-payment event:', body.type);
+      return new Response(JSON.stringify({ received: true }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    return await processWebhookWithRetry(body);
 
   } catch (error) {
     console.error('[MercadoPago Webhook] Error:', error);
