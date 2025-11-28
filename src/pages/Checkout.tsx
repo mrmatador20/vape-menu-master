@@ -30,7 +30,7 @@ const checkoutSchema = z.object({
 });
 
 const Checkout = () => {
-  const { items, totalPrice, clearCart } = useCart();
+  const { items, totalPrice, clearCart, getFinalPrice } = useCart();
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
@@ -418,7 +418,7 @@ const Checkout = () => {
           items: items.map(item => ({
             name: item.name,
             quantity: item.quantity,
-            price: item.price,
+            price: getFinalPrice(item),
             flavor: item.flavor
           })),
           totalAmount: Number(order.total),
@@ -719,7 +719,8 @@ const Checkout = () => {
             <h2 className="text-2xl font-bold mb-6">Resumo do Pedido</h2>
             <div className="space-y-4">
               {items.map((item) => {
-                // Preço já vem com desconto aplicado do carrinho
+                // Preço base com desconto calculado via getFinalPrice
+                const finalPrice = getFinalPrice(item);
                 return (
                   <div key={`${item.id}-${item.flavor}`} className="flex justify-between">
                     <span>
@@ -727,7 +728,7 @@ const Checkout = () => {
                       {item.flavor && <span className="text-muted-foreground"> ({item.flavor})</span>}
                     </span>
                     <span className="font-bold">
-                      R$ {(item.price * item.quantity).toFixed(2)}
+                      R$ {(finalPrice * item.quantity).toFixed(2)}
                     </span>
                   </div>
                 );
