@@ -36,22 +36,35 @@ const ProductCard = ({ product, onAddToCart }: ProductCardProps) => {
     if (flavors && flavors.length > 0) {
       if (selectedFlavor) {
         const flavor = flavors.find(f => f.name === selectedFlavor);
-        if (flavor) {
-          setCurrentPrice(flavor.price ? Number(flavor.price) : product.price);
+        if (flavor && flavor.price) {
+          // Variação tem preço próprio - usa ele diretamente
+          setCurrentPrice(Number(flavor.price));
+        } else {
+          // Variação sem preço - usa preço do produto base
+          setCurrentPrice(product.price);
         }
       } else {
         // Define primeira variante como padrão
         const firstFlavor = flavors[0];
         setSelectedFlavor(firstFlavor.name);
-        setCurrentPrice(firstFlavor.price ? Number(firstFlavor.price) : product.price);
+        if (firstFlavor.price) {
+          setCurrentPrice(Number(firstFlavor.price));
+        } else {
+          setCurrentPrice(product.price);
+        }
       }
     } else {
       setCurrentPrice(product.price);
     }
   }, [flavors, selectedFlavor, product.price]);
   
+  // Verifica se a variação selecionada tem preço próprio
+  const selectedFlavorData = flavors?.find(f => f.name === selectedFlavor);
+  const hasCustomFlavorPrice = selectedFlavorData?.price ? true : false;
+  
   // Calculate only product individual discount (not global coupons)
-  const discountValue = product.discount_value || 0;
+  // ✅ Só aplica desconto se NÃO for variação com preço próprio
+  const discountValue = !hasCustomFlavorPrice ? (product.discount_value || 0) : 0;
   const discountType = product.discount_type || 'percent';
   
   const finalPrice = discountType === 'percent'
@@ -67,7 +80,6 @@ const ProductCard = ({ product, onAddToCart }: ProductCardProps) => {
     : product.stock === 0; // Product stock (no flavors)
   
   // Check if selected flavor is out of stock
-  const selectedFlavorData = flavors?.find(f => f.name === selectedFlavor);
   const isSelectedFlavorOutOfStock = selectedFlavorData ? selectedFlavorData.stock === 0 : false;
 
   const handleAddToCart = () => {
