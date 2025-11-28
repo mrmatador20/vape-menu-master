@@ -107,7 +107,15 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
       }
     }
 
-    // NÃO aplicar desconto aqui - o desconto será aplicado apenas no getFinalPrice()
+    // ✅ APLICAR DESCONTO ao preço antes de adicionar ao carrinho
+    if (currentProduct.discount_value && currentProduct.discount_value > 0) {
+      if (currentProduct.discount_type === 'percent') {
+        variantPrice = variantPrice * (1 - currentProduct.discount_value / 100);
+      } else if (currentProduct.discount_type === 'fixed') {
+        variantPrice = variantPrice - currentProduct.discount_value;
+      }
+      variantPrice = Math.max(0, variantPrice); // Garantir que o preço não seja negativo
+    }
 
     // Verificar estoque disponível
     if (stockToCheck === 0) {
