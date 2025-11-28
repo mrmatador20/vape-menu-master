@@ -40,15 +40,7 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 export const CartProvider = ({ children }: { children: React.ReactNode }) => {
   const [items, setItems] = useState<CartItem[]>([]);
 
-  // ✅ CORREÇÃO 3: Sincronização periódica com servidor
-  const handlePriceChange = useCallback((productId: string, newPrice: number) => {
-    setItems(currentItems =>
-      currentItems.map(item =>
-        item.id === productId ? { ...item, price: newPrice } : item
-      )
-    );
-  }, []);
-
+  // ✅ CORREÇÃO 3: Sincronização periódica com servidor (apenas estoque)
   const handleStockChange = useCallback((productId: string, inStock: boolean) => {
     if (!inStock) {
       // Remove produtos esgotados do carrinho
@@ -58,22 +50,13 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
 
   useCartSync({
     items,
-    onPriceChange: handlePriceChange,
+    onPriceChange: () => {}, // ✅ Não faz nada - preço não deve ser alterado após adicionar ao carrinho
     onStockChange: handleStockChange,
     intervalMs: 30000, // Sincronizar a cada 30 segundos
   });
 
   const addToCart = async (product: Product, flavor?: string) => {
     // ✅ CORREÇÃO 2: Validar estoque antes de adicionar ao carrinho
-    
-    console.log('[CartContext] addToCart called');
-    console.log('[CartContext] Product:', { 
-      name: product.name, 
-      price: product.price, 
-      discount_value: product.discount_value,
-      discount_type: product.discount_type 
-    });
-    console.log('[CartContext] Flavor:', flavor);
     
     // Buscar dados atualizados do produto
     const { data: currentProduct, error: productError } = await supabase
@@ -86,8 +69,6 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
       toast.error('Erro ao verificar disponibilidade do produto');
       return;
     }
-
-    console.log('[CartContext] Current product from DB:', currentProduct);
 
     // Se tem sabor, busca o preço e estoque da variante
     let variantPrice = Number(currentProduct.price);
@@ -109,12 +90,9 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
         const selectedFlavor = flavors[0];
         stockToCheck = selectedFlavor.stock;
         
-        console.log('[CartContext] Selected flavor:', selectedFlavor);
-        
         // Se a variação tem preço próprio, usa ele (mas ainda aplica desconto do produto base)
         if (selectedFlavor.price) {
           variantPrice = Number(selectedFlavor.price);
-          console.log('[CartContext] Using flavor price:', variantPrice);
         }
       } else {
         toast.error(`Sabor "${flavor}" não encontrado`);
@@ -122,27 +100,15 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
       }
     }
 
-    console.log('[CartContext] Variant price before discount:', variantPrice);
-
     // ✅ Aplicar desconto ao preço (tanto para produto base quanto variações)
     let finalPrice = variantPrice;
     if (currentProduct.discount_value && currentProduct.discount_value > 0) {
-      console.log('[CartContext] Applying discount:', {
-        type: currentProduct.discount_type,
-        value: currentProduct.discount_value,
-        priceBeforeDiscount: variantPrice
-      });
-      
       if (currentProduct.discount_type === 'percent') {
         finalPrice = variantPrice * (1 - currentProduct.discount_value / 100);
       } else if (currentProduct.discount_type === 'fixed') {
         finalPrice = variantPrice - currentProduct.discount_value;
       }
       finalPrice = Math.max(0, finalPrice);
-      
-      console.log('[CartContext] Price after discount:', finalPrice);
-    } else {
-      console.log('[CartContext] No discount to apply');
     }
 
     // Verificar estoque disponível
@@ -191,12 +157,6 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
         discount_value: undefined, // Não armazenar desconto no carrinho
         discount_type: undefined,
       };
-      
-      console.log('[CartContext] Adding item to cart:', {
-        name: productWithCorrectData.name,
-        price: finalPrice,
-        flavor
-      });
       
       return [...currentItems, { ...productWithCorrectData, quantity: 1, flavor, cartItemId }];
     });

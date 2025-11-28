@@ -74,23 +74,14 @@ export const useCartSync = ({
           const cartItem = items.find(item => item.id === product.id);
           if (!cartItem) return;
 
-          // Calcular preço final com desconto
-          let serverPrice = Number(product.price);
-          if (product.discount_value && product.discount_value > 0) {
-            if (product.discount_type === 'percent') {
-              serverPrice = serverPrice * (1 - product.discount_value / 100);
-            } else if (product.discount_type === 'fixed') {
-              serverPrice = Math.max(0, serverPrice - product.discount_value);
-            }
-          }
+          // ✅ NÃO recalcular preço - o preço no carrinho já foi calculado corretamente
+          // O preço é calculado uma única vez quando o item é adicionado ao carrinho
+          // e não deve ser alterado durante a sincronização
 
-          // Se tem sabor, usar preço do sabor
+          // Verificar apenas disponibilidade de estoque
           if (cartItem.flavor) {
             const flavorKey = `${product.id}-${cartItem.flavor}`;
             const flavor = flavorsMap.get(flavorKey);
-            if (flavor?.price) {
-              serverPrice = Number(flavor.price);
-            }
 
             // Verificar estoque do sabor
             if (flavor && flavor.stock === 0) {
@@ -107,16 +98,6 @@ export const useCartSync = ({
                 id: `stock-${product.id}`,
               });
             }
-          }
-
-          // Verificar mudança de preço (com tolerância de 0.01 para arredondamento)
-          const currentPrice = cartItem.price;
-          if (Math.abs(currentPrice - serverPrice) > 0.01) {
-            onPriceChange(product.id, serverPrice);
-            toast.info(
-              `Preço de ${cartItem.name} atualizado: R$ ${currentPrice.toFixed(2)} → R$ ${serverPrice.toFixed(2)}`,
-              { id: `price-${product.id}` }
-            );
           }
         });
       } catch (error) {

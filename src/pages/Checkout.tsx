@@ -407,17 +407,6 @@ const Checkout = () => {
 
       const order = data.order;
 
-      console.log('[Checkout] Order created successfully');
-      console.log('[Checkout] Order data:', order);
-      console.log('[Checkout] Items being sent to confirmation:', items.map(item => ({
-        name: item.name,
-        quantity: item.quantity,
-        price: getFinalPrice(item),
-        total: getFinalPrice(item) * item.quantity
-      })));
-      console.log('[Checkout] Total amount:', Number(order.total));
-      console.log('[Checkout] Shipping cost:', Number(shippingCost || 0));
-
       const itemsList = order.items
         .map((item: any) => {
           const flavorText = item.flavor ? ` (${item.flavor})` : '';
