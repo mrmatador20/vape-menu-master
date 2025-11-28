@@ -90,10 +90,10 @@ serve(async (req) => {
     console.log('[create-pix-qrcode] Dados extraídos de pixData:', JSON.stringify(pixData, null, 2));
     console.log('[create-pix-qrcode] Campos disponíveis:', Object.keys(pixData));
     
-    // Extrair dados - AbacatePay usa 'brCode' e 'qrCodeImage'
+    // Extrair dados - AbacatePay usa 'brCode' e 'brCodeBase64'
     const responseData = {
       pixCode: pixData.brCode || pixData.pixCode || pixData.emv,
-      pixQrCodeUrl: pixData.qrCodeImage || pixData.pixQrCodeUrl || pixData.qr_code_url || pixData.image,
+      pixQrCodeUrl: pixData.brCodeBase64 || pixData.qrCodeImage || pixData.pixQrCodeUrl || pixData.qr_code_url,
       expiresAt: pixData.expiresAt 
         ? pixData.expiresAt 
         : pixData.expiresIn 
