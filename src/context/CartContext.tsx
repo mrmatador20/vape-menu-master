@@ -107,6 +107,17 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
       }
     }
 
+    // ✅ Aplicar desconto ao preço ANTES de adicionar ao carrinho
+    let finalPrice = variantPrice;
+    if (currentProduct.discount_value && currentProduct.discount_value > 0) {
+      if (currentProduct.discount_type === 'percent') {
+        finalPrice = variantPrice * (1 - currentProduct.discount_value / 100);
+      } else if (currentProduct.discount_type === 'fixed') {
+        finalPrice = variantPrice - currentProduct.discount_value;
+      }
+      finalPrice = Math.max(0, finalPrice);
+    }
+
     // Verificar estoque disponível
     if (stockToCheck === 0) {
       toast.error(`${product.name}${flavor ? ` (${flavor})` : ''} está esgotado`);
@@ -131,7 +142,7 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
         toast.success('Quantidade atualizada no carrinho!');
         return currentItems.map(item =>
           item.id === product.id && item.flavor === flavor
-            ? { ...item, quantity: newQuantity, price: variantPrice }
+            ? { ...item, quantity: newQuantity, price: finalPrice }
             : item
         );
       }
@@ -145,13 +156,13 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
       const cartItemId = `${product.id}-${flavor || 'no-flavor'}`;
       toast.success('Produto adicionado ao carrinho!');
       
-      // Criar produto com preço correto e atualizado
+      // Criar produto com preço final (já com desconto aplicado)
       const productWithCorrectData = { 
         ...product, 
-        price: variantPrice,
+        price: finalPrice, // Preço já com desconto
         stock: stockToCheck,
-        discount_value: currentProduct.discount_value,
-        discount_type: currentProduct.discount_type as 'percent' | 'fixed' | undefined,
+        discount_value: undefined, // Não armazenar desconto no carrinho
+        discount_type: undefined,
       };
       
       return [...currentItems, { ...productWithCorrectData, quantity: 1, flavor, cartItemId }];
@@ -184,19 +195,9 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     setItems([]);
   };
 
-  // Helper function to calculate final price with discount applied
+  // Preço já vem com desconto aplicado do addToCart
   const getFinalPrice = (item: CartItem) => {
-    const basePrice = item.price;
-    const discountValue = item.discount_value || 0;
-    const discountType = item.discount_type || 'percent';
-    
-    if (discountValue === 0) return basePrice;
-    
-    if (discountType === 'percent') {
-      return basePrice * (1 - discountValue / 100);
-    } else {
-      return basePrice - discountValue;
-    }
+    return item.price;
   };
 
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
