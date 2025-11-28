@@ -48,15 +48,32 @@ const OrderConfirmation = () => {
   const [orderData, setOrderData] = useState<OrderData | null>(null);
 
   useEffect(() => {
-    const data = location.state;
+    let data = location.state;
+    
+    // Se não houver data no location.state, tentar recuperar do sessionStorage
+    if (!data) {
+      console.log('[OrderConfirmation] No data in location.state, trying sessionStorage');
+      const storedData = sessionStorage.getItem('orderConfirmationData');
+      if (storedData) {
+        try {
+          data = JSON.parse(storedData);
+          console.log('[OrderConfirmation] Data recovered from sessionStorage');
+        } catch (error) {
+          console.error('[OrderConfirmation] Failed to parse sessionStorage data:', error);
+        }
+      }
+    }
     
     // Validate data exists
     if (!data) {
-      console.error('[OrderConfirmation] No data provided in navigation state');
+      console.error('[OrderConfirmation] No data provided in navigation state or sessionStorage');
       toast.error('Dados do pedido não encontrados');
       navigate('/');
       return;
     }
+    
+    // Limpar sessionStorage após recuperar os dados
+    sessionStorage.removeItem('orderConfirmationData');
 
     console.log('[OrderConfirmation] Received data:', JSON.stringify(data, null, 2));
     console.log('[OrderConfirmation] Payment method:', data.paymentMethod);
