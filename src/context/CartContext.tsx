@@ -107,16 +107,6 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
       }
     }
 
-    // ✅ APLICAR DESCONTO ao preço antes de adicionar ao carrinho
-    if (currentProduct.discount_value && currentProduct.discount_value > 0) {
-      if (currentProduct.discount_type === 'percent') {
-        variantPrice = variantPrice * (1 - currentProduct.discount_value / 100);
-      } else if (currentProduct.discount_type === 'fixed') {
-        variantPrice = variantPrice - currentProduct.discount_value;
-      }
-      variantPrice = Math.max(0, variantPrice); // Garantir que o preço não seja negativo
-    }
-
     // Verificar estoque disponível
     if (stockToCheck === 0) {
       toast.error(`${product.name}${flavor ? ` (${flavor})` : ''} está esgotado`);
@@ -194,13 +184,23 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     setItems([]);
   };
 
-  // Helper function to return the item price (discount already applied when adding to cart)
+  // Helper function to calculate final price with discount applied
   const getFinalPrice = (item: CartItem) => {
-    return item.price;
+    const basePrice = item.price;
+    const discountValue = item.discount_value || 0;
+    const discountType = item.discount_type || 'percent';
+    
+    if (discountValue === 0) return basePrice;
+    
+    if (discountType === 'percent') {
+      return basePrice * (1 - discountValue / 100);
+    } else {
+      return basePrice - discountValue;
+    }
   };
 
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
-  const totalPrice = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const totalPrice = items.reduce((sum, item) => sum + getFinalPrice(item) * item.quantity, 0);
 
   return (
     <CartContext.Provider
