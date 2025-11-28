@@ -399,7 +399,8 @@ const Checkout = () => {
         const whatsappUrl = `https://wa.me/5583996694806?text=${encodedMessage}`;
 
         clearCart();
-         toast.success('Pedido realizado com sucesso! Abrindo WhatsApp...');
+        toast.success('Pedido realizado com sucesso! Abrindo WhatsApp...');
+        
         // Salvar endereço se solicitado e não for um endereço salvo
         if (saveAddress && !selectedSavedAddress && addressLabel.trim()) {
           createAddress({
@@ -414,8 +415,12 @@ const Checkout = () => {
           });
         }
         
-        // Navegar para página de confirmação com os dados do pedido
-        navigate('/order-confirmation', {
+        // Abrir WhatsApp
+        window.open(whatsappUrl, '_blank');
+        
+        // Aguardar um momento antes de navegar
+        setTimeout(() => {
+          navigate('/order-confirmation', {
           state: {
             orderId: order.id,
             items: items.map(item => ({
@@ -438,6 +443,7 @@ const Checkout = () => {
             whatsappMessage: message
           }
         });
+        }, 2000);
       } catch (whatsappError) {
         toast.error('Erro ao abrir WhatsApp. Por favor, entre em contato diretamente.');
         setTimeout(() => {
