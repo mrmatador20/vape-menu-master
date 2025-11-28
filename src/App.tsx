@@ -29,6 +29,7 @@ import AdminSettings from "./pages/admin/Settings";
 import AdminBanners from "./pages/admin/Banners";
 import AdminAuditLogs from "./pages/admin/AuditLogs";
 import AdminSecurityDashboard from "./pages/admin/SecurityDashboard";
+import AdminPixPayments from "./pages/admin/PixPayments";
 import TrustedDevices from "./pages/TrustedDevices";
 
 const queryClient = new QueryClient();
@@ -123,6 +124,7 @@ const App = () => (
                 <Route path="security" element={<AdminSecurityDashboard />} />
                 <Route path="products" element={<AdminProducts />} />
                 <Route path="orders" element={<AdminOrders />} />
+                <Route path="pix-payments" element={<AdminPixPayments />} />
                 <Route path="reviews" element={<AdminReviews />} />
                 <Route path="stats" element={<AdminStats />} />
                 <Route path="discounts" element={<AdminDiscounts />} />

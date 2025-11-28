@@ -1,4 +1,4 @@
-import { LayoutDashboard, Package, ShoppingCart, BarChart3, Tag, Star, Truck, Settings, Megaphone, Shield } from "lucide-react";
+import { LayoutDashboard, Package, ShoppingCart, BarChart3, Tag, Star, Truck, Settings, Megaphone, Shield, Banknote } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import {
   Sidebar,
@@ -18,6 +18,7 @@ const menuItems = [
   { title: "Segurança", url: "/admin/security", icon: Shield },
   { title: "Produtos", url: "/admin/products", icon: Package },
   { title: "Pedidos", url: "/admin/orders", icon: ShoppingCart },
+  { title: "Pagamentos PIX", url: "/admin/pix-payments", icon: Banknote },
   { title: "Avaliações", url: "/admin/reviews", icon: Star },
   { title: "Estatísticas", url: "/admin/stats", icon: BarChart3 },
   { title: "Descontos", url: "/admin/discounts", icon: Tag },

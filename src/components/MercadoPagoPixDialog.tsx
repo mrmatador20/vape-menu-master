@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Loader2, Copy, CheckCircle2, Clock } from 'lucide-react';
+import { Loader2, Copy, CheckCircle2, Clock, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface MercadoPagoPixDialogProps {
   open: boolean;
@@ -32,13 +33,57 @@ export const MercadoPagoPixDialog = ({
   const [paymentId, setPaymentId] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState<'pending' | 'confirmed' | 'error'>('pending');
+  const [expiresAt, setExpiresAt] = useState<string | null>(null);
+  const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
 
   useEffect(() => {
     if (open) {
       generateQRCode();
       startPollingPaymentStatus();
+      fetchOrderExpiresAt();
     }
   }, [open]);
+
+  // Timer to update remaining time
+  useEffect(() => {
+    if (!expiresAt) return;
+
+    const interval = setInterval(() => {
+      const now = new Date().getTime();
+      const expiry = new Date(expiresAt).getTime();
+      const remaining = expiry - now;
+
+      if (remaining <= 0) {
+        setTimeRemaining(0);
+        clearInterval(interval);
+      } else {
+        setTimeRemaining(remaining);
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [expiresAt]);
+
+  const fetchOrderExpiresAt = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('orders')
+        .select('expires_at')
+        .eq('id', orderId)
+        .single();
+
+      if (error) {
+        console.error('[MercadoPago] Error fetching expires_at:', error);
+        return;
+      }
+
+      if (data?.expires_at) {
+        setExpiresAt(data.expires_at);
+      }
+    } catch (error) {
+      console.error('[MercadoPago] Error:', error);
+    }
+  };
 
   const generateQRCode = async () => {
     try {
@@ -165,12 +210,43 @@ export const MercadoPagoPixDialog = ({
 
           {!isLoading && paymentStatus === 'pending' && qrCodeBase64 && (
             <>
+              {timeRemaining !== null && timeRemaining > 0 && timeRemaining <= 300000 && (
+                <Alert variant="destructive" className="mb-4">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    ⚠️ <strong>Atenção!</strong> Este QR Code expira em {Math.floor(timeRemaining / 60000)} minutos e {Math.floor((timeRemaining % 60000) / 1000)} segundos!
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              {timeRemaining === 0 && (
+                <Alert variant="destructive" className="mb-4">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    ❌ <strong>QR Code expirado!</strong> Faça um novo pedido para gerar um novo código.
+                  </AlertDescription>
+                </Alert>
+              )}
+
               <div className="flex flex-col items-center space-y-4">
-                <img
-                  src={`data:image/png;base64,${qrCodeBase64}`}
-                  alt="QR Code PIX"
-                  className="w-64 h-64 border-2 border-border rounded-lg"
-                />
+                <div className={`relative ${timeRemaining !== null && timeRemaining <= 300000 && timeRemaining > 0 ? 'animate-pulse' : ''}`}>
+                  <img
+                    src={`data:image/png;base64,${qrCodeBase64}`}
+                    alt="QR Code PIX"
+                    className={`w-64 h-64 border-2 rounded-lg ${
+                      timeRemaining !== null && timeRemaining <= 300000 && timeRemaining > 0
+                        ? 'border-red-500'
+                        : 'border-border'
+                    }`}
+                  />
+                  {timeRemaining !== null && timeRemaining <= 300000 && timeRemaining > 0 && (
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="bg-red-500/90 text-white px-3 py-1 rounded-full text-xs font-bold">
+                        {Math.floor(timeRemaining / 60000)}:{String(Math.floor((timeRemaining % 60000) / 1000)).padStart(2, '0')}
+                      </div>
+                    </div>
+                  )}
+                </div>
                 
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Clock className="w-4 h-4 animate-pulse" />

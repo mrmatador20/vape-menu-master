@@ -1,0 +1,16 @@
+{
+  "name": "Vape-Menu-Express",
+  "short_name": "Vape Express",
+  "description": "Sua loja de vapes de confiança",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f1419",
+  "theme_color": "#00ccff",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    }
+  ]
+}
