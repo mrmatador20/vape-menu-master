@@ -18,7 +18,6 @@ import { useSavedAddresses } from '@/hooks/useSavedAddresses';
 import { SavedAddressSelector } from '@/components/SavedAddressSelector';
 import { Tables } from '@/integrations/supabase/types';
 import { Checkbox } from '@/components/ui/checkbox';
-import { PixPaymentDialog } from '@/components/PixPaymentDialog';
 
 const checkoutSchema = z.object({
   rua: z.string().trim().min(1, 'Rua é obrigatória').max(100, 'Rua deve ter no máximo 100 caracteres'),
@@ -45,13 +44,6 @@ const Checkout = () => {
   const [selectedSavedAddress, setSelectedSavedAddress] = useState<Tables<'saved_addresses'> | null>(null);
   const [saveAddress, setSaveAddress] = useState(false);
   const [addressLabel, setAddressLabel] = useState('');
-  const [showPixDialog, setShowPixDialog] = useState(false);
-  const [pixOrderData, setPixOrderData] = useState<{ 
-    orderId: string; 
-    amount: number;
-    whatsappUrl: string;
-    orderDetails: any;
-  } | null>(null);
 
   const [formData, setFormData] = useState({
     rua: '',
@@ -407,7 +399,7 @@ const Checkout = () => {
         const whatsappUrl = `https://wa.me/5583996694806?text=${encodedMessage}`;
 
         clearCart();
-        
+         toast.success('Pedido realizado com sucesso! Abrindo WhatsApp...');
         // Salvar endereço se solicitado e não for um endereço salvo
         if (saveAddress && !selectedSavedAddress && addressLabel.trim()) {
           createAddress({
@@ -421,41 +413,6 @@ const Checkout = () => {
             is_default: false,
           });
         }
-
-        // Se for pagamento PIX, abrir dialog de pagamento primeiro
-        if (validatedData.paymentMethod === 'pix') {
-          setPixOrderData({
-            orderId: order.id,
-            amount: order.total,
-            whatsappUrl,
-            orderDetails: {
-              items: items.map(item => ({
-                name: item.name,
-                quantity: item.quantity,
-                price: item.price,
-                flavor: item.flavor
-              })),
-              totalAmount: Number(order.total),
-              shippingCost: Number(shippingCost || 0),
-              address: {
-                rua: formData.rua,
-                numero: formData.numero,
-                bairro: formData.bairro,
-                cidade: formData.cidade,
-                cep: formData.cep
-              },
-              paymentMethod: formData.paymentMethod,
-              changeAmount: validatedData.changeAmount ? Number(validatedData.changeAmount) : undefined,
-              whatsappMessage: message
-            }
-          });
-          setShowPixDialog(true);
-          toast.success('Pedido criado! Gere o QR Code PIX para pagamento');
-          return;
-        }
-        
-        // Para outros métodos, abrir WhatsApp e navegar
-        toast.success('Pedido realizado com sucesso! Abrindo WhatsApp...');
         
         // Navegar para página de confirmação com os dados do pedido
         navigate('/order-confirmation', {
@@ -826,29 +783,6 @@ const Checkout = () => {
         </div>
       </div>
 
-      {/* PIX Payment Dialog */}
-      <PixPaymentDialog
-        open={showPixDialog}
-        onOpenChange={(open) => {
-          setShowPixDialog(open);
-          // Quando o dialog fechar, abrir WhatsApp e navegar
-          if (!open && pixOrderData) {
-            toast.success('Abrindo WhatsApp...');
-            window.open(pixOrderData.whatsappUrl, '_blank');
-            
-            setTimeout(() => {
-              navigate('/order-confirmation', {
-                state: {
-                  orderId: pixOrderData.orderId,
-                  ...pixOrderData.orderDetails
-                }
-              });
-            }, 2000);
-          }
-        }}
-        orderId={pixOrderData?.orderId || ''}
-        amount={pixOrderData?.amount || 0}
-      />
     </div>
   );
 };
