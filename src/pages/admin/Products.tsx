@@ -61,6 +61,35 @@ export default function AdminProducts() {
   const handleDelete = async () => {
     if (!deleteProductId) return;
 
+    // Verifica se o produto tem pedidos associados
+    const { data: orderItems, error: checkError } = await supabase
+      .from('order_items')
+      .select('id')
+      .eq('product_id', deleteProductId)
+      .limit(1);
+
+    if (checkError) {
+      toast({
+        title: "Erro ao verificar",
+        description: "Não foi possível verificar o produto.",
+        variant: "destructive",
+      });
+      setDeleteProductId(null);
+      return;
+    }
+
+    // Se existem pedidos, não permite deletar
+    if (orderItems && orderItems.length > 0) {
+      toast({
+        title: "Não é possível excluir",
+        description: "Este produto já foi vendido e não pode ser excluído. Considere reduzir o estoque para zero para ocultar o produto.",
+        variant: "destructive",
+      });
+      setDeleteProductId(null);
+      return;
+    }
+
+    // Se não há pedidos, permite deletar
     const { error } = await supabase
       .from('products')
       .delete()
