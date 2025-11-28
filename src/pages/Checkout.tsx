@@ -513,6 +513,9 @@ const Checkout = () => {
       
       console.log('[Checkout] Navigation state:', JSON.stringify(navigationState, null, 2));
       
+      // Salvar no sessionStorage como backup para evitar perda de dados
+      sessionStorage.setItem('orderConfirmationData', JSON.stringify(navigationState));
+      
       navigate('/order-confirmation', { state: navigationState });
     } catch (error) {
       if (error instanceof z.ZodError) {
