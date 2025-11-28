@@ -66,10 +66,6 @@ const OrderConfirmation = () => {
       return;
     }
 
-    console.log('[OrderConfirmation] Data validated successfully');
-    console.log('[OrderConfirmation] Items:', validationResult.data.items);
-    console.log('[OrderConfirmation] Total amount:', validationResult.data.totalAmount);
-    console.log('[OrderConfirmation] Shipping cost:', validationResult.data.shippingCost);
     setOrderData(validationResult.data);
     
     // Show PIX dialog automatically if payment method is PIX
@@ -103,9 +99,6 @@ const OrderConfirmation = () => {
 
   // Calcular subtotal como soma dos itens (price já vem com desconto aplicado)
   const subtotal = orderData.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-  
-  console.log('[OrderConfirmation] Calculated subtotal:', subtotal);
-  console.log('[OrderConfirmation] Total should be:', subtotal + orderData.shippingCost);
 
   return (
     <div className="min-h-screen bg-background">
