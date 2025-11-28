@@ -481,7 +481,8 @@ const Checkout = () => {
         orderId: order.id,
         paymentMethod: formData.paymentMethod,
         changeAmount: validatedData.changeAmount,
-        hasPixData: !!pixData
+        hasPixData: !!pixData,
+        pixData: pixData
       });
       
       // Navegar direto para página de confirmação onde usuário clicará para abrir WhatsApp
@@ -507,7 +508,7 @@ const Checkout = () => {
           ? Number(validatedData.changeAmount) 
           : undefined,
         whatsappMessage: message,
-        pixData: pixData || undefined
+        pixData: (pixData && pixData.pixCode && pixData.pixQrCodeUrl) ? pixData : undefined
       };
       
       console.log('[Checkout] Navigation state:', JSON.stringify(navigationState, null, 2));
