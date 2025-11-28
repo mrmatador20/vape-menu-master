@@ -376,92 +376,65 @@ const Checkout = () => {
 
       const order = data.order;
 
-      try {
-        const itemsList = order.items
-          .map((item: any) => {
-            const flavorText = item.flavor ? ` (${item.flavor})` : '';
-            return `${item.quantity}x ${item.name}${flavorText} - R$ ${item.price.toFixed(2)}`;
-          })
-          .join('\n');
-        
-        // Montando a mensagem para o WhatsApp
-        let message = `*Novo Pedido #${order.id}*\n\n*Itens:*\n${itemsList}\n\n*Subtotal: R$ ${subtotal.toFixed(2)}*\n*Taxa de Entrega (CEP ${validatedData.cep}): R$ ${(shippingCost || 0).toFixed(2)}*\n*Total: R$ ${order.total.toFixed(2)}*\n\n*Endereço de Entrega:*\n${validatedData.rua}, ${validatedData.numero}\n${validatedData.bairro} - ${validatedData.cidade}\nCEP: ${validatedData.cep}\n\n*Forma de Pagamento:* ${validatedData.paymentMethod === 'pix' ? 'PIX' : 'Dinheiro'}`;
+      const itemsList = order.items
+        .map((item: any) => {
+          const flavorText = item.flavor ? ` (${item.flavor})` : '';
+          return `${item.quantity}x ${item.name}${flavorText} - R$ ${item.price.toFixed(2)}`;
+        })
+        .join('\n');
+      
+      // Montando a mensagem para o WhatsApp
+      let message = `*Novo Pedido #${order.id}*\n\n*Itens:*\n${itemsList}\n\n*Subtotal: R$ ${subtotal.toFixed(2)}*\n*Taxa de Entrega (CEP ${validatedData.cep}): R$ ${(shippingCost || 0).toFixed(2)}*\n*Total: R$ ${order.total.toFixed(2)}*\n\n*Endereço de Entrega:*\n${validatedData.rua}, ${validatedData.numero}\n${validatedData.bairro} - ${validatedData.cidade}\nCEP: ${validatedData.cep}\n\n*Forma de Pagamento:* ${validatedData.paymentMethod === 'pix' ? 'PIX' : 'Dinheiro'}`;
 
-        // Se o pagamento for em dinheiro e houver troco
-        if (validatedData.paymentMethod === 'dinheiro' && validatedData.changeAmount) {
-          const changeAmount = parseFloat(validatedData.changeAmount);
-          const changeToGive = changeAmount - order.total;
-          message += `\nTroco para: R$ ${changeAmount.toFixed(2)}\nTroco a ser pago: R$ ${changeToGive.toFixed(2)}`;
-        }
-
-        // Codificando a mensagem para ser passada na URL do WhatsApp
-        const encodedMessage = encodeURIComponent(message);
-        const whatsappUrl = `https://wa.me/5583996694806?text=${encodedMessage}`;
-
-        clearCart();
-        
-        // Salvar endereço se solicitado e não for um endereço salvo
-        if (saveAddress && !selectedSavedAddress && addressLabel.trim()) {
-          createAddress({
-            label: addressLabel.trim(),
-            street: validatedData.rua,
-            number: validatedData.numero,
-            neighborhood: validatedData.bairro,
-            city: validatedData.cidade,
-            cep: validatedData.cep,
-            state: undefined,
-            is_default: false,
-          });
-        }
-        
-        // Log para debug
-        console.log('[Checkout] Abrindo WhatsApp:', whatsappUrl);
-        
-        // Tentar abrir WhatsApp
-        const whatsappWindow = window.open(whatsappUrl, '_blank');
-        
-        // Se window.open foi bloqueado, usar location.href
-        if (!whatsappWindow || whatsappWindow.closed || typeof whatsappWindow.closed === 'undefined') {
-          console.log('[Checkout] window.open bloqueado, usando location.href');
-          window.location.href = whatsappUrl;
-          // Não navegar para confirmação se estamos redirecionando
-          return;
-        }
-        
-        toast.success('Pedido realizado! Abrindo WhatsApp...');
-        
-        // Aguardar um momento antes de navegar
-        setTimeout(() => {
-          navigate('/order-confirmation', {
-          state: {
-            orderId: order.id,
-            items: items.map(item => ({
-              name: item.name,
-              quantity: item.quantity,
-              price: item.price,
-              flavor: item.flavor
-            })),
-            totalAmount: Number(order.total),
-            shippingCost: Number(shippingCost || 0),
-            address: {
-              rua: formData.rua,
-              numero: formData.numero,
-              bairro: formData.bairro,
-              cidade: formData.cidade,
-              cep: formData.cep
-            },
-            paymentMethod: formData.paymentMethod,
-            changeAmount: validatedData.changeAmount ? Number(validatedData.changeAmount) : undefined,
-            whatsappMessage: message
-          }
-        });
-        }, 2000);
-      } catch (whatsappError) {
-        toast.error('Erro ao abrir WhatsApp. Por favor, entre em contato diretamente.');
-        setTimeout(() => {
-          navigate('/');
-        }, 2000);
+      // Se o pagamento for em dinheiro e houver troco
+      if (validatedData.paymentMethod === 'dinheiro' && validatedData.changeAmount) {
+        const changeAmount = parseFloat(validatedData.changeAmount);
+        const changeToGive = changeAmount - order.total;
+        message += `\nTroco para: R$ ${changeAmount.toFixed(2)}\nTroco a ser pago: R$ ${changeToGive.toFixed(2)}`;
       }
+
+      clearCart();
+      
+      // Salvar endereço se solicitado e não for um endereço salvo
+      if (saveAddress && !selectedSavedAddress && addressLabel.trim()) {
+        createAddress({
+          label: addressLabel.trim(),
+          street: validatedData.rua,
+          number: validatedData.numero,
+          neighborhood: validatedData.bairro,
+          city: validatedData.cidade,
+          cep: validatedData.cep,
+          state: undefined,
+          is_default: false,
+        });
+      }
+      
+      toast.success('Pedido realizado com sucesso!');
+      
+      // Navegar direto para página de confirmação onde usuário clicará para abrir WhatsApp
+      navigate('/order-confirmation', {
+        state: {
+          orderId: order.id,
+          items: items.map(item => ({
+            name: item.name,
+            quantity: item.quantity,
+            price: item.price,
+            flavor: item.flavor
+          })),
+          totalAmount: Number(order.total),
+          shippingCost: Number(shippingCost || 0),
+          address: {
+            rua: formData.rua,
+            numero: formData.numero,
+            bairro: formData.bairro,
+            cidade: formData.cidade,
+            cep: formData.cep
+          },
+          paymentMethod: formData.paymentMethod,
+          changeAmount: validatedData.changeAmount ? Number(validatedData.changeAmount) : undefined,
+          whatsappMessage: message
+        }
+      });
     } catch (error) {
       if (error instanceof z.ZodError) {
         const firstError = error.errors[0];
