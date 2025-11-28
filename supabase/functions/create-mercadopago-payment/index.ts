@@ -14,46 +14,80 @@ serve(async (req) => {
   try {
     const { orderId, amount, description, payerEmail, payerCpf } = await req.json();
 
+    // Validação rigorosa de campos obrigatórios
     if (!orderId || !amount || !description) {
+      console.error('[MercadoPago] Missing required fields');
       return new Response(
-        JSON.stringify({ error: 'Missing required fields' }),
+        JSON.stringify({ error: 'Dados incompletos para processamento' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
+    // Validação de CPF obrigatório para PIX
     if (!payerCpf) {
+      console.error('[MercadoPago] Missing CPF for PIX payment');
       return new Response(
         JSON.stringify({ error: 'CPF é obrigatório para pagamento PIX' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    const accessToken = Deno.env.get('MERCADOPAGO_ACCESS_TOKEN');
-    if (!accessToken) {
-      console.error('MERCADOPAGO_ACCESS_TOKEN not configured');
+    // Validação de formato de CPF (apenas números, 11 dígitos)
+    const cpfNumbers = payerCpf.replace(/\D/g, '');
+    if (cpfNumbers.length !== 11) {
+      console.error('[MercadoPago] Invalid CPF format');
       return new Response(
-        JSON.stringify({ error: 'Payment gateway not configured' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: 'CPF inválido' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Create payment preference
+    // Validação de formato de email
+    if (payerEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(payerEmail)) {
+      console.error('[MercadoPago] Invalid email format');
+      return new Response(
+        JSON.stringify({ error: 'Email inválido' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Validação de valor mínimo
+    const numAmount = Number(amount);
+    if (isNaN(numAmount) || numAmount <= 0) {
+      console.error('[MercadoPago] Invalid amount');
+      return new Response(
+        JSON.stringify({ error: 'Valor inválido' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Verificação segura de credenciais (não expor detalhes)
+    const accessToken = Deno.env.get('MERCADOPAGO_ACCESS_TOKEN');
+    if (!accessToken) {
+      console.error('[MercadoPago] Access token not configured');
+      return new Response(
+        JSON.stringify({ error: 'Serviço de pagamento temporariamente indisponível' }),
+        { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Preparar dados do pagamento (sanitizados)
     const paymentData = {
-      transaction_amount: Number(amount),
-      description: description,
+      transaction_amount: numAmount,
+      description: String(description).substring(0, 256), // Limitar tamanho
       payment_method_id: 'pix',
       payer: {
         email: payerEmail || 'cliente@example.com',
         identification: {
           type: 'CPF',
-          number: payerCpf,
+          number: cpfNumbers, // Usar apenas números
         },
       },
       notification_url: `${Deno.env.get('SUPABASE_URL')}/functions/v1/mercadopago-webhook`,
-      external_reference: orderId,
+      external_reference: String(orderId).substring(0, 256), // Limitar tamanho
     };
 
-    console.log('[MercadoPago] Creating payment:', paymentData);
+    console.log('[MercadoPago] Creating payment for order:', orderId);
 
     // Generate unique idempotency key for this request
     const idempotencyKey = `${orderId}-${Date.now()}`;
@@ -71,9 +105,13 @@ serve(async (req) => {
     if (!response.ok) {
       const errorText = await response.text();
       console.error('[MercadoPago] API error:', response.status, errorText);
+      
+      // Não expor detalhes internos ao cliente
       return new Response(
-        JSON.stringify({ error: 'Failed to create payment', details: errorText }),
-        { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ 
+          error: 'Não foi possível processar o pagamento PIX. Tente novamente.' 
+        }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
@@ -88,7 +126,7 @@ serve(async (req) => {
     if (!qrCodeBase64 && !qrCode) {
       console.error('[MercadoPago] No QR code in response');
       return new Response(
-        JSON.stringify({ error: 'QR code not available in response' }),
+        JSON.stringify({ error: 'Código PIX não disponível. Tente novamente.' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -121,8 +159,9 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('[MercadoPago] Error:', error);
+    // Não expor detalhes do erro interno ao cliente
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }),
+      JSON.stringify({ error: 'Erro ao processar pagamento PIX. Tente novamente.' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
