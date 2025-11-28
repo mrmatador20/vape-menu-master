@@ -55,11 +55,15 @@ serve(async (req) => {
 
     console.log('[MercadoPago] Creating payment:', paymentData);
 
+    // Generate unique idempotency key for this request
+    const idempotencyKey = `${orderId}-${Date.now()}`;
+
     const response = await fetch('https://api.mercadopago.com/v1/payments', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${accessToken}`,
         'Content-Type': 'application/json',
+        'X-Idempotency-Key': idempotencyKey,
       },
       body: JSON.stringify(paymentData),
     });
