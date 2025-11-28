@@ -60,11 +60,10 @@ const ProductCard = ({ product, onAddToCart }: ProductCardProps) => {
   
   // Verifica se a variação selecionada tem preço próprio
   const selectedFlavorData = flavors?.find(f => f.name === selectedFlavor);
-  const hasCustomFlavorPrice = selectedFlavorData?.price ? true : false;
   
   // Calculate only product individual discount (not global coupons)
-  // ✅ Só aplica desconto se NÃO for variação com preço próprio
-  const discountValue = !hasCustomFlavorPrice ? (product.discount_value || 0) : 0;
+  // ✅ Aplica desconto do produto base tanto para produto quanto para variações
+  const discountValue = product.discount_value || 0;
   const discountType = product.discount_type || 'percent';
   
   const finalPrice = discountType === 'percent'
