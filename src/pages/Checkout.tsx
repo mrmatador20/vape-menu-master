@@ -393,6 +393,39 @@ const Checkout = () => {
         message += `\nTroco para: R$ ${changeAmount.toFixed(2)}\nTroco a ser pago: R$ ${changeToGive.toFixed(2)}`;
       }
 
+      // Gerar QR code PIX se o método de pagamento for PIX
+      let pixData = null;
+      if (validatedData.paymentMethod === 'pix') {
+        try {
+          const { data: { user } } = await supabase.auth.getUser();
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('full_name, phone')
+            .eq('id', user?.id || '')
+            .single();
+
+          const pixResponse = await supabase.functions.invoke('create-pix-qrcode', {
+            body: {
+              amount: order.total,
+              customerName: profile?.full_name || 'Cliente',
+              customerPhone: profile?.phone || '(00) 00000-0000',
+              customerEmail: user?.email || '',
+              orderId: order.id
+            }
+          });
+
+          if (pixResponse.error) {
+            console.error('[Checkout] Erro ao gerar QR code PIX:', pixResponse.error);
+            toast.error('Erro ao gerar QR code PIX. Continue para WhatsApp.');
+          } else if (pixResponse.data) {
+            pixData = pixResponse.data;
+          }
+        } catch (error) {
+          console.error('[Checkout] Erro ao gerar QR code PIX:', error);
+          toast.error('Erro ao gerar QR code PIX. Continue para WhatsApp.');
+        }
+      }
+
       clearCart();
       
       // Salvar endereço se solicitado e não for um endereço salvo
@@ -432,7 +465,8 @@ const Checkout = () => {
           },
           paymentMethod: formData.paymentMethod,
           changeAmount: validatedData.changeAmount ? Number(validatedData.changeAmount) : undefined,
-          whatsappMessage: message
+          whatsappMessage: message,
+          pixData: pixData || undefined
         }
       });
     } catch (error) {

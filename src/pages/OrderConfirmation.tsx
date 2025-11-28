@@ -2,8 +2,9 @@ import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
-import { CheckCircle2, MessageCircle, Package, MapPin, CreditCard, Home } from 'lucide-react';
+import { CheckCircle2, MessageCircle, Package, MapPin, CreditCard, Home, QrCode, Copy } from 'lucide-react';
 import Header from '@/components/Header';
 import { z } from 'zod';
 import { toast } from 'sonner';
@@ -32,6 +33,11 @@ const orderDataSchema = z.object({
   }),
   changeAmount: z.number().nonnegative('Valor de troco deve ser não negativo').optional(),
   whatsappMessage: z.string().min(1, 'Mensagem do WhatsApp é obrigatória'),
+  pixData: z.object({
+    pixCode: z.string(),
+    pixQrCodeUrl: z.string(),
+    expiresAt: z.string(),
+  }).optional(),
 });
 
 type OrderData = z.infer<typeof orderDataSchema>;
@@ -76,6 +82,13 @@ const OrderConfirmation = () => {
     window.open(whatsappUrl, '_blank');
   };
 
+  const handleCopyPixCode = () => {
+    if (orderData.pixData?.pixCode) {
+      navigator.clipboard.writeText(orderData.pixData.pixCode);
+      toast.success('Código PIX copiado!');
+    }
+  };
+
   const getPaymentMethodLabel = (method: string) => {
     const methods: { [key: string]: string } = {
       credit: 'Cartão de Crédito',
@@ -106,6 +119,54 @@ const OrderConfirmation = () => {
                   Pedido #{orderData.orderId.slice(-8).toUpperCase()}
                 </p>
               </div>
+              
+              {/* QR Code PIX */}
+              {orderData.paymentMethod === 'pix' && orderData.pixData && (
+                <Card className="w-full max-w-md border-2 border-primary/20 bg-primary/5">
+                  <CardContent className="pt-6">
+                    <div className="flex flex-col items-center space-y-4">
+                      <div className="flex items-center gap-2 text-primary">
+                        <QrCode className="w-6 h-6" />
+                        <h2 className="text-xl font-bold">Pagamento PIX</h2>
+                      </div>
+                      
+                      {/* QR Code Image */}
+                      <div className="bg-white p-4 rounded-lg">
+                        <img 
+                          src={orderData.pixData.pixQrCodeUrl} 
+                          alt="QR Code PIX"
+                          className="w-64 h-64 object-contain"
+                        />
+                      </div>
+                      
+                      {/* PIX Code */}
+                      <div className="w-full space-y-2">
+                        <p className="text-sm text-muted-foreground">
+                          Ou copie o código PIX:
+                        </p>
+                        <div className="flex gap-2">
+                          <Input
+                            value={orderData.pixData.pixCode}
+                            readOnly
+                            className="text-xs font-mono"
+                          />
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={handleCopyPixCode}
+                          >
+                            <Copy className="w-4 h-4" />
+                          </Button>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Expira em: {new Date(orderData.pixData.expiresAt).toLocaleString('pt-BR')}
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+              
               <Button
                 onClick={handleOpenWhatsApp}
                 size="lg"
