@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -29,22 +29,14 @@ export default function Settings() {
   }
 
   // Inicializar valor quando os dados carregarem
-  useState(() => {
+  useEffect(() => {
     if (settings) {
       const freeShippingSetting = settings.find(s => s.key === 'free_shipping_min_value');
       if (freeShippingSetting) {
         setFreeShippingValue(freeShippingSetting.value);
       }
     }
-  });
-
-  // Atualizar valor quando settings mudar
-  if (settings && !freeShippingValue) {
-    const freeShippingSetting = settings.find(s => s.key === 'free_shipping_min_value');
-    if (freeShippingSetting && freeShippingSetting.value !== freeShippingValue) {
-      setFreeShippingValue(freeShippingSetting.value);
-    }
-  }
+  }, [settings]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
