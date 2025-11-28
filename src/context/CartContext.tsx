@@ -186,20 +186,13 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     setItems([]);
   };
 
-  // Helper function to calculate final price with individual product discount
+  // Helper function to return the item price (discount already applied when adding to cart)
   const getFinalPrice = (item: CartItem) => {
-    const discountValue = item.discount_value || 0;
-    const discountType = item.discount_type || 'percent';
-    
-    const finalPrice = discountType === 'percent'
-      ? item.price * (1 - discountValue / 100)
-      : item.price - discountValue;
-    
-    return Math.max(0, finalPrice);
+    return item.price;
   };
 
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
-  const totalPrice = items.reduce((sum, item) => sum + getFinalPrice(item) * item.quantity, 0);
+  const totalPrice = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
   return (
     <CartContext.Provider
