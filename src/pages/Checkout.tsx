@@ -476,33 +476,43 @@ const Checkout = () => {
       
       toast.success('Pedido realizado com sucesso!');
       
-      // Navegar direto para página de confirmação onde usuário clicará para abrir WhatsApp
-      navigate('/order-confirmation', {
-        state: {
-          orderId: order.id,
-          items: items.map(item => ({
-            name: item.name,
-            quantity: item.quantity,
-            price: item.price,
-            flavor: item.flavor
-          })),
-          totalAmount: Number(order.total),
-          shippingCost: Number(shippingCost || 0),
-          address: {
-            rua: formData.rua,
-            numero: formData.numero,
-            bairro: formData.bairro,
-            cidade: formData.cidade,
-            cep: formData.cep
-          },
-          paymentMethod: formData.paymentMethod,
-          changeAmount: validatedData.changeAmount && validatedData.changeAmount !== '' 
-            ? Number(validatedData.changeAmount) 
-            : undefined,
-          whatsappMessage: message,
-          pixData: pixData || undefined
-        }
+      console.log('[Checkout] Preparando navegação para order-confirmation');
+      console.log('[Checkout] Order data:', {
+        orderId: order.id,
+        paymentMethod: formData.paymentMethod,
+        changeAmount: validatedData.changeAmount,
+        hasPixData: !!pixData
       });
+      
+      // Navegar direto para página de confirmação onde usuário clicará para abrir WhatsApp
+      const navigationState = {
+        orderId: order.id,
+        items: items.map(item => ({
+          name: item.name,
+          quantity: item.quantity,
+          price: item.price,
+          flavor: item.flavor
+        })),
+        totalAmount: Number(order.total),
+        shippingCost: Number(shippingCost || 0),
+        address: {
+          rua: formData.rua,
+          numero: formData.numero,
+          bairro: formData.bairro,
+          cidade: formData.cidade,
+          cep: formData.cep
+        },
+        paymentMethod: formData.paymentMethod,
+        changeAmount: formData.paymentMethod === 'dinheiro' && validatedData.changeAmount && validatedData.changeAmount !== '' 
+          ? Number(validatedData.changeAmount) 
+          : undefined,
+        whatsappMessage: message,
+        pixData: pixData || undefined
+      };
+      
+      console.log('[Checkout] Navigation state:', JSON.stringify(navigationState, null, 2));
+      
+      navigate('/order-confirmation', { state: navigationState });
     } catch (error) {
       if (error instanceof z.ZodError) {
         const firstError = error.errors[0];
