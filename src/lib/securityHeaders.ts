@@ -25,6 +25,10 @@ export const SECURITY_HEADERS = {
   
   // Controls which browser features can be used
   'Permissions-Policy': 'geolocation=(), microphone=(), camera=()',
+  
+  // Enforces HTTPS connections (HSTS)
+  // max-age=31536000 = 1 year, includeSubDomains applies to all subdomains, preload submits to browsers' HSTS preload list
+  'Strict-Transport-Security': 'max-age=31536000; includeSubDomains; preload',
 } as const;
 
 /**
