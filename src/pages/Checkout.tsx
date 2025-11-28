@@ -445,12 +445,19 @@ const Checkout = () => {
               orderId: order.id
             }
           });
+          
+          console.log('[Checkout] PIX Response completo:', JSON.stringify(pixResponse, null, 2));
+          console.log('[Checkout] PIX Response data:', pixResponse.data);
+          console.log('[Checkout] PIX Response error:', pixResponse.error);
 
           if (pixResponse.error) {
             console.error('[Checkout] Erro ao gerar QR code PIX:', pixResponse.error);
             toast.error('Erro ao gerar QR code PIX. Continue para WhatsApp.');
           } else if (pixResponse.data) {
             pixData = pixResponse.data;
+            console.log('[Checkout] pixData atribuído:', JSON.stringify(pixData, null, 2));
+          } else {
+            console.warn('[Checkout] PIX Response não tem data nem error');
           }
         } catch (error) {
           console.error('[Checkout] Erro ao gerar QR code PIX:', error);
@@ -484,8 +491,20 @@ const Checkout = () => {
         hasPixData: !!pixData,
         pixData: pixData
       });
+      console.log('[Checkout] pixData RAW:', JSON.stringify(pixData, null, 2));
+      console.log('[Checkout] pixData.pixCode:', pixData?.pixCode);
+      console.log('[Checkout] pixData.pixQrCodeUrl:', pixData?.pixQrCodeUrl);
+      console.log('[Checkout] pixData.expiresAt:', pixData?.expiresAt);
       
       // Navegar direto para página de confirmação onde usuário clicará para abrir WhatsApp
+      console.log('[Checkout] Preparando navigationState...');
+      console.log('[Checkout] Verificando condição pixData:', {
+        hasPixData: !!pixData,
+        hasPixCode: !!(pixData && pixData.pixCode),
+        hasPixQrCodeUrl: !!(pixData && pixData.pixQrCodeUrl),
+        willIncludePixData: !!(pixData && pixData.pixCode && pixData.pixQrCodeUrl)
+      });
+      
       const navigationState = {
         orderId: order.id,
         items: items.map(item => ({
@@ -511,7 +530,9 @@ const Checkout = () => {
         pixData: (pixData && pixData.pixCode && pixData.pixQrCodeUrl) ? pixData : undefined
       };
       
-      console.log('[Checkout] Navigation state:', JSON.stringify(navigationState, null, 2));
+      console.log('[Checkout] Navigation state completo:', JSON.stringify(navigationState, null, 2));
+      console.log('[Checkout] navigationState.pixData:', navigationState.pixData);
+      console.log('[Checkout] Tipo de navigationState.pixData:', typeof navigationState.pixData);
       
       // Salvar no sessionStorage como backup para evitar perda de dados
       sessionStorage.setItem('orderConfirmationData', JSON.stringify(navigationState));

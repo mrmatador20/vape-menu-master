@@ -83,14 +83,22 @@ serve(async (req) => {
     }
 
     const pixData = await abacatePayResponse.json();
+    console.log('[create-pix-qrcode] Resposta da AbacatePay:', JSON.stringify(pixData, null, 2));
+    console.log('[create-pix-qrcode] pixData.pixCode:', pixData.pixCode);
+    console.log('[create-pix-qrcode] pixData.pixQrCodeUrl:', pixData.pixQrCodeUrl);
+    console.log('[create-pix-qrcode] pixData.expiresAt:', pixData.expiresAt);
     console.log('[create-pix-qrcode] QR code PIX criado com sucesso');
 
+    const responseData = {
+      pixCode: pixData.pixCode,
+      pixQrCodeUrl: pixData.pixQrCodeUrl,
+      expiresAt: pixData.expiresAt,
+    };
+    
+    console.log('[create-pix-qrcode] Response data que será enviado:', JSON.stringify(responseData, null, 2));
+
     return new Response(
-      JSON.stringify({
-        pixCode: pixData.pixCode,
-        pixQrCodeUrl: pixData.pixQrCodeUrl,
-        expiresAt: pixData.expiresAt,
-      }),
+      JSON.stringify(responseData),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
