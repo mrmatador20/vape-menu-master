@@ -7,6 +7,7 @@ import { CheckCircle2, MessageCircle, Package, MapPin, CreditCard, Home } from '
 import Header from '@/components/Header';
 import { z } from 'zod';
 import { toast } from 'sonner';
+import { MercadoPagoPixDialog } from '@/components/MercadoPagoPixDialog';
 
 const orderItemSchema = z.object({
   name: z.string().min(1, 'Nome do produto é obrigatório'),
@@ -40,6 +41,8 @@ const OrderConfirmation = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [orderData, setOrderData] = useState<OrderData | null>(null);
+  const [showPixDialog, setShowPixDialog] = useState(false);
+  const [paymentConfirmed, setPaymentConfirmed] = useState(false);
 
   useEffect(() => {
     const data = location.state;
@@ -64,6 +67,14 @@ const OrderConfirmation = () => {
 
     console.log('[OrderConfirmation] Data validated successfully');
     setOrderData(validationResult.data);
+    
+    // Show PIX dialog automatically if payment method is PIX
+    if (validationResult.data.paymentMethod === 'pix') {
+      setShowPixDialog(true);
+    } else {
+      // For other payment methods, consider payment confirmed immediately
+      setPaymentConfirmed(true);
+    }
   }, [location.state, navigate]);
 
   if (!orderData) {
@@ -106,14 +117,28 @@ const OrderConfirmation = () => {
                   Pedido #{orderData.orderId.slice(-8).toUpperCase()}
                 </p>
               </div>
-              <Button
-                onClick={handleOpenWhatsApp}
-                size="lg"
-                className="gap-2"
-              >
-                <MessageCircle className="w-5 h-5" />
-                Abrir WhatsApp
-              </Button>
+              {orderData.paymentMethod === 'pix' && !paymentConfirmed ? (
+                <Button
+                  onClick={() => setShowPixDialog(true)}
+                  size="lg"
+                  className="gap-2"
+                >
+                  <CreditCard className="w-5 h-5" />
+                  Ver QR Code PIX
+                </Button>
+              ) : (
+                <Button
+                  onClick={handleOpenWhatsApp}
+                  size="lg"
+                  className="gap-2"
+                  disabled={orderData.paymentMethod === 'pix' && !paymentConfirmed}
+                >
+                  <MessageCircle className="w-5 h-5" />
+                  {orderData.paymentMethod === 'pix' && !paymentConfirmed
+                    ? 'Aguardando Pagamento...'
+                    : 'Abrir WhatsApp'}
+                </Button>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -233,6 +258,22 @@ const OrderConfirmation = () => {
           </Button>
         </div>
       </div>
+
+      {/* MercadoPago PIX Dialog */}
+      {orderData && orderData.paymentMethod === 'pix' && (
+        <MercadoPagoPixDialog
+          open={showPixDialog}
+          onOpenChange={setShowPixDialog}
+          orderId={orderData.orderId}
+          amount={orderData.totalAmount}
+          description={`Pedido #${orderData.orderId.slice(-8).toUpperCase()}`}
+          onPaymentConfirmed={() => {
+            setPaymentConfirmed(true);
+            setShowPixDialog(false);
+            toast.success('Pagamento confirmado! Você pode abrir o WhatsApp agora.');
+          }}
+        />
+      )}
     </div>
   );
 };
