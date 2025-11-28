@@ -86,7 +86,7 @@ const Cart = () => {
                       </div>
                       <div className="flex items-center gap-4">
                         <span className="text-lg font-bold text-primary">
-                          R$ {(getFinalPrice(item) * item.quantity).toFixed(2)}
+                          R$ {(item.price * item.quantity).toFixed(2)}
                         </span>
                         
                         {/* Lixeira sempre ao lado do valor */}

@@ -25,7 +25,6 @@ const checkoutSchema = z.object({
   bairro: z.string().trim().min(1, 'Bairro é obrigatório').max(100, 'Bairro deve ter no máximo 100 caracteres'),
   cidade: z.string().trim().min(1, 'Cidade é obrigatória').max(100, 'Cidade deve ter no máximo 100 caracteres'),
   cep: z.string().trim().min(8, 'CEP é obrigatório').max(9, 'CEP inválido'),
-  cpf: z.string().optional(),
   paymentMethod: z.enum(['pix', 'dinheiro']),
   changeAmount: z.string().optional(),
 });
@@ -52,7 +51,6 @@ const Checkout = () => {
     bairro: '',
     cidade: '',
     cep: '',
-    cpf: '',
     paymentMethod: 'pix',
     changeAmount: '',
     discountCode: '',
@@ -119,7 +117,6 @@ const Checkout = () => {
         bairro: '',
         cidade: '',
         cep: '',
-        cpf: '',
       }));
     }
   };
@@ -145,23 +142,6 @@ const Checkout = () => {
         }));
       }
     }
-  };
-
-  const handleCpfChange = (cpf: string) => {
-    const cleanCpf = cpf.replace(/\D/g, '');
-    let formatted = cleanCpf;
-    
-    if (cleanCpf.length <= 11) {
-      if (cleanCpf.length > 9) {
-        formatted = `${cleanCpf.slice(0, 3)}.${cleanCpf.slice(3, 6)}.${cleanCpf.slice(6, 9)}-${cleanCpf.slice(9, 11)}`;
-      } else if (cleanCpf.length > 6) {
-        formatted = `${cleanCpf.slice(0, 3)}.${cleanCpf.slice(3, 6)}.${cleanCpf.slice(6)}`;
-      } else if (cleanCpf.length > 3) {
-        formatted = `${cleanCpf.slice(0, 3)}.${cleanCpf.slice(3)}`;
-      }
-    }
-    
-    setFormData(prev => ({ ...prev, cpf: formatted }));
   };
 
   const handlePaymentChange = (value: string) => {
@@ -299,15 +279,6 @@ const Checkout = () => {
       return;
     }
 
-    // Validação condicional do CPF para PIX
-    if (formData.paymentMethod === 'pix') {
-      const cleanCpf = formData.cpf.replace(/\D/g, '');
-      if (cleanCpf.length !== 11) {
-        toast.error('CPF é obrigatório para pagamento via PIX');
-        return;
-      }
-    }
-
     setIsSubmitting(true);
 
     try {
@@ -422,49 +393,6 @@ const Checkout = () => {
         message += `\nTroco para: R$ ${changeAmount.toFixed(2)}\nTroco a ser pago: R$ ${changeToGive.toFixed(2)}`;
       }
 
-      // Gerar QR code PIX se o método de pagamento for PIX
-      let pixData = null;
-      if (validatedData.paymentMethod === 'pix') {
-        try {
-          const { data: { user } } = await supabase.auth.getUser();
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('full_name, phone')
-            .eq('id', user?.id || '')
-            .single();
-
-          const cleanCpf = formData.cpf.replace(/\D/g, '');
-
-          const pixResponse = await supabase.functions.invoke('create-pix-qrcode', {
-            body: {
-              amount: order.total,
-              customerName: profile?.full_name || 'Cliente',
-              customerPhone: profile?.phone || '(00) 00000-0000',
-              customerEmail: user?.email || '',
-              customerCpf: cleanCpf,
-              orderId: order.id
-            }
-          });
-          
-          console.log('[Checkout] PIX Response completo:', JSON.stringify(pixResponse, null, 2));
-          console.log('[Checkout] PIX Response data:', pixResponse.data);
-          console.log('[Checkout] PIX Response error:', pixResponse.error);
-
-          if (pixResponse.error) {
-            console.error('[Checkout] Erro ao gerar QR code PIX:', pixResponse.error);
-            toast.error('Erro ao gerar QR code PIX. Continue para WhatsApp.');
-          } else if (pixResponse.data) {
-            pixData = pixResponse.data;
-            console.log('[Checkout] pixData atribuído:', JSON.stringify(pixData, null, 2));
-          } else {
-            console.warn('[Checkout] PIX Response não tem data nem error');
-          }
-        } catch (error) {
-          console.error('[Checkout] Erro ao gerar QR code PIX:', error);
-          toast.error('Erro ao gerar QR code PIX. Continue para WhatsApp.');
-        }
-      }
-
       clearCart();
       
       // Salvar endereço se solicitado e não for um endereço salvo
@@ -483,61 +411,30 @@ const Checkout = () => {
       
       toast.success('Pedido realizado com sucesso!');
       
-      console.log('[Checkout] Preparando navegação para order-confirmation');
-      console.log('[Checkout] Order data:', {
-        orderId: order.id,
-        paymentMethod: formData.paymentMethod,
-        changeAmount: validatedData.changeAmount,
-        hasPixData: !!pixData,
-        pixData: pixData
-      });
-      console.log('[Checkout] pixData RAW:', JSON.stringify(pixData, null, 2));
-      console.log('[Checkout] pixData.pixCode:', pixData?.pixCode);
-      console.log('[Checkout] pixData.pixQrCodeUrl:', pixData?.pixQrCodeUrl);
-      console.log('[Checkout] pixData.expiresAt:', pixData?.expiresAt);
-      
       // Navegar direto para página de confirmação onde usuário clicará para abrir WhatsApp
-      console.log('[Checkout] Preparando navigationState...');
-      console.log('[Checkout] Verificando condição pixData:', {
-        hasPixData: !!pixData,
-        hasPixCode: !!(pixData && pixData.pixCode),
-        hasPixQrCodeUrl: !!(pixData && pixData.pixQrCodeUrl),
-        willIncludePixData: !!(pixData && pixData.pixCode && pixData.pixQrCodeUrl)
+      navigate('/order-confirmation', {
+        state: {
+          orderId: order.id,
+          items: items.map(item => ({
+            name: item.name,
+            quantity: item.quantity,
+            price: item.price,
+            flavor: item.flavor
+          })),
+          totalAmount: Number(order.total),
+          shippingCost: Number(shippingCost || 0),
+          address: {
+            rua: formData.rua,
+            numero: formData.numero,
+            bairro: formData.bairro,
+            cidade: formData.cidade,
+            cep: formData.cep
+          },
+          paymentMethod: formData.paymentMethod,
+          changeAmount: validatedData.changeAmount ? Number(validatedData.changeAmount) : undefined,
+          whatsappMessage: message
+        }
       });
-      
-      const navigationState = {
-        orderId: order.id,
-        items: items.map(item => ({
-          name: item.name,
-          quantity: item.quantity,
-          price: item.price,
-          flavor: item.flavor
-        })),
-        totalAmount: Number(order.total),
-        shippingCost: Number(shippingCost || 0),
-        address: {
-          rua: formData.rua,
-          numero: formData.numero,
-          bairro: formData.bairro,
-          cidade: formData.cidade,
-          cep: formData.cep
-        },
-        paymentMethod: formData.paymentMethod,
-        changeAmount: formData.paymentMethod === 'dinheiro' && validatedData.changeAmount && validatedData.changeAmount !== '' 
-          ? Number(validatedData.changeAmount) 
-          : undefined,
-        whatsappMessage: message,
-        pixData: (pixData && pixData.pixCode && pixData.pixQrCodeUrl) ? pixData : undefined
-      };
-      
-      console.log('[Checkout] Navigation state completo:', JSON.stringify(navigationState, null, 2));
-      console.log('[Checkout] navigationState.pixData:', navigationState.pixData);
-      console.log('[Checkout] Tipo de navigationState.pixData:', typeof navigationState.pixData);
-      
-      // Salvar no sessionStorage como backup para evitar perda de dados
-      sessionStorage.setItem('orderConfirmationData', JSON.stringify(navigationState));
-      
-      navigate('/order-confirmation', { state: navigationState });
     } catch (error) {
       if (error instanceof z.ZodError) {
         const firstError = error.errors[0];
@@ -679,26 +576,6 @@ const Checkout = () => {
                     </p>
                   )
                 )}
-              </div>
-
-              {/* Campo CPF - Obrigatório para PIX */}
-              <div>
-                <Label htmlFor="cpf">
-                  CPF {formData.paymentMethod === 'pix' && <span className="text-red-500">*</span>}
-                  {formData.paymentMethod === 'pix' && (
-                    <span className="text-xs text-muted-foreground ml-2">(obrigatório para PIX)</span>
-                  )}
-                </Label>
-                <Input
-                  id="cpf"
-                  name="cpf"
-                  value={formData.cpf}
-                  onChange={(e) => handleCpfChange(e.target.value)}
-                  placeholder="000.000.000-00"
-                  maxLength={14}
-                  required={formData.paymentMethod === 'pix'}
-                  disabled={isSubmitting}
-                />
               </div>
 
               {/* Opção para salvar endereço */}

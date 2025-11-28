@@ -186,23 +186,13 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     setItems([]);
   };
 
-  // Helper function to apply discount to item price
+  // Helper function to return the item price (discount already applied when adding to cart)
   const getFinalPrice = (item: CartItem) => {
-    let finalPrice = item.price;
-    
-    if (item.discount_value && item.discount_value > 0) {
-      if (item.discount_type === 'percent') {
-        finalPrice = item.price * (1 - item.discount_value / 100);
-      } else if (item.discount_type === 'fixed') {
-        finalPrice = Math.max(0, item.price - item.discount_value);
-      }
-    }
-    
-    return finalPrice;
+    return item.price;
   };
 
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
-  const totalPrice = items.reduce((sum, item) => sum + getFinalPrice(item) * item.quantity, 0);
+  const totalPrice = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
   return (
     <CartContext.Provider

@@ -2,9 +2,8 @@ import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
-import { CheckCircle2, MessageCircle, Package, MapPin, CreditCard, Home, QrCode, Copy } from 'lucide-react';
+import { CheckCircle2, MessageCircle, Package, MapPin, CreditCard, Home } from 'lucide-react';
 import Header from '@/components/Header';
 import { z } from 'zod';
 import { toast } from 'sonner';
@@ -28,16 +27,11 @@ const orderDataSchema = z.object({
     cidade: z.string().min(1, 'Cidade é obrigatória'),
     cep: z.string().optional(),
   }),
-  paymentMethod: z.enum(['credit', 'debit', 'pix', 'dinheiro'], {
+  paymentMethod: z.enum(['credit', 'debit', 'pix', 'cash'], {
     errorMap: () => ({ message: 'Método de pagamento inválido' }),
   }),
   changeAmount: z.number().nonnegative('Valor de troco deve ser não negativo').optional(),
   whatsappMessage: z.string().min(1, 'Mensagem do WhatsApp é obrigatória'),
-  pixData: z.object({
-    pixCode: z.string(),
-    pixQrCodeUrl: z.string(),
-    expiresAt: z.string(),
-  }).optional(),
 });
 
 type OrderData = z.infer<typeof orderDataSchema>;
@@ -48,51 +42,27 @@ const OrderConfirmation = () => {
   const [orderData, setOrderData] = useState<OrderData | null>(null);
 
   useEffect(() => {
-    let data = location.state;
-    
-    // Se não houver data no location.state, tentar recuperar do sessionStorage
-    if (!data) {
-      console.log('[OrderConfirmation] No data in location.state, trying sessionStorage');
-      const storedData = sessionStorage.getItem('orderConfirmationData');
-      if (storedData) {
-        try {
-          data = JSON.parse(storedData);
-          console.log('[OrderConfirmation] Data recovered from sessionStorage');
-        } catch (error) {
-          console.error('[OrderConfirmation] Failed to parse sessionStorage data:', error);
-        }
-      }
-    }
+    const data = location.state;
     
     // Validate data exists
     if (!data) {
-      console.error('[OrderConfirmation] No data provided in navigation state or sessionStorage');
+      console.error('[OrderConfirmation] No data provided in navigation state');
       toast.error('Dados do pedido não encontrados');
       navigate('/');
       return;
     }
-    
-    // Limpar sessionStorage após recuperar os dados
-    sessionStorage.removeItem('orderConfirmationData');
-
-    console.log('[OrderConfirmation] Received data:', JSON.stringify(data, null, 2));
-    console.log('[OrderConfirmation] Payment method:', data.paymentMethod);
-    console.log('[OrderConfirmation] Has pixData:', !!data.pixData);
-    console.log('[OrderConfirmation] pixData details:', data.pixData);
 
     // Validate data format
     const validationResult = orderDataSchema.safeParse(data);
     
     if (!validationResult.success) {
       console.error('[OrderConfirmation] Invalid order data format:', validationResult.error.errors);
-      console.error('[OrderConfirmation] Received data that failed validation:', data);
       toast.error('Formato de dados do pedido inválido. Por favor, tente novamente.');
       navigate('/');
       return;
     }
 
     console.log('[OrderConfirmation] Data validated successfully');
-    console.log('[OrderConfirmation] Validated pixData:', validationResult.data.pixData);
     setOrderData(validationResult.data);
   }, [location.state, navigate]);
 
@@ -106,19 +76,12 @@ const OrderConfirmation = () => {
     window.open(whatsappUrl, '_blank');
   };
 
-  const handleCopyPixCode = () => {
-    if (orderData.pixData?.pixCode) {
-      navigator.clipboard.writeText(orderData.pixData.pixCode);
-      toast.success('Código PIX copiado!');
-    }
-  };
-
   const getPaymentMethodLabel = (method: string) => {
     const methods: { [key: string]: string } = {
       credit: 'Cartão de Crédito',
       debit: 'Cartão de Débito',
       pix: 'PIX',
-      dinheiro: 'Dinheiro'
+      cash: 'Dinheiro'
     };
     return methods[method] || method;
   };
@@ -143,54 +106,6 @@ const OrderConfirmation = () => {
                   Pedido #{orderData.orderId.slice(-8).toUpperCase()}
                 </p>
               </div>
-              
-              {/* QR Code PIX */}
-              {orderData.paymentMethod === 'pix' && orderData.pixData && (
-                <Card className="w-full max-w-md border-2 border-primary/20 bg-primary/5">
-                  <CardContent className="pt-6">
-                    <div className="flex flex-col items-center space-y-4">
-                      <div className="flex items-center gap-2 text-primary">
-                        <QrCode className="w-6 h-6" />
-                        <h2 className="text-xl font-bold">Pagamento PIX</h2>
-                      </div>
-                      
-                      {/* QR Code Image */}
-                      <div className="bg-white p-4 rounded-lg">
-                        <img 
-                          src={orderData.pixData.pixQrCodeUrl} 
-                          alt="QR Code PIX"
-                          className="w-64 h-64 object-contain"
-                        />
-                      </div>
-                      
-                      {/* PIX Code */}
-                      <div className="w-full space-y-2">
-                        <p className="text-sm text-muted-foreground">
-                          Ou copie o código PIX:
-                        </p>
-                        <div className="flex gap-2">
-                          <Input
-                            value={orderData.pixData.pixCode}
-                            readOnly
-                            className="text-xs font-mono"
-                          />
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            onClick={handleCopyPixCode}
-                          >
-                            <Copy className="w-4 h-4" />
-                          </Button>
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                          Expira em: {new Date(orderData.pixData.expiresAt).toLocaleString('pt-BR')}
-                        </p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-              
               <Button
                 onClick={handleOpenWhatsApp}
                 size="lg"
