@@ -46,7 +46,12 @@ const Checkout = () => {
   const [saveAddress, setSaveAddress] = useState(false);
   const [addressLabel, setAddressLabel] = useState('');
   const [showPixDialog, setShowPixDialog] = useState(false);
-  const [pixOrderData, setPixOrderData] = useState<{ orderId: string; amount: number } | null>(null);
+  const [pixOrderData, setPixOrderData] = useState<{ 
+    orderId: string; 
+    amount: number;
+    whatsappUrl: string;
+    orderDetails: any;
+  } | null>(null);
 
   const [formData, setFormData] = useState({
     rua: '',
@@ -417,11 +422,32 @@ const Checkout = () => {
           });
         }
 
-        // Se for pagamento PIX, abrir dialog de pagamento
+        // Se for pagamento PIX, abrir dialog de pagamento primeiro
         if (validatedData.paymentMethod === 'pix') {
           setPixOrderData({
             orderId: order.id,
-            amount: order.total
+            amount: order.total,
+            whatsappUrl,
+            orderDetails: {
+              items: items.map(item => ({
+                name: item.name,
+                quantity: item.quantity,
+                price: item.price,
+                flavor: item.flavor
+              })),
+              totalAmount: Number(order.total),
+              shippingCost: Number(shippingCost || 0),
+              address: {
+                rua: formData.rua,
+                numero: formData.numero,
+                bairro: formData.bairro,
+                cidade: formData.cidade,
+                cep: formData.cep
+              },
+              paymentMethod: formData.paymentMethod,
+              changeAmount: validatedData.changeAmount ? Number(validatedData.changeAmount) : undefined,
+              whatsappMessage: message
+            }
           });
           setShowPixDialog(true);
           toast.success('Pedido criado! Gere o QR Code PIX para pagamento');
@@ -803,7 +829,23 @@ const Checkout = () => {
       {/* PIX Payment Dialog */}
       <PixPaymentDialog
         open={showPixDialog}
-        onOpenChange={setShowPixDialog}
+        onOpenChange={(open) => {
+          setShowPixDialog(open);
+          // Quando o dialog fechar, abrir WhatsApp e navegar
+          if (!open && pixOrderData) {
+            toast.success('Abrindo WhatsApp...');
+            window.open(pixOrderData.whatsappUrl, '_blank');
+            
+            setTimeout(() => {
+              navigate('/order-confirmation', {
+                state: {
+                  orderId: pixOrderData.orderId,
+                  ...pixOrderData.orderDetails
+                }
+              });
+            }, 2000);
+          }
+        }}
         orderId={pixOrderData?.orderId || ''}
         amount={pixOrderData?.amount || 0}
       />
