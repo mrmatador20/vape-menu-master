@@ -83,19 +83,31 @@ serve(async (req) => {
     }
 
     const pixData = await abacatePayResponse.json();
-    console.log('[create-pix-qrcode] Resposta da AbacatePay:', JSON.stringify(pixData, null, 2));
-    console.log('[create-pix-qrcode] pixData.pixCode:', pixData.pixCode);
-    console.log('[create-pix-qrcode] pixData.pixQrCodeUrl:', pixData.pixQrCodeUrl);
-    console.log('[create-pix-qrcode] pixData.expiresAt:', pixData.expiresAt);
-    console.log('[create-pix-qrcode] QR code PIX criado com sucesso');
-
+    console.log('[create-pix-qrcode] Resposta COMPLETA da AbacatePay:', JSON.stringify(pixData, null, 2));
+    console.log('[create-pix-qrcode] Campos disponíveis:', Object.keys(pixData));
+    
+    // Extrair dados da resposta da AbacatePay
+    // A AbacatePay pode retornar os dados em diferentes formatos
     const responseData = {
-      pixCode: pixData.pixCode,
-      pixQrCodeUrl: pixData.pixQrCodeUrl,
-      expiresAt: pixData.expiresAt,
+      pixCode: pixData.pixCode || pixData.pix_code || pixData.qrCode || pixData.qr_code || pixData.emv,
+      pixQrCodeUrl: pixData.pixQrCodeUrl || pixData.pix_qr_code_url || pixData.qrCodeUrl || pixData.qr_code_url || pixData.image,
+      expiresAt: pixData.expiresAt || pixData.expires_at || pixData.expiration || new Date(Date.now() + 3600000).toISOString(),
     };
     
-    console.log('[create-pix-qrcode] Response data que será enviado:', JSON.stringify(responseData, null, 2));
+    console.log('[create-pix-qrcode] Dados extraídos:', JSON.stringify(responseData, null, 2));
+    console.log('[create-pix-qrcode] pixCode extraído:', responseData.pixCode);
+    console.log('[create-pix-qrcode] pixQrCodeUrl extraído:', responseData.pixQrCodeUrl);
+    
+    if (!responseData.pixCode || !responseData.pixQrCodeUrl) {
+      console.error('[create-pix-qrcode] Campos obrigatórios não encontrados na resposta da AbacatePay');
+      console.error('[create-pix-qrcode] Resposta recebida:', JSON.stringify(pixData, null, 2));
+      return new Response(
+        JSON.stringify({ error: 'Resposta inválida da API de pagamento' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
+    console.log('[create-pix-qrcode] QR code PIX criado com sucesso');
 
     return new Response(
       JSON.stringify(responseData),
