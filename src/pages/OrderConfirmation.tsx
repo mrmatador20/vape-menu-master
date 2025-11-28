@@ -32,6 +32,7 @@ const orderDataSchema = z.object({
     errorMap: () => ({ message: 'Método de pagamento inválido' }),
   }),
   changeAmount: z.number().nonnegative('Valor de troco deve ser não negativo').optional(),
+  cpf: z.string().optional(),
   whatsappMessage: z.string().min(1, 'Mensagem do WhatsApp é obrigatória'),
 });
 
@@ -267,6 +268,7 @@ const OrderConfirmation = () => {
           orderId={orderData.orderId}
           amount={orderData.totalAmount}
           description={`Pedido #${orderData.orderId.slice(-8).toUpperCase()}`}
+          payerCpf={orderData.cpf}
           onPaymentConfirmed={() => {
             setPaymentConfirmed(true);
             setShowPixDialog(false);

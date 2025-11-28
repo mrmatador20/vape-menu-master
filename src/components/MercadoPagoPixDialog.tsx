@@ -12,6 +12,7 @@ interface MercadoPagoPixDialogProps {
   amount: number;
   description: string;
   payerEmail?: string;
+  payerCpf?: string;
   onPaymentConfirmed: () => void;
 }
 
@@ -22,6 +23,7 @@ export const MercadoPagoPixDialog = ({
   amount,
   description,
   payerEmail,
+  payerCpf,
   onPaymentConfirmed,
 }: MercadoPagoPixDialogProps) => {
   const [isLoading, setIsLoading] = useState(true);
@@ -48,6 +50,7 @@ export const MercadoPagoPixDialog = ({
           amount,
           description,
           payerEmail,
+          payerCpf,
         },
       });
 

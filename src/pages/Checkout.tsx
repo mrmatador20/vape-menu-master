@@ -27,6 +27,17 @@ const checkoutSchema = z.object({
   cep: z.string().trim().min(8, 'CEP é obrigatório').max(9, 'CEP inválido'),
   paymentMethod: z.enum(['pix', 'dinheiro']),
   changeAmount: z.string().optional(),
+  cpf: z.string().optional(),
+}).refine((data) => {
+  // Se for PIX, CPF é obrigatório
+  if (data.paymentMethod === 'pix') {
+    const cleanCpf = data.cpf?.replace(/\D/g, '') || '';
+    return cleanCpf.length === 11;
+  }
+  return true;
+}, {
+  message: 'CPF é obrigatório para pagamento PIX',
+  path: ['cpf'],
 });
 
 const Checkout = () => {
@@ -54,6 +65,7 @@ const Checkout = () => {
     paymentMethod: 'pix',
     changeAmount: '',
     discountCode: '',
+    cpf: '',
   });
 
   const { createAddress } = useSavedAddresses();
@@ -146,6 +158,24 @@ const Checkout = () => {
 
   const handlePaymentChange = (value: string) => {
     setFormData(prev => ({ ...prev, paymentMethod: value }));
+  };
+
+  const handleCpfChange = (cpf: string) => {
+    const cleanCpf = cpf.replace(/\D/g, '');
+    let formatted = cleanCpf;
+    
+    if (cleanCpf.length <= 11) {
+      // Formato: 000.000.000-00
+      if (cleanCpf.length > 9) {
+        formatted = `${cleanCpf.slice(0, 3)}.${cleanCpf.slice(3, 6)}.${cleanCpf.slice(6, 9)}-${cleanCpf.slice(9, 11)}`;
+      } else if (cleanCpf.length > 6) {
+        formatted = `${cleanCpf.slice(0, 3)}.${cleanCpf.slice(3, 6)}.${cleanCpf.slice(6, 9)}`;
+      } else if (cleanCpf.length > 3) {
+        formatted = `${cleanCpf.slice(0, 3)}.${cleanCpf.slice(3, 6)}`;
+      }
+    }
+    
+    setFormData(prev => ({ ...prev, cpf: formatted }));
   };
 
   const handleApplyDiscount = async () => {
@@ -432,6 +462,7 @@ const Checkout = () => {
           },
           paymentMethod: formData.paymentMethod,
           changeAmount: validatedData.changeAmount ? Number(validatedData.changeAmount) : undefined,
+          cpf: validatedData.cpf ? validatedData.cpf.replace(/\D/g, '') : undefined,
           whatsappMessage: message
         }
       });
@@ -629,6 +660,29 @@ const Checkout = () => {
                     <Label htmlFor="dinheiro" className="cursor-pointer">Dinheiro</Label>
                   </div>
                 </RadioGroup>
+              </div>
+
+              {/* Campo CPF - Opcional, mas obrigatório para PIX */}
+              <div>
+                <Label htmlFor="cpf">
+                  CPF {formData.paymentMethod === 'pix' && <span className="text-destructive">*</span>}
+                  {formData.paymentMethod !== 'pix' && <span className="text-muted-foreground text-xs">(opcional)</span>}
+                </Label>
+                <Input
+                  id="cpf"
+                  name="cpf"
+                  value={formData.cpf}
+                  onChange={(e) => handleCpfChange(e.target.value)}
+                  placeholder="000.000.000-00"
+                  maxLength={14}
+                  required={formData.paymentMethod === 'pix'}
+                  disabled={isSubmitting}
+                />
+                {formData.paymentMethod === 'pix' && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    CPF necessário para gerar o QR Code PIX
+                  </p>
+                )}
               </div>
 
               {formData.paymentMethod === 'dinheiro' && (

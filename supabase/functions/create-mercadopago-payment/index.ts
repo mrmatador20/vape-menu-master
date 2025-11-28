@@ -12,11 +12,18 @@ serve(async (req) => {
   }
 
   try {
-    const { orderId, amount, description, payerEmail } = await req.json();
+    const { orderId, amount, description, payerEmail, payerCpf } = await req.json();
 
     if (!orderId || !amount || !description) {
       return new Response(
         JSON.stringify({ error: 'Missing required fields' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (!payerCpf) {
+      return new Response(
+        JSON.stringify({ error: 'CPF é obrigatório para pagamento PIX' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -37,6 +44,10 @@ serve(async (req) => {
       payment_method_id: 'pix',
       payer: {
         email: payerEmail || 'cliente@example.com',
+        identification: {
+          type: 'CPF',
+          number: payerCpf,
+        },
       },
       notification_url: `${Deno.env.get('SUPABASE_URL')}/functions/v1/mercadopago-webhook`,
       external_reference: orderId,
