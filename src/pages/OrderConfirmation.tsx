@@ -59,6 +59,9 @@ const OrderConfirmation = () => {
     }
 
     console.log('[OrderConfirmation] Received data:', JSON.stringify(data, null, 2));
+    console.log('[OrderConfirmation] Payment method:', data.paymentMethod);
+    console.log('[OrderConfirmation] Has pixData:', !!data.pixData);
+    console.log('[OrderConfirmation] pixData details:', data.pixData);
 
     // Validate data format
     const validationResult = orderDataSchema.safeParse(data);
@@ -72,6 +75,7 @@ const OrderConfirmation = () => {
     }
 
     console.log('[OrderConfirmation] Data validated successfully');
+    console.log('[OrderConfirmation] Validated pixData:', validationResult.data.pixData);
     setOrderData(validationResult.data);
   }, [location.state, navigate]);
 
