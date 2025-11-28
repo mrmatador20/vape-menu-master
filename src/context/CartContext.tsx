@@ -66,6 +66,15 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
   const addToCart = async (product: Product, flavor?: string) => {
     // ✅ CORREÇÃO 2: Validar estoque antes de adicionar ao carrinho
     
+    console.log('[CartContext] addToCart called');
+    console.log('[CartContext] Product:', { 
+      name: product.name, 
+      price: product.price, 
+      discount_value: product.discount_value,
+      discount_type: product.discount_type 
+    });
+    console.log('[CartContext] Flavor:', flavor);
+    
     // Buscar dados atualizados do produto
     const { data: currentProduct, error: productError } = await supabase
       .from('products')
@@ -77,6 +86,8 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
       toast.error('Erro ao verificar disponibilidade do produto');
       return;
     }
+
+    console.log('[CartContext] Current product from DB:', currentProduct);
 
     // Se tem sabor, busca o preço e estoque da variante
     let variantPrice = Number(currentProduct.price);
@@ -98,9 +109,12 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
         const selectedFlavor = flavors[0];
         stockToCheck = selectedFlavor.stock;
         
+        console.log('[CartContext] Selected flavor:', selectedFlavor);
+        
         // Se a variação tem preço próprio, usa ele (mas ainda aplica desconto do produto base)
         if (selectedFlavor.price) {
           variantPrice = Number(selectedFlavor.price);
+          console.log('[CartContext] Using flavor price:', variantPrice);
         }
       } else {
         toast.error(`Sabor "${flavor}" não encontrado`);
@@ -108,15 +122,27 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
       }
     }
 
+    console.log('[CartContext] Variant price before discount:', variantPrice);
+
     // ✅ Aplicar desconto ao preço (tanto para produto base quanto variações)
     let finalPrice = variantPrice;
     if (currentProduct.discount_value && currentProduct.discount_value > 0) {
+      console.log('[CartContext] Applying discount:', {
+        type: currentProduct.discount_type,
+        value: currentProduct.discount_value,
+        priceBeforeDiscount: variantPrice
+      });
+      
       if (currentProduct.discount_type === 'percent') {
         finalPrice = variantPrice * (1 - currentProduct.discount_value / 100);
       } else if (currentProduct.discount_type === 'fixed') {
         finalPrice = variantPrice - currentProduct.discount_value;
       }
       finalPrice = Math.max(0, finalPrice);
+      
+      console.log('[CartContext] Price after discount:', finalPrice);
+    } else {
+      console.log('[CartContext] No discount to apply');
     }
 
     // Verificar estoque disponível
@@ -165,6 +191,12 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
         discount_value: undefined, // Não armazenar desconto no carrinho
         discount_type: undefined,
       };
+      
+      console.log('[CartContext] Adding item to cart:', {
+        name: productWithCorrectData.name,
+        price: finalPrice,
+        flavor
+      });
       
       return [...currentItems, { ...productWithCorrectData, quantity: 1, flavor, cartItemId }];
     });
