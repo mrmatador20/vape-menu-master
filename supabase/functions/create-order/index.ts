@@ -13,6 +13,7 @@ const orderRequestSchema = z.object({
     id: z.string().uuid(),
     quantity: z.number().int().min(1).max(100),
     flavor: z.string().trim().max(50).optional(),
+    price: z.number().nonnegative().optional(), // ✅ Aceitar preço do frontend
   })).min(1),
   address: z.object({
     street: z.string().trim().min(1).max(100),
@@ -31,6 +32,7 @@ interface OrderItem {
   id: string;
   quantity: number;
   flavor?: string;
+  price?: number; // ✅ Aceitar preço do frontend
 }
 
 interface Product {
@@ -322,14 +324,25 @@ serve(async (req) => {
         );
       }
 
-      // Calculate price with individual product discount
-      let finalPrice = Number(product.price);
-      if (product.discount_value && product.discount_value > 0) {
-        if (product.discount_type === 'percent') {
-          finalPrice = finalPrice * (1 - product.discount_value / 100);
-        } else if (product.discount_type === 'fixed') {
-          finalPrice = Math.max(0, finalPrice - product.discount_value);
+      // ✅ Usar preço do frontend se disponível (já com desconto aplicado)
+      // Caso contrário, calcular no servidor (fallback para compatibilidade)
+      let finalPrice: number;
+      
+      if (item.price !== undefined && item.price !== null) {
+        // Usar preço enviado pelo frontend (já com desconto do produto base aplicado)
+        finalPrice = Number(item.price);
+        console.log(`[create-order] Using frontend price for ${product.name}: ${finalPrice}`);
+      } else {
+        // Fallback: calcular preço no servidor (para compatibilidade com clientes antigos)
+        finalPrice = Number(product.price);
+        if (product.discount_value && product.discount_value > 0) {
+          if (product.discount_type === 'percent') {
+            finalPrice = finalPrice * (1 - product.discount_value / 100);
+          } else if (product.discount_type === 'fixed') {
+            finalPrice = Math.max(0, finalPrice - product.discount_value);
+          }
         }
+        console.log(`[create-order] Calculated server price for ${product.name}: ${finalPrice}`);
       }
 
       const itemTotal = finalPrice * item.quantity;
