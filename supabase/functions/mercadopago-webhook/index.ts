@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { Resend } from 'https://esm.sh/resend@2.0.0';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -177,6 +178,88 @@ serve(async (req) => {
     }
 
     console.log('[MercadoPago Webhook] Order updated:', orderId, 'status:', orderStatus);
+    
+    // Send confirmation email if payment approved
+    if (orderStatus === 'confirmed') {
+      try {
+        const { data: orderData } = await supabase
+          .from('orders')
+          .select('*, profiles!inner(full_name)')
+          .eq('id', orderId)
+          .single();
+
+        if (orderData) {
+          const { data: userData } = await supabase.auth.admin.getUserById(orderData.user_id);
+          
+          if (userData?.user?.email) {
+            const resend = new Resend(Deno.env.get('RESEND_API_KEY'));
+            
+            await resend.emails.send({
+              from: 'Vape-Menu-Express <onboarding@resend.dev>',
+              to: [userData.user.email],
+              subject: '✅ Pagamento PIX Confirmado - Vape-Menu-Express',
+              html: `
+                <div style="font-family: 'Roboto', 'Open Sans', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: linear-gradient(135deg, #00ccff 0%, #00d9a3 100%); padding: 40px 20px; border-radius: 12px;">
+                  <div style="text-align: center; margin-bottom: 30px;">
+                    <h1 style="color: #0f1419; font-size: 32px; font-weight: bold; margin: 0;">Vape-Menu-Express</h1>
+                    <p style="color: #7a8fa3; font-size: 14px; margin: 5px 0;">Sua loja de vapes de confiança</p>
+                  </div>
+                  
+                  <div style="background: #0f1419; padding: 30px; border-radius: 8px; color: #e6fffd;">
+                    <h2 style="color: #00ccff; font-size: 24px; margin-top: 0;">🎉 Pagamento Confirmado!</h2>
+                    
+                    <p style="font-size: 16px; line-height: 1.6; margin: 20px 0;">
+                      Olá ${orderData.profiles?.full_name || 'Cliente'},
+                    </p>
+                    
+                    <p style="font-size: 16px; line-height: 1.6; margin: 20px 0;">
+                      Seu pagamento PIX foi confirmado com sucesso!
+                    </p>
+                    
+                    <div style="background: rgba(0, 204, 255, 0.1); padding: 20px; border-radius: 8px; border-left: 4px solid #00ccff; margin: 25px 0;">
+                      <p style="margin: 5px 0;"><strong>Pedido:</strong> #${orderId.slice(0, 8).toUpperCase()}</p>
+                      <p style="margin: 5px 0;"><strong>Valor:</strong> R$ ${Number(orderData.total_amount).toFixed(2)}</p>
+                      <p style="margin: 5px 0;"><strong>Status:</strong> Confirmado</p>
+                    </div>
+                    
+                    <p style="font-size: 16px; line-height: 1.6; margin: 20px 0;">
+                      Seu pedido está sendo preparado e logo estará a caminho!
+                    </p>
+                    
+                    <div style="text-align: center; margin: 30px 0;">
+                      <a href="https://wa.me/5583996694806" style="display: inline-block; background: #00ccff; color: #0f1419; padding: 12px 30px; border-radius: 6px; text-decoration: none; font-weight: bold;">
+                        Falar com a Loja
+                      </a>
+                    </div>
+                    
+                    <div style="background: rgba(0, 204, 255, 0.15); padding: 15px; border-radius: 6px; margin-top: 25px;">
+                      <p style="font-size: 13px; margin: 5px 0; color: #a3d9e6;">
+                        <strong>Dica de Segurança:</strong>
+                      </p>
+                      <p style="font-size: 13px; margin: 5px 0; color: #a3d9e6;">
+                        ✓ Nunca compartilhe códigos de verificação<br/>
+                        ✓ Guarde este email como comprovante
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div style="text-align: center; margin-top: 30px;">
+                    <p style="color: #7a8fa3; font-size: 12px; margin: 5px 0;">
+                      © ${new Date().getFullYear()} Vape-Menu-Express. Todos os direitos reservados.
+                    </p>
+                  </div>
+                </div>
+              `,
+            });
+            
+            console.log('[MercadoPago Webhook] Confirmation email sent to:', userData.user.email);
+          }
+        }
+      } catch (emailError) {
+        console.error('[MercadoPago Webhook] Error sending confirmation email:', emailError);
+        // Don't throw - email is non-critical
+      }
+    }
 
     return new Response(
       JSON.stringify({ success: true, orderId, status: orderStatus }),

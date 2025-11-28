@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Loader2, Package, Calendar, MapPin, CreditCard, ShoppingBag } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { OrderStatusTimeline } from "@/components/OrderStatusTimeline";
 
 export default function MyOrders() {
   const navigate = useNavigate();
@@ -54,17 +55,38 @@ export default function MyOrders() {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
+      
+      // Check for expired PIX orders and update status
+      const now = new Date();
+      for (const order of data || []) {
+        if (
+          order.payment_method === 'pix' &&
+          order.status === 'pending_payment' &&
+          order.expires_at &&
+          new Date(order.expires_at) < now
+        ) {
+          await supabase
+            .from('orders')
+            .update({ status: 'expired' })
+            .eq('id', order.id);
+          order.status = 'expired';
+        }
+      }
+      
       return data;
     },
     enabled: !!userId,
+    refetchInterval: 30000, // Refetch every 30 seconds to check for expiration
   });
 
   const getStatusBadge = (status: string) => {
     const statusConfig: Record<string, { variant: "default" | "secondary" | "destructive" | "outline", label: string }> = {
       pending: { variant: "secondary", label: "Pendente" },
+      pending_payment: { variant: "secondary", label: "Aguardando Pagamento" },
       confirmed: { variant: "default", label: "Confirmado" },
       delivered: { variant: "outline", label: "Entregue" },
       cancelled: { variant: "destructive", label: "Cancelado" },
+      expired: { variant: "destructive", label: "Expirado" },
     };
     
     const config = statusConfig[status] || { variant: "default", label: status };
@@ -193,6 +215,19 @@ export default function MyOrders() {
                           </div>
                         ))}
                       </div>
+                    </div>
+
+                    <Separator />
+
+                    {/* Order Status Timeline */}
+                    <div>
+                      <OrderStatusTimeline 
+                        statusHistory={[
+                          { status: 'pending', changed_at: order.created_at || new Date().toISOString() },
+                          ...(order.status !== 'pending' ? [{ status: order.status, changed_at: order.created_at || new Date().toISOString() }] : [])
+                        ]}
+                        currentStatus={order.status}
+                      />
                     </div>
 
                     <Separator />
