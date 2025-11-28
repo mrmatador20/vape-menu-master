@@ -82,19 +82,26 @@ serve(async (req) => {
       );
     }
 
-    const pixData = await abacatePayResponse.json();
-    console.log('[create-pix-qrcode] Resposta COMPLETA da AbacatePay:', JSON.stringify(pixData, null, 2));
+    const abacatePayFullResponse = await abacatePayResponse.json();
+    console.log('[create-pix-qrcode] Resposta COMPLETA da AbacatePay:', JSON.stringify(abacatePayFullResponse, null, 2));
+    
+    // A AbacatePay retorna os dados dentro de um objeto 'data'
+    const pixData = abacatePayFullResponse.data || abacatePayFullResponse;
+    console.log('[create-pix-qrcode] Dados extraídos de pixData:', JSON.stringify(pixData, null, 2));
     console.log('[create-pix-qrcode] Campos disponíveis:', Object.keys(pixData));
     
-    // Extrair dados da resposta da AbacatePay
-    // A AbacatePay pode retornar os dados em diferentes formatos
+    // Extrair dados - AbacatePay usa 'brCode' e 'qrCodeImage'
     const responseData = {
-      pixCode: pixData.pixCode || pixData.pix_code || pixData.qrCode || pixData.qr_code || pixData.emv,
-      pixQrCodeUrl: pixData.pixQrCodeUrl || pixData.pix_qr_code_url || pixData.qrCodeUrl || pixData.qr_code_url || pixData.image,
-      expiresAt: pixData.expiresAt || pixData.expires_at || pixData.expiration || new Date(Date.now() + 3600000).toISOString(),
+      pixCode: pixData.brCode || pixData.pixCode || pixData.emv,
+      pixQrCodeUrl: pixData.qrCodeImage || pixData.pixQrCodeUrl || pixData.qr_code_url || pixData.image,
+      expiresAt: pixData.expiresAt 
+        ? pixData.expiresAt 
+        : pixData.expiresIn 
+          ? new Date(Date.now() + (pixData.expiresIn * 1000)).toISOString()
+          : new Date(Date.now() + 3600000).toISOString(),
     };
     
-    console.log('[create-pix-qrcode] Dados extraídos:', JSON.stringify(responseData, null, 2));
+    console.log('[create-pix-qrcode] Dados finais extraídos:', JSON.stringify(responseData, null, 2));
     console.log('[create-pix-qrcode] pixCode extraído:', responseData.pixCode);
     console.log('[create-pix-qrcode] pixQrCodeUrl extraído:', responseData.pixQrCodeUrl);
     
