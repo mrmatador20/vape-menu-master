@@ -12,7 +12,16 @@ serve(async (req) => {
   }
 
   try {
-    const body = await req.json();
+    let body;
+    try {
+      body = await req.json();
+    } catch (jsonError) {
+      console.log('[MercadoPago Webhook] Empty or invalid JSON body - likely a test request');
+      return new Response(JSON.stringify({ received: true }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+    
     console.log('[MercadoPago Webhook] Received:', JSON.stringify(body, null, 2));
 
     // MercadoPago sends different event types
@@ -73,11 +82,15 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    let orderStatus = 'pending';
+    let orderStatus = 'pending_payment';
     if (payment.status === 'approved') {
       orderStatus = 'confirmed';
+      console.log('[MercadoPago Webhook] Payment approved, updating to confirmed');
     } else if (payment.status === 'rejected' || payment.status === 'cancelled') {
       orderStatus = 'cancelled';
+      console.log('[MercadoPago Webhook] Payment rejected/cancelled');
+    } else {
+      console.log('[MercadoPago Webhook] Payment status:', payment.status, '- keeping as pending_payment');
     }
 
     const { error: updateError } = await supabase

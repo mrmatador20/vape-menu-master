@@ -470,6 +470,9 @@ serve(async (req) => {
 
     console.log('[create-order] Creating order in database with total:', finalAmount);
     // Create the order with server-side validated data
+    // PIX orders start as pending_payment, others as pending
+    const initialStatus = orderData.paymentMethod === 'pix' ? 'pending_payment' : 'pending';
+    
     const { data: order, error: orderError } = await supabaseClient
       .from('orders')
       .insert({
@@ -483,6 +486,7 @@ serve(async (req) => {
         cep: orderData.cep,
         shipping_cost: finalShippingCost,
         total_amount: finalAmount,
+        status: initialStatus,
       })
       .select()
       .single();
