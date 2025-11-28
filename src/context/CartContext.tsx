@@ -81,6 +81,7 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     // Se tem sabor, busca o preço e estoque da variante
     let variantPrice = Number(currentProduct.price);
     let stockToCheck = currentProduct.stock;
+    let hasCustomFlavorPrice = false;
 
     if (flavor) {
       const { data: flavors, error: flavorError } = await supabase
@@ -98,8 +99,10 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
         const selectedFlavor = flavors[0];
         stockToCheck = selectedFlavor.stock;
         
+        // Se a variação tem preço próprio, usa ele e NÃO aplica desconto do produto
         if (selectedFlavor.price) {
           variantPrice = Number(selectedFlavor.price);
+          hasCustomFlavorPrice = true;
         }
       } else {
         toast.error(`Sabor "${flavor}" não encontrado`);
@@ -107,9 +110,9 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
       }
     }
 
-    // ✅ Aplicar desconto ao preço ANTES de adicionar ao carrinho
+    // ✅ Aplicar desconto ao preço APENAS se a variação NÃO tiver preço próprio
     let finalPrice = variantPrice;
-    if (currentProduct.discount_value && currentProduct.discount_value > 0) {
+    if (!hasCustomFlavorPrice && currentProduct.discount_value && currentProduct.discount_value > 0) {
       if (currentProduct.discount_type === 'percent') {
         finalPrice = variantPrice * (1 - currentProduct.discount_value / 100);
       } else if (currentProduct.discount_type === 'fixed') {
