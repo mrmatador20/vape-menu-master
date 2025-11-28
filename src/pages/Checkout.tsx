@@ -801,14 +801,12 @@ const Checkout = () => {
       </div>
 
       {/* PIX Payment Dialog */}
-      {pixOrderData && (
-        <PixPaymentDialog
-          open={showPixDialog}
-          onOpenChange={setShowPixDialog}
-          orderId={pixOrderData.orderId}
-          amount={pixOrderData.amount}
-        />
-      )}
+      <PixPaymentDialog
+        open={showPixDialog}
+        onOpenChange={setShowPixDialog}
+        orderId={pixOrderData?.orderId || ''}
+        amount={pixOrderData?.amount || 0}
+      />
     </div>
   );
 };
