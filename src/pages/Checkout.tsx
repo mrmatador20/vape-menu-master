@@ -18,6 +18,7 @@ import { useSavedAddresses } from '@/hooks/useSavedAddresses';
 import { SavedAddressSelector } from '@/components/SavedAddressSelector';
 import { Tables } from '@/integrations/supabase/types';
 import { Checkbox } from '@/components/ui/checkbox';
+import { PixPaymentDialog } from '@/components/PixPaymentDialog';
 
 const checkoutSchema = z.object({
   rua: z.string().trim().min(1, 'Rua é obrigatória').max(100, 'Rua deve ter no máximo 100 caracteres'),
@@ -44,6 +45,8 @@ const Checkout = () => {
   const [selectedSavedAddress, setSelectedSavedAddress] = useState<Tables<'saved_addresses'> | null>(null);
   const [saveAddress, setSaveAddress] = useState(false);
   const [addressLabel, setAddressLabel] = useState('');
+  const [showPixDialog, setShowPixDialog] = useState(false);
+  const [pixOrderData, setPixOrderData] = useState<{ orderId: string; amount: number } | null>(null);
 
   const [formData, setFormData] = useState({
     rua: '',
@@ -399,7 +402,6 @@ const Checkout = () => {
         const whatsappUrl = `https://wa.me/5583996694806?text=${encodedMessage}`;
 
         clearCart();
-        toast.success('Pedido realizado com sucesso! Abrindo WhatsApp...');
         
         // Salvar endereço se solicitado e não for um endereço salvo
         if (saveAddress && !selectedSavedAddress && addressLabel.trim()) {
@@ -414,6 +416,20 @@ const Checkout = () => {
             is_default: false,
           });
         }
+
+        // Se for pagamento PIX, abrir dialog de pagamento
+        if (validatedData.paymentMethod === 'pix') {
+          setPixOrderData({
+            orderId: order.id,
+            amount: order.total
+          });
+          setShowPixDialog(true);
+          toast.success('Pedido criado! Gere o QR Code PIX para pagamento');
+          return;
+        }
+        
+        // Para outros métodos, abrir WhatsApp e navegar
+        toast.success('Pedido realizado com sucesso! Abrindo WhatsApp...');
         
         // Navegar para página de confirmação com os dados do pedido
         navigate('/order-confirmation', {
@@ -783,6 +799,16 @@ const Checkout = () => {
           </Card>
         </div>
       </div>
+
+      {/* PIX Payment Dialog */}
+      {pixOrderData && (
+        <PixPaymentDialog
+          open={showPixDialog}
+          onOpenChange={setShowPixDialog}
+          orderId={pixOrderData.orderId}
+          amount={pixOrderData.amount}
+        />
+      )}
     </div>
   );
 };
