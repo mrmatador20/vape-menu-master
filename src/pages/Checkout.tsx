@@ -399,7 +399,6 @@ const Checkout = () => {
         const whatsappUrl = `https://wa.me/5583996694806?text=${encodedMessage}`;
 
         clearCart();
-        toast.success('Pedido realizado com sucesso! Abrindo WhatsApp...');
         
         // Salvar endereço se solicitado e não for um endereço salvo
         if (saveAddress && !selectedSavedAddress && addressLabel.trim()) {
@@ -415,8 +414,21 @@ const Checkout = () => {
           });
         }
         
-        // Abrir WhatsApp
-        window.open(whatsappUrl, '_blank');
+        // Log para debug
+        console.log('[Checkout] Abrindo WhatsApp:', whatsappUrl);
+        
+        // Tentar abrir WhatsApp
+        const whatsappWindow = window.open(whatsappUrl, '_blank');
+        
+        // Se window.open foi bloqueado, usar location.href
+        if (!whatsappWindow || whatsappWindow.closed || typeof whatsappWindow.closed === 'undefined') {
+          console.log('[Checkout] window.open bloqueado, usando location.href');
+          window.location.href = whatsappUrl;
+          // Não navegar para confirmação se estamos redirecionando
+          return;
+        }
+        
+        toast.success('Pedido realizado! Abrindo WhatsApp...');
         
         // Aguardar um momento antes de navegar
         setTimeout(() => {
