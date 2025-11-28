@@ -28,7 +28,7 @@ const orderDataSchema = z.object({
     cidade: z.string().min(1, 'Cidade é obrigatória'),
     cep: z.string().optional(),
   }),
-  paymentMethod: z.enum(['credit', 'debit', 'pix', 'cash'], {
+  paymentMethod: z.enum(['credit', 'debit', 'pix', 'dinheiro'], {
     errorMap: () => ({ message: 'Método de pagamento inválido' }),
   }),
   changeAmount: z.number().nonnegative('Valor de troco deve ser não negativo').optional(),
@@ -94,7 +94,7 @@ const OrderConfirmation = () => {
       credit: 'Cartão de Crédito',
       debit: 'Cartão de Débito',
       pix: 'PIX',
-      cash: 'Dinheiro'
+      dinheiro: 'Dinheiro'
     };
     return methods[method] || method;
   };
