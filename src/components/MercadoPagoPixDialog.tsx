@@ -95,11 +95,17 @@ export const MercadoPagoPixDialog = ({
           return;
         }
 
+        console.log('[MercadoPago] Current order status:', data.status);
+
         if (data.status === 'confirmed') {
           setPaymentStatus('confirmed');
           clearInterval(interval);
           toast.success('Pagamento confirmado!');
           onPaymentConfirmed();
+        } else if (data.status === 'cancelled') {
+          setPaymentStatus('error');
+          clearInterval(interval);
+          toast.error('Pagamento cancelado ou rejeitado.');
         }
       } catch (error) {
         console.error('[MercadoPago] Error polling status:', error);
