@@ -8,7 +8,7 @@ import { ShippingRate } from '@/hooks/useShippingRates';
 interface ShippingRateFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (data: { cep: string; price: number }) => void;
+  onSubmit: (data: { cep: string; price: number; free_shipping_min_value?: number | null }) => void;
   editingRate?: ShippingRate | null;
 }
 
@@ -20,14 +20,17 @@ export function ShippingRateFormDialog({
 }: ShippingRateFormDialogProps) {
   const [cep, setCep] = useState('');
   const [price, setPrice] = useState('');
+  const [freeShippingMinValue, setFreeShippingMinValue] = useState('');
 
   useEffect(() => {
     if (editingRate) {
       setCep(editingRate.cep);
       setPrice(editingRate.price.toString());
+      setFreeShippingMinValue(editingRate.free_shipping_min_value?.toString() || '');
     } else {
       setCep('');
       setPrice('');
+      setFreeShippingMinValue('');
     }
   }, [editingRate, open]);
 
@@ -36,6 +39,7 @@ export function ShippingRateFormDialog({
     onSubmit({
       cep: cep.replace(/\D/g, ''),
       price: parseFloat(price),
+      free_shipping_min_value: freeShippingMinValue ? parseFloat(freeShippingMinValue) : null,
     });
     onOpenChange(false);
   };
@@ -85,6 +89,21 @@ export function ShippingRateFormDialog({
               placeholder="0.00"
               required
             />
+          </div>
+          <div>
+            <Label htmlFor="freeShippingMinValue">Frete Grátis a partir de (R$)</Label>
+            <Input
+              id="freeShippingMinValue"
+              type="number"
+              step="0.01"
+              min="0"
+              value={freeShippingMinValue}
+              onChange={(e) => setFreeShippingMinValue(e.target.value)}
+              placeholder="0.00 (deixe vazio para desabilitar)"
+            />
+            <p className="text-sm text-muted-foreground mt-1">
+              Se preenchido, compras acima deste valor terão frete grátis neste CEP
+            </p>
           </div>
           <div className="flex justify-end gap-2">
             <Button

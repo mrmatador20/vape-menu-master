@@ -12,7 +12,6 @@ import Header from '@/components/Header';
 import { supabase } from '@/integrations/supabase/client';
 import { z } from 'zod';
 import { useShippingRateByCep } from '@/hooks/useShippingRates';
-import { useSettingByKey } from '@/hooks/useSettings';
 import { useCepLookup } from '@/hooks/useCepLookup';
 import { useSavedAddresses } from '@/hooks/useSavedAddresses';
 import { SavedAddressSelector } from '@/components/SavedAddressSelector';
@@ -74,10 +73,7 @@ const Checkout = () => {
   const cleanCep = formData.cep.replace(/\D/g, '');
   const { data: shippingRate } = useShippingRateByCep(cleanCep);
   const baseShippingCost = shippingRate?.price ? Number(shippingRate.price) : null;
-  
-  // Buscar configuração de frete grátis
-  const { data: freeShippingSetting } = useSettingByKey('free_shipping_min_value');
-  const freeShippingMinValue = freeShippingSetting ? parseFloat(freeShippingSetting.value) : 0;
+  const freeShippingMinValue = shippingRate?.free_shipping_min_value ? Number(shippingRate.free_shipping_min_value) : 0;
 
   // Hook para consulta de CEP
   const { isLoading: isLoadingCep, lookupCep } = useCepLookup();

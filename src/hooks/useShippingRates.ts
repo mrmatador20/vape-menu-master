@@ -6,6 +6,7 @@ export interface ShippingRate {
   id: string;
   cep: string;
   price: number;
+  free_shipping_min_value: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -48,7 +49,7 @@ export const useAddShippingRate = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async (data: { cep: string; price: number }) => {
+    mutationFn: async (data: { cep: string; price: number; free_shipping_min_value?: number | null }) => {
       const { error } = await supabase
         .from('shipping_rates')
         .insert(data);
@@ -69,7 +70,7 @@ export const useUpdateShippingRate = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: { cep: string; price: number } }) => {
+    mutationFn: async ({ id, data }: { id: string; data: { cep: string; price: number; free_shipping_min_value?: number | null } }) => {
       const { error } = await supabase
         .from('shipping_rates')
         .update(data)

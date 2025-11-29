@@ -43,7 +43,7 @@ export default function ShippingRates() {
     return <Navigate to="/" replace />;
   }
 
-  const handleSubmit = (data: { cep: string; price: number }) => {
+  const handleSubmit = (data: { cep: string; price: number; free_shipping_min_value?: number | null }) => {
     if (editingRate) {
       updateRate.mutate({ id: editingRate.id, data });
     } else {
@@ -97,6 +97,7 @@ export default function ShippingRates() {
             <TableRow>
               <TableHead>CEP</TableHead>
               <TableHead>Valor da Entrega</TableHead>
+              <TableHead>Frete Grátis a partir de</TableHead>
               <TableHead className="text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
@@ -109,6 +110,12 @@ export default function ShippingRates() {
                   </TableCell>
                   <TableCell>
                     R$ {Number(rate.price).toFixed(2)}
+                  </TableCell>
+                  <TableCell>
+                    {rate.free_shipping_min_value 
+                      ? `R$ ${Number(rate.free_shipping_min_value).toFixed(2)}`
+                      : '-'
+                    }
                   </TableCell>
                   <TableCell className="text-right space-x-2">
                     <Button
@@ -130,7 +137,7 @@ export default function ShippingRates() {
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={3} className="text-center text-muted-foreground">
+                <TableCell colSpan={4} className="text-center text-muted-foreground">
                   Nenhuma taxa cadastrada
                 </TableCell>
               </TableRow>
