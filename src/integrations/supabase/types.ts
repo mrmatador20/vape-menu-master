@@ -835,7 +835,7 @@ export type Database = {
       }
       shipping_rates: {
         Row: {
-          cep: string
+          cep: string | null
           created_at: string
           free_shipping_min_value: number | null
           id: string
@@ -843,7 +843,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          cep: string
+          cep?: string | null
           created_at?: string
           free_shipping_min_value?: number | null
           id?: string
@@ -851,7 +851,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          cep?: string
+          cep?: string | null
           created_at?: string
           free_shipping_min_value?: number | null
           id?: string

@@ -43,7 +43,7 @@ export default function ShippingRates() {
     return <Navigate to="/" replace />;
   }
 
-  const handleSubmit = (data: { cep: string; price: number; free_shipping_min_value?: number | null }) => {
+  const handleSubmit = (data: { cep: string | null; price: number; free_shipping_min_value?: number | null }) => {
     if (editingRate) {
       updateRate.mutate({ id: editingRate.id, data });
     } else {
@@ -106,7 +106,7 @@ export default function ShippingRates() {
               rates.map((rate) => (
                 <TableRow key={rate.id}>
                   <TableCell className="font-medium">
-                    {rate.cep.replace(/^(\d{5})(\d{3})$/, '$1-$2')}
+                    {rate.cep ? rate.cep.replace(/^(\d{5})(\d{3})$/, '$1-$2') : <span className="text-primary font-semibold">Todos os CEPs</span>}
                   </TableCell>
                   <TableCell>
                     R$ {Number(rate.price).toFixed(2)}
