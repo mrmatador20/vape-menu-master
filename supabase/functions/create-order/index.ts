@@ -539,20 +539,6 @@ serve(async (req) => {
 
     console.log('[create-order] Order items inserted successfully');
 
-    // Process referral if code provided
-    if (orderData.referralCode) {
-      try {
-        const referralResponse = await supabaseClient.functions.invoke('process-referral', {
-          body: { orderId: order.id, referralCode: orderData.referralCode }
-        });
-        if (referralResponse.data?.success) {
-          console.log('[create-order] Referral processed:', referralResponse.data);
-        }
-      } catch (e) {
-        console.error('[create-order] Referral error (non-blocking):', e);
-      }
-    }
-
     // Stock will be decremented automatically by the database trigger
     // when the order status is changed to 'confirmed' or 'delivered'
 

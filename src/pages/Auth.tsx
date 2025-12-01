@@ -35,7 +35,6 @@ const Auth = () => {
   const [formData, setFormData] = useState({
     email: '',
     password: '',
-    referralCode: '',
   });
   
   // 2FA verification state
@@ -99,9 +98,6 @@ const Auth = () => {
           password: formData.password,
           options: {
             emailRedirectTo: `${window.location.origin}/`,
-            data: {
-              referral_code: formData.referralCode.trim() || null,
-            }
           }
         });
 
@@ -435,27 +431,6 @@ const Auth = () => {
                 </div>
               )}
             </div>
-
-            {/* Código de Indicação - apenas no signup */}
-            {isSignUp && (
-              <div className="space-y-2">
-                <Label htmlFor="referralCode" className="text-foreground">
-                  Código de Indicação (opcional)
-                </Label>
-                <Input
-                  id="referralCode"
-                  type="text"
-                  value={formData.referralCode}
-                  onChange={(e) => setFormData({ ...formData, referralCode: e.target.value.toUpperCase() })}
-                  className="bg-background border-border text-foreground"
-                  placeholder="Ex: NEB12345"
-                  maxLength={8}
-                />
-                <p className="text-xs text-muted-foreground">
-                  Se alguém te indicou, insira o código aqui para que essa pessoa ganhe pontos
-                </p>
-              </div>
-            )}
 
             {/* Remember Device Checkbox - Always visible for login */}
             {!isSignUp && (
