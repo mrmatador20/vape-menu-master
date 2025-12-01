@@ -91,6 +91,7 @@ export default function Referrals() {
     await updateSetting.mutateAsync({
       key: 'referral_min_order_value',
       value: minOrderValue,
+      description: 'Valor mínimo do pedido (em reais) para que o indicador ganhe pontos',
     });
   };
 
