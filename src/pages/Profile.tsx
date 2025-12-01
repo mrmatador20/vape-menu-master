@@ -17,6 +17,7 @@ import { Separator } from '@/components/ui/separator';
 import { MFAEnrollDialog } from '@/components/MFAEnrollDialog';
 import { ChangePasswordDialog } from '@/components/ChangePasswordDialog';
 import { ActivityLogsCard } from '@/components/ActivityLogsCard';
+import { ReferralCard } from '@/components/ReferralCard';
 import { AvatarUpload } from '@/components/AvatarUpload';
 import { Badge } from '@/components/ui/badge';
 import { SavedAddressesManager } from '@/components/SavedAddressesManager';
@@ -583,6 +584,9 @@ const Profile = () => {
 
           {/* Activity Logs */}
           <ActivityLogsCard />
+
+          {/* Referral System */}
+          <ReferralCard />
 
           {/* Orders History Link */}
           <Card className="cursor-pointer hover:border-primary transition-colors" onClick={() => navigate('/my-orders')}>

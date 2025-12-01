@@ -419,6 +419,8 @@ export type Database = {
           expires_at: string | null
           id: string
           payment_method: string
+          referral_points_awarded: boolean | null
+          referred_by_code: string | null
           shipping_cost: number | null
           status: string
           total_amount: number
@@ -435,6 +437,8 @@ export type Database = {
           expires_at?: string | null
           id?: string
           payment_method: string
+          referral_points_awarded?: boolean | null
+          referred_by_code?: string | null
           shipping_cost?: number | null
           status?: string
           total_amount: number
@@ -451,6 +455,8 @@ export type Database = {
           expires_at?: string | null
           id?: string
           payment_method?: string
+          referral_points_awarded?: boolean | null
+          referred_by_code?: string | null
           shipping_cost?: number | null
           status?: string
           total_amount?: number
@@ -521,6 +527,7 @@ export type Database = {
           id: string
           password_changed_at: string | null
           phone: string | null
+          referral_code: string | null
           updated_at: string
         }
         Insert: {
@@ -537,6 +544,7 @@ export type Database = {
           id: string
           password_changed_at?: string | null
           phone?: string | null
+          referral_code?: string | null
           updated_at?: string
         }
         Update: {
@@ -553,6 +561,7 @@ export type Database = {
           id?: string
           password_changed_at?: string | null
           phone?: string | null
+          referral_code?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -592,6 +601,128 @@ export type Database = {
           window_start?: string
         }
         Relationships: []
+      }
+      referral_points: {
+        Row: {
+          created_at: string
+          id: string
+          points_balance: number
+          total_earned: number
+          total_redeemed: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          points_balance?: number
+          total_earned?: number
+          total_redeemed?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          points_balance?: number
+          total_earned?: number
+          total_redeemed?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      referral_rewards: {
+        Row: {
+          created_at: string
+          description: string | null
+          discount_code: string | null
+          id: string
+          is_active: boolean
+          name: string
+          points_required: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          discount_code?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          points_required: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          discount_code?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          points_required?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referral_rewards_discount_code_fkey"
+            columns: ["discount_code"]
+            isOneToOne: false
+            referencedRelation: "discounts"
+            referencedColumns: ["code"]
+          },
+        ]
+      }
+      referral_transactions: {
+        Row: {
+          created_at: string
+          id: string
+          notes: string | null
+          points_amount: number
+          related_order_id: string | null
+          related_user_id: string | null
+          reward_id: string | null
+          transaction_type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          points_amount: number
+          related_order_id?: string | null
+          related_user_id?: string | null
+          reward_id?: string | null
+          transaction_type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          points_amount?: number
+          related_order_id?: string | null
+          related_user_id?: string | null
+          reward_id?: string | null
+          transaction_type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referral_transactions_related_order_id_fkey"
+            columns: ["related_order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referral_transactions_reward_id_fkey"
+            columns: ["reward_id"]
+            isOneToOne: false
+            referencedRelation: "referral_rewards"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       review_responses: {
         Row: {
@@ -1113,6 +1244,7 @@ export type Database = {
         Args: { retention_days?: number }
         Returns: undefined
       }
+      generate_referral_code: { Args: never; Returns: string }
       get_product_availability: {
         Args: { stock_value: number }
         Returns: string

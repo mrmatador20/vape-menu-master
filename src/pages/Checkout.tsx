@@ -66,6 +66,7 @@ const Checkout = () => {
     changeAmount: '',
     discountCode: '',
     cpf: '',
+    referralCode: '',
   });
 
   const { createAddress } = useSavedAddresses();
@@ -346,6 +347,7 @@ const Checkout = () => {
           paymentMethod: validatedData.paymentMethod,
           changeAmount: validatedData.changeAmount,
           discountCode: appliedDiscount?.code || undefined,
+          referralCode: formData.referralCode.trim() || undefined,
         }
       });
 
@@ -756,6 +758,26 @@ const Checkout = () => {
                       : ` R$ ${appliedDiscount.value.toFixed(2)} de desconto`}
                   </p>
                 )}
+              </div>
+
+              <div>
+                <Label htmlFor="referralCode">Código de Indicação (opcional)</Label>
+                <Input
+                  id="referralCode"
+                  name="referralCode"
+                  value={formData.referralCode}
+                  onChange={(e) => {
+                    const value = e.target.value.toUpperCase();
+                    setFormData({ ...formData, referralCode: value });
+                  }}
+                  placeholder="Ex: NEB12345"
+                  maxLength={8}
+                  disabled={isSubmitting}
+                  className="uppercase"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Se alguém te indicou, insira o código aqui para que essa pessoa ganhe pontos
+                </p>
               </div>
 
               <Button
