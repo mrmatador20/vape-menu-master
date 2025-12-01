@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Pencil, Trash2, Gift, TrendingUp, Users } from "lucide-react";
+import { Plus, Pencil, Trash2, Gift, TrendingUp, Users, Settings } from "lucide-react";
 import { useAllReferralPoints, useAdjustPoints } from "@/hooks/useReferralPoints";
 import { useAllReferralRewards, useDeleteReferralReward } from "@/hooks/useReferralRewards";
 import { ReferralRewardFormDialog } from "@/components/admin/ReferralRewardFormDialog";
@@ -13,6 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { useSettingByKey, useUpdateSetting } from "@/hooks/useSettings";
 
 export default function Referrals() {
   const [rewardDialogOpen, setRewardDialogOpen] = useState(false);
@@ -22,11 +23,14 @@ export default function Referrals() {
   const [pointsAdjustment, setPointsAdjustment] = useState('');
   const [adjustmentNotes, setAdjustmentNotes] = useState('');
   const [deleteRewardId, setDeleteRewardId] = useState<string | null>(null);
+  const [pointsPerOrder, setPointsPerOrder] = useState('');
 
   const { data: allPoints, isLoading: pointsLoading } = useAllReferralPoints();
   const { data: rewards, isLoading: rewardsLoading } = useAllReferralRewards();
+  const { data: pointsSetting, isLoading: settingLoading } = useSettingByKey('referral_points_per_order');
   const adjustPoints = useAdjustPoints();
   const deleteReward = useDeleteReferralReward();
+  const updateSetting = useUpdateSetting();
 
   const handleEditReward = (reward: any) => {
     setEditingReward(reward);
@@ -66,6 +70,17 @@ export default function Referrals() {
     setDeleteRewardId(null);
   };
 
+  const handleUpdatePointsPerOrder = async () => {
+    const points = parseInt(pointsPerOrder);
+    if (isNaN(points) || points < 1) {
+      return;
+    }
+    await updateSetting.mutateAsync({
+      key: 'referral_points_per_order',
+      value: pointsPerOrder,
+    });
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -74,6 +89,47 @@ export default function Referrals() {
           Gerencie recompensas, pontos dos clientes e acompanhe o programa de indicação
         </p>
       </div>
+
+      {/* Configuração de Pontos por Indicação */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Settings className="h-5 w-5" />
+            <CardTitle>Configuração de Pontos</CardTitle>
+          </div>
+          <CardDescription>
+            Defina quantos pontos o indicador ganha quando um pedido indicado é confirmado
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {settingLoading ? (
+            <Skeleton className="h-10 w-full" />
+          ) : (
+            <div className="flex gap-3 items-end max-w-md">
+              <div className="flex-1 space-y-2">
+                <Label htmlFor="points_per_order">Pontos por Pedido Confirmado</Label>
+                <Input
+                  id="points_per_order"
+                  type="number"
+                  min="1"
+                  value={pointsPerOrder || pointsSetting?.value || '10'}
+                  onChange={(e) => setPointsPerOrder(e.target.value)}
+                  placeholder="10"
+                />
+              </div>
+              <Button
+                onClick={handleUpdatePointsPerOrder}
+                disabled={updateSetting.isPending || !pointsPerOrder || parseInt(pointsPerOrder) < 1}
+              >
+                Salvar
+              </Button>
+            </div>
+          )}
+          <p className="text-xs text-muted-foreground mt-2">
+            Valor atual: <strong>{pointsSetting?.value || '10'} pontos</strong> por pedido confirmado
+          </p>
+        </CardContent>
+      </Card>
 
       <Tabs defaultValue="rewards" className="space-y-6">
         <TabsList>
