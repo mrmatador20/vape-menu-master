@@ -495,6 +495,7 @@ serve(async (req) => {
         total_amount: finalAmount,
         status: initialStatus,
         expires_at: expiresAt,
+        referred_by_code: orderData.referralCode || null,
       })
       .select()
       .single();
