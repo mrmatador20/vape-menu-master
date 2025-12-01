@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Pencil, Trash2, Gift, TrendingUp, Users, Settings } from "lucide-react";
 import { useAllReferralPoints, useAdjustPoints } from "@/hooks/useReferralPoints";
 import { useAllReferralRewards, useDeleteReferralReward } from "@/hooks/useReferralRewards";
@@ -25,11 +26,18 @@ export default function Referrals() {
   const [deleteRewardId, setDeleteRewardId] = useState<string | null>(null);
   const [pointsPerOrder, setPointsPerOrder] = useState('');
   const [minOrderValue, setMinOrderValue] = useState('');
+  const [couponSettingsOpen, setCouponSettingsOpen] = useState(false);
+  const [couponDiscountType, setCouponDiscountType] = useState('percent');
+  const [couponDiscountValue, setCouponDiscountValue] = useState('10');
+  const [couponValidityDays, setCouponValidityDays] = useState('30');
 
   const { data: allPoints, isLoading: pointsLoading } = useAllReferralPoints();
   const { data: rewards, isLoading: rewardsLoading } = useAllReferralRewards();
   const { data: pointsSetting, isLoading: settingLoading } = useSettingByKey('referral_points_per_order');
   const { data: minValueSetting, isLoading: minValueLoading } = useSettingByKey('referral_min_order_value');
+  const { data: couponType } = useSettingByKey('referral_coupon_type');
+  const { data: couponValue } = useSettingByKey('referral_coupon_value');
+  const { data: couponValidity } = useSettingByKey('referral_coupon_validity_days');
   const adjustPoints = useAdjustPoints();
   const deleteReward = useDeleteReferralReward();
   const updateSetting = useUpdateSetting();
@@ -95,13 +103,41 @@ export default function Referrals() {
     });
   };
 
+  const handleSaveCouponSettings = async () => {
+    await updateSetting.mutateAsync({
+      key: 'referral_coupon_type',
+      value: couponDiscountType,
+      description: 'Tipo de desconto dos cupons de indicação (percent ou fixed)',
+    });
+
+    await updateSetting.mutateAsync({
+      key: 'referral_coupon_value',
+      value: couponDiscountValue,
+      description: 'Valor do desconto dos cupons de indicação',
+    });
+
+    await updateSetting.mutateAsync({
+      key: 'referral_coupon_validity_days',
+      value: couponValidityDays,
+      description: 'Dias de validade dos cupons de indicação',
+    });
+
+    setCouponSettingsOpen(false);
+  };
+
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Sistema de Indicação</h1>
-        <p className="text-muted-foreground">
-          Gerencie recompensas, pontos dos clientes e acompanhe o programa de indicação
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">Sistema de Indicação</h1>
+          <p className="text-muted-foreground">
+            Gerencie recompensas, pontos dos clientes e acompanhe o programa de indicação
+          </p>
+        </div>
+        <Button onClick={() => setCouponSettingsOpen(true)} variant="outline">
+          <Settings className="h-4 w-4 mr-2" />
+          Configurar Cupons
+        </Button>
       </div>
 
       {/* Configuração de Pontos por Indicação */}
@@ -424,6 +460,62 @@ export default function Referrals() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Coupon Settings Dialog */}
+      <Dialog open={couponSettingsOpen} onOpenChange={setCouponSettingsOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Configurações de Cupons de Indicação</DialogTitle>
+            <DialogDescription>
+              Configure o valor e validade dos cupons gerados automaticamente
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Tipo de Desconto</Label>
+              <Select value={couponDiscountType} onValueChange={setCouponDiscountType}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="percent">Percentual (%)</SelectItem>
+                  <SelectItem value="fixed">Valor Fixo (R$)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Valor do Desconto</Label>
+              <Input
+                type="number"
+                step="0.01"
+                value={couponDiscountValue}
+                onChange={(e) => setCouponDiscountValue(e.target.value)}
+                placeholder={couponDiscountType === 'percent' ? '10' : '5.00'}
+              />
+              <p className="text-xs text-muted-foreground">
+                {couponDiscountType === 'percent' 
+                  ? 'Percentual de desconto (ex: 10 para 10%)' 
+                  : 'Valor fixo de desconto em reais'}
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label>Validade do Cupom (dias)</Label>
+              <Input
+                type="number"
+                value={couponValidityDays}
+                onChange={(e) => setCouponValidityDays(e.target.value)}
+                placeholder="30"
+              />
+              <p className="text-xs text-muted-foreground">
+                Quantos dias após o resgate o cupom será válido
+              </p>
+            </div>
+            <Button onClick={handleSaveCouponSettings} className="w-full">
+              Salvar Configurações
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

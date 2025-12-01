@@ -149,6 +149,43 @@ export const useRedeemReward = () => {
         throw new Error('Pontos insuficientes para resgatar esta recompensa');
       }
 
+      // Generate unique coupon code
+      const { data: couponCode, error: codeError } = await supabase
+        .rpc('generate_unique_coupon_code');
+
+      if (codeError) throw codeError;
+
+      // Get coupon configuration from settings
+      const [typeResult, valueResult, validityResult] = await Promise.all([
+        supabase.from('settings').select('value').eq('key', 'referral_coupon_type').maybeSingle(),
+        supabase.from('settings').select('value').eq('key', 'referral_coupon_value').maybeSingle(),
+        supabase.from('settings').select('value').eq('key', 'referral_coupon_validity_days').maybeSingle(),
+      ]);
+
+      const couponType = typeResult.data?.value || 'percent';
+      const couponValue = parseFloat(valueResult.data?.value || '10');
+      const validityDays = parseInt(validityResult.data?.value || '30');
+
+      // Create unique discount coupon for this user
+      const { data: newCoupon, error: couponError } = await supabase
+        .from('discounts')
+        .insert({
+          code: couponCode,
+          type: couponType as 'percent' | 'fixed',
+          value: couponValue,
+          schedule_type: 'permanent',
+          is_active: true,
+          max_uses: 1, // Single use
+          user_id: user.id,
+          is_referral_reward: true,
+          reward_id: rewardId,
+          valid_until: new Date(Date.now() + validityDays * 24 * 60 * 60 * 1000).toISOString(),
+        })
+        .select()
+        .single();
+
+      if (couponError) throw couponError;
+
       // Deduct points
       const { error: updateError } = await supabase
         .from('referral_points')
@@ -168,12 +205,12 @@ export const useRedeemReward = () => {
           transaction_type: 'redeemed',
           points_amount: -reward.points_required,
           reward_id: rewardId,
-          notes: `Resgatou: ${reward.name}`,
+          notes: `Resgatou: ${reward.name} - Cupom: ${couponCode}`,
         });
 
       if (transactionError) throw transactionError;
 
-      return { reward, discountCode: reward.discount_code };
+      return { reward, discountCode: newCoupon.code };
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['referral-points'] });

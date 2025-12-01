@@ -177,10 +177,14 @@ export type Database = {
           end_time: string | null
           id: string
           is_active: boolean
+          is_referral_reward: boolean | null
           max_uses: number | null
+          reward_id: string | null
           schedule_type: string
           start_time: string | null
+          times_used: number | null
           type: string
+          user_id: string | null
           valid_until: string | null
           value: number
         }
@@ -191,10 +195,14 @@ export type Database = {
           end_time?: string | null
           id?: string
           is_active?: boolean
+          is_referral_reward?: boolean | null
           max_uses?: number | null
+          reward_id?: string | null
           schedule_type: string
           start_time?: string | null
+          times_used?: number | null
           type: string
+          user_id?: string | null
           valid_until?: string | null
           value: number
         }
@@ -205,14 +213,26 @@ export type Database = {
           end_time?: string | null
           id?: string
           is_active?: boolean
+          is_referral_reward?: boolean | null
           max_uses?: number | null
+          reward_id?: string | null
           schedule_type?: string
           start_time?: string | null
+          times_used?: number | null
           type?: string
+          user_id?: string | null
           valid_until?: string | null
           value?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "discounts_reward_id_fkey"
+            columns: ["reward_id"]
+            isOneToOne: false
+            referencedRelation: "referral_rewards"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       email_verification_codes: {
         Row: {
@@ -1245,6 +1265,7 @@ export type Database = {
         Returns: undefined
       }
       generate_referral_code: { Args: never; Returns: string }
+      generate_unique_coupon_code: { Args: never; Returns: string }
       get_product_availability: {
         Args: { stock_value: number }
         Returns: string
