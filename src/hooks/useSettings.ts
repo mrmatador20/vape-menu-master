@@ -47,13 +47,30 @@ export const useUpdateSetting = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async ({ key, value }: { key: string; value: string }) => {
-      const { error } = await supabase
+    mutationFn: async ({ key, value, description }: { key: string; value: string; description?: string }) => {
+      // Try to update first
+      const { data: existing } = await supabase
         .from('settings')
-        .update({ value })
-        .eq('key', key);
-      
-      if (error) throw error;
+        .select('id')
+        .eq('key', key)
+        .maybeSingle();
+
+      if (existing) {
+        // Update existing setting
+        const { error } = await supabase
+          .from('settings')
+          .update({ value })
+          .eq('key', key);
+        
+        if (error) throw error;
+      } else {
+        // Insert new setting
+        const { error } = await supabase
+          .from('settings')
+          .insert({ key, value, description: description || '' });
+        
+        if (error) throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['settings'] });
