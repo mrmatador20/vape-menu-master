@@ -12,12 +12,26 @@ import { toast } from "sonner";
 interface DiscountFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  discount?: any; // Discount to edit (if provided)
 }
 
-export function DiscountFormDialog({ open, onOpenChange }: DiscountFormDialogProps) {
+export function DiscountFormDialog({ open, onOpenChange, discount }: DiscountFormDialogProps) {
   const queryClient = useQueryClient();
+  const isEditing = !!discount;
+  
   const { register, handleSubmit, watch, setValue, reset } = useForm({
-    defaultValues: {
+    defaultValues: discount ? {
+      code: discount.code,
+      type: discount.type,
+      value: discount.value,
+      schedule_type: discount.schedule_type,
+      start_time: discount.start_time,
+      end_time: discount.end_time,
+      day_of_week: discount.day_of_week || 0,
+      valid_until: discount.valid_until ? discount.valid_until.split('T')[0] : null,
+      is_active: discount.is_active,
+      max_uses: discount.max_uses,
+    } : {
       code: '',
       type: 'percent',
       value: 0,
@@ -33,19 +47,27 @@ export function DiscountFormDialog({ open, onOpenChange }: DiscountFormDialogPro
 
   const scheduleType = watch('schedule_type');
 
-  const createMutation = useMutation({
+  const saveMutation = useMutation({
     mutationFn: async (data: any) => {
-      const { error } = await supabase.from('discounts').insert([data]);
-      if (error) throw error;
+      if (isEditing) {
+        const { error } = await supabase
+          .from('discounts')
+          .update(data)
+          .eq('id', discount.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from('discounts').insert([data]);
+        if (error) throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-discounts'] });
-      toast.success('Desconto criado com sucesso!');
+      toast.success(isEditing ? 'Desconto atualizado com sucesso!' : 'Desconto criado com sucesso!');
       reset();
       onOpenChange(false);
     },
     onError: () => {
-      toast.error('Erro ao criar desconto');
+      toast.error(isEditing ? 'Erro ao atualizar desconto' : 'Erro ao criar desconto');
     },
   });
 
@@ -65,14 +87,14 @@ export function DiscountFormDialog({ open, onOpenChange }: DiscountFormDialogPro
     };
     
     console.log('Dados a serem enviados:', cleanedData);
-    createMutation.mutate(cleanedData);
+    saveMutation.mutate(cleanedData);
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Criar Novo Desconto</DialogTitle>
+          <DialogTitle>{isEditing ? 'Editar Desconto' : 'Criar Novo Desconto'}</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -208,8 +230,10 @@ export function DiscountFormDialog({ open, onOpenChange }: DiscountFormDialogPro
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancelar
             </Button>
-            <Button type="submit" disabled={createMutation.isPending}>
-              {createMutation.isPending ? 'Criando...' : 'Criar Desconto'}
+            <Button type="submit" disabled={saveMutation.isPending}>
+              {saveMutation.isPending 
+                ? (isEditing ? 'Atualizando...' : 'Criando...') 
+                : (isEditing ? 'Atualizar Desconto' : 'Criar Desconto')}
             </Button>
           </div>
         </form>

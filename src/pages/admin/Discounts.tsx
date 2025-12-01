@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Plus, Trash2 } from "lucide-react";
+import { Loader2, Plus, Trash2, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { DiscountFormDialog } from "@/components/admin/DiscountFormDialog";
 import { useState } from "react";
@@ -14,6 +14,7 @@ import { Navigate } from "react-router-dom";
 export default function AdminDiscounts() {
   const { data: role, isLoading: roleLoading } = useUserRole();
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingDiscount, setEditingDiscount] = useState<any>(null);
   const queryClient = useQueryClient();
 
   if (roleLoading) {
@@ -167,14 +168,26 @@ export default function AdminDiscounts() {
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => deleteMutation.mutate(discount.id)}
-                      disabled={deleteMutation.isPending}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setEditingDiscount(discount);
+                          setDialogOpen(true);
+                        }}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => deleteMutation.mutate(discount.id)}
+                        disabled={deleteMutation.isPending}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
@@ -183,7 +196,14 @@ export default function AdminDiscounts() {
         </CardContent>
       </Card>
 
-      <DiscountFormDialog open={dialogOpen} onOpenChange={setDialogOpen} />
+      <DiscountFormDialog 
+        open={dialogOpen} 
+        onOpenChange={(open) => {
+          setDialogOpen(open);
+          if (!open) setEditingDiscount(null);
+        }}
+        discount={editingDiscount}
+      />
     </div>
   );
 }
