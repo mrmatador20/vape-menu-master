@@ -65,6 +65,7 @@ interface OrderRequest {
   paymentMethod: string;
   changeAmount?: string;
   discountCode?: string;
+  referralCode?: string;
 }
 
 serve(async (req) => {
@@ -539,10 +540,10 @@ serve(async (req) => {
     console.log('[create-order] Order items inserted successfully');
 
     // Process referral if code provided
-    if (sanitizedInput.referralCode) {
+    if (orderData.referralCode) {
       try {
         const referralResponse = await supabaseClient.functions.invoke('process-referral', {
-          body: { orderId: order.id, referralCode: sanitizedInput.referralCode }
+          body: { orderId: order.id, referralCode: orderData.referralCode }
         });
         if (referralResponse.data?.success) {
           console.log('[create-order] Referral processed:', referralResponse.data);
