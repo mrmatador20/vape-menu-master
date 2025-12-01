@@ -72,8 +72,11 @@ serve(async (req) => {
     }
 
     // Preparar dados do pagamento (sanitizados)
+    // Arredondar para 2 casas decimais (MercadoPago PIX aceita apenas centavos)
+    const roundedAmount = parseFloat(numAmount.toFixed(2));
+    
     const paymentData = {
-      transaction_amount: numAmount,
+      transaction_amount: roundedAmount,
       description: String(description).substring(0, 256), // Limitar tamanho
       payment_method_id: 'pix',
       payer: {
