@@ -84,8 +84,32 @@ serve(async (req) => {
       );
     }
 
-    // 5. Calculate points (example: 10 points per referral)
-    const POINTS_PER_REFERRAL = 10;
+    // 5. Get referral configuration from settings
+    const { data: settingsData } = await supabaseClient
+      .from('settings')
+      .select('key, value')
+      .in('key', ['referral_points_per_order', 'referral_min_order_value']);
+
+    const pointsPerOrder = settingsData?.find(s => s.key === 'referral_points_per_order')?.value || '10';
+    const minOrderValue = settingsData?.find(s => s.key === 'referral_min_order_value')?.value || '50';
+
+    const POINTS_PER_REFERRAL = parseInt(pointsPerOrder);
+    const MIN_ORDER_VALUE = parseFloat(minOrderValue);
+
+    // Check if order meets minimum value requirement
+    if (order.total_amount < MIN_ORDER_VALUE) {
+      console.log('[process-referral] Order value below minimum:', { 
+        orderValue: order.total_amount, 
+        minRequired: MIN_ORDER_VALUE 
+      });
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          message: `Pedido abaixo do valor mínimo (R$ ${MIN_ORDER_VALUE.toFixed(2)}) para ganhar pontos` 
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     // 6. Get or create referrer's points record
     const { data: referrerPoints, error: pointsError } = await supabaseClient
