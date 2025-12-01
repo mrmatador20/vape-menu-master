@@ -26,6 +26,7 @@ const orderRequestSchema = z.object({
   paymentMethod: z.enum(['pix', 'dinheiro']),
   changeAmount: z.string().trim().optional(),
   discountCode: z.string().trim().max(50).optional(),
+  referralCode: z.string().trim().max(8).optional(),
 });
 
 interface OrderItem {
@@ -536,6 +537,20 @@ serve(async (req) => {
     }
 
     console.log('[create-order] Order items inserted successfully');
+
+    // Process referral if code provided
+    if (sanitizedInput.referralCode) {
+      try {
+        const referralResponse = await supabaseClient.functions.invoke('process-referral', {
+          body: { orderId: order.id, referralCode: sanitizedInput.referralCode }
+        });
+        if (referralResponse.data?.success) {
+          console.log('[create-order] Referral processed:', referralResponse.data);
+        }
+      } catch (e) {
+        console.error('[create-order] Referral error (non-blocking):', e);
+      }
+    }
 
     // Stock will be decremented automatically by the database trigger
     // when the order status is changed to 'confirmed' or 'delivered'
