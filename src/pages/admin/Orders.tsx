@@ -47,6 +47,9 @@ export default function AdminOrders() {
   });
 
   const handleStatusChange = async (orderId: string, newStatus: string) => {
+    // Buscar dados do pedido para notificação
+    const order = orders?.find(o => o.id === orderId);
+    
     const { error } = await supabase
       .from('orders')
       .update({ status: newStatus })
@@ -58,17 +61,54 @@ export default function AdminOrders() {
         description: error.message,
         variant: "destructive",
       });
-    } else {
-      toast({
-        title: "Status atualizado",
-        description: newStatus === 'delivered' || newStatus === 'confirmed' 
-          ? "O estoque foi atualizado automaticamente." 
-          : "Status do pedido foi alterado com sucesso.",
-      });
-      queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
-      queryClient.invalidateQueries({ queryKey: ['products'] });
-      queryClient.invalidateQueries({ queryKey: ['low-stock-products'] });
+      return;
     }
+    
+    // Se o pedido foi marcado como entregue, enviar email de solicitação de avaliação
+    if (newStatus === 'delivered' && order) {
+      try {
+        // Buscar email do usuário via profiles ou auth
+        const { data: userData } = await supabase
+          .from('profiles')
+          .select('full_name')
+          .eq('id', order.user_id)
+          .single();
+        
+        // Buscar email do usuário via auth.users (admin pode acessar via service role na edge function)
+        const orderItems = order.order_items?.map((item: any) => ({
+          name: item.products?.name || 'Produto',
+          quantity: item.quantity,
+        })) || [];
+
+        // Chamar edge function para enviar email
+        const { error: emailError } = await supabase.functions.invoke('notify-delivery-review', {
+          body: {
+            orderId: order.id,
+            userId: order.user_id,
+            userName: userData?.full_name,
+            orderItems,
+          },
+        });
+
+        if (emailError) {
+          console.error('Erro ao enviar email de avaliação:', emailError);
+        }
+      } catch (emailErr) {
+        console.error('Erro ao processar notificação de entrega:', emailErr);
+      }
+    }
+
+    toast({
+      title: "Status atualizado",
+      description: newStatus === 'delivered' 
+        ? "O estoque foi atualizado e email de avaliação enviado ao cliente." 
+        : newStatus === 'confirmed'
+          ? "O estoque foi atualizado automaticamente."
+          : "Status do pedido foi alterado com sucesso.",
+    });
+    queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
+    queryClient.invalidateQueries({ queryKey: ['products'] });
+    queryClient.invalidateQueries({ queryKey: ['low-stock-products'] });
   };
 
   const handleDelete = async (orderId: string) => {

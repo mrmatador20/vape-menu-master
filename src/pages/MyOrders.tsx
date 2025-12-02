@@ -12,6 +12,7 @@ import { OrderStatusTimeline } from "@/components/OrderStatusTimeline";
 import { useCart } from "@/context/CartContext";
 import { toast } from "sonner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { PostDeliveryReviewDialog } from "@/components/PostDeliveryReviewDialog";
 
 export default function MyOrders() {
   const navigate = useNavigate();
@@ -345,17 +346,28 @@ export default function MyOrders() {
                         </span>
                       </div>
                       
-                      {/* Botão Reordenar - disponível para pedidos entregues ou cancelados */}
-                      {(order.status === 'delivered' || order.status === 'cancelled') && (
-                        <Button
-                          variant="outline"
-                          onClick={() => handleReorder(order)}
-                          className="w-full md:w-auto"
-                        >
-                          <RefreshCw className="mr-2 h-4 w-4" />
-                          Pedir Novamente
-                        </Button>
-                      )}
+                      {/* Ações para pedidos entregues ou cancelados */}
+                      <div className="flex flex-wrap gap-2 w-full md:w-auto">
+                        {/* Botão Avaliar - disponível apenas para pedidos entregues */}
+                        {order.status === 'delivered' && order.order_items && (
+                          <PostDeliveryReviewDialog 
+                            orderId={order.id}
+                            orderItems={order.order_items}
+                          />
+                        )}
+                        
+                        {/* Botão Reordenar - disponível para pedidos entregues ou cancelados */}
+                        {(order.status === 'delivered' || order.status === 'cancelled') && (
+                          <Button
+                            variant="outline"
+                            onClick={() => handleReorder(order)}
+                            className="w-full md:w-auto"
+                          >
+                            <RefreshCw className="mr-2 h-4 w-4" />
+                            Pedir Novamente
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </CardContent>
