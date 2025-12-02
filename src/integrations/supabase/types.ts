@@ -625,32 +625,46 @@ export type Database = {
       referral_points: {
         Row: {
           created_at: string
+          current_tier_id: string | null
           id: string
           points_balance: number
           total_earned: number
           total_redeemed: number
+          total_successful_referrals: number
           updated_at: string
           user_id: string
         }
         Insert: {
           created_at?: string
+          current_tier_id?: string | null
           id?: string
           points_balance?: number
           total_earned?: number
           total_redeemed?: number
+          total_successful_referrals?: number
           updated_at?: string
           user_id: string
         }
         Update: {
           created_at?: string
+          current_tier_id?: string | null
           id?: string
           points_balance?: number
           total_earned?: number
           total_redeemed?: number
+          total_successful_referrals?: number
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "referral_points_current_tier_id_fkey"
+            columns: ["current_tier_id"]
+            isOneToOne: false
+            referencedRelation: "referral_tiers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       referral_rewards: {
         Row: {
@@ -692,6 +706,42 @@ export type Database = {
             referencedColumns: ["code"]
           },
         ]
+      }
+      referral_tiers: {
+        Row: {
+          badge_color: string
+          created_at: string
+          display_order: number
+          id: string
+          is_active: boolean
+          min_referrals: number
+          name: string
+          points_multiplier: number
+          updated_at: string
+        }
+        Insert: {
+          badge_color?: string
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          min_referrals: number
+          name: string
+          points_multiplier?: number
+          updated_at?: string
+        }
+        Update: {
+          badge_color?: string
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          min_referrals?: number
+          name?: string
+          points_multiplier?: number
+          updated_at?: string
+        }
+        Relationships: []
       }
       referral_transactions: {
         Row: {
@@ -1281,6 +1331,7 @@ export type Database = {
         Args: { user_profile_id: string }
         Returns: boolean
       }
+      update_user_tier: { Args: { p_user_id: string }; Returns: undefined }
       validate_discount_code: {
         Args: { code_input: string }
         Returns: {

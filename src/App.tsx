@@ -31,6 +31,7 @@ import AdminAuditLogs from "./pages/admin/AuditLogs";
 import AdminSecurityDashboard from "./pages/admin/SecurityDashboard";
 import AdminPixPayments from "./pages/admin/PixPayments";
 import AdminReferrals from "./pages/admin/Referrals";
+import AdminReferralMetrics from "./pages/admin/ReferralMetrics";
 import TrustedDevices from "./pages/TrustedDevices";
 
 const queryClient = new QueryClient();
@@ -131,6 +132,7 @@ const App = () => (
                 <Route path="discounts" element={<AdminDiscounts />} />
                 <Route path="shipping-rates" element={<AdminShippingRates />} />
                 <Route path="referrals" element={<AdminReferrals />} />
+                <Route path="referrals/metrics" element={<AdminReferralMetrics />} />
                 <Route path="banners" element={<AdminBanners />} />
                 <Route path="audit-logs" element={<AdminAuditLogs />} />
                 <Route path="settings" element={<AdminSettings />} />
