@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useCartSync } from '@/hooks/useCartSync';
@@ -37,8 +37,31 @@ interface CartContextType {
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
+const CART_STORAGE_KEY = 'vape-menu-cart';
+
 export const CartProvider = ({ children }: { children: React.ReactNode }) => {
-  const [items, setItems] = useState<CartItem[]>([]);
+  // Carregar carrinho do localStorage na inicialização
+  const [items, setItems] = useState<CartItem[]>(() => {
+    try {
+      const savedCart = localStorage.getItem(CART_STORAGE_KEY);
+      if (savedCart) {
+        const parsedCart = JSON.parse(savedCart);
+        return Array.isArray(parsedCart) ? parsedCart : [];
+      }
+    } catch (error) {
+      console.error('Erro ao carregar carrinho do localStorage:', error);
+    }
+    return [];
+  });
+
+  // Salvar carrinho no localStorage sempre que mudar
+  useEffect(() => {
+    try {
+      localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
+    } catch (error) {
+      console.error('Erro ao salvar carrinho no localStorage:', error);
+    }
+  }, [items]);
 
   // ✅ CORREÇÃO 3: Sincronização periódica com servidor (apenas estoque)
   const handleStockChange = useCallback((productId: string, inStock: boolean) => {
