@@ -433,6 +433,7 @@ export type Database = {
           address_neighborhood: string
           address_number: string
           address_street: string
+          cancellation_reason: string | null
           cep: string | null
           change_amount: number | null
           created_at: string | null
@@ -451,6 +452,7 @@ export type Database = {
           address_neighborhood: string
           address_number: string
           address_street: string
+          cancellation_reason?: string | null
           cep?: string | null
           change_amount?: number | null
           created_at?: string | null
@@ -469,6 +471,7 @@ export type Database = {
           address_neighborhood?: string
           address_number?: string
           address_street?: string
+          cancellation_reason?: string | null
           cep?: string | null
           change_amount?: number | null
           created_at?: string | null

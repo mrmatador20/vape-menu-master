@@ -6,13 +6,17 @@ import Header from "@/components/Header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Loader2, Package, Calendar, MapPin, CreditCard, ShoppingBag } from "lucide-react";
+import { Loader2, Package, Calendar, MapPin, CreditCard, ShoppingBag, RefreshCw, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { OrderStatusTimeline } from "@/components/OrderStatusTimeline";
+import { useCart } from "@/context/CartContext";
+import { toast } from "sonner";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export default function MyOrders() {
   const navigate = useNavigate();
   const [userId, setUserId] = useState<string | null>(null);
+  const { addToCart } = useCart();
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -99,6 +103,63 @@ export default function MyOrders() {
       dinheiro: "Dinheiro",
     };
     return methods[method] || method;
+  };
+
+  const handleReorder = async (order: any) => {
+    let successCount = 0;
+    let errorCount = 0;
+
+    for (const item of order.order_items || []) {
+      if (!item.product_id) continue;
+
+      try {
+        // Buscar dados atualizados do produto
+        const { data: product, error } = await supabase
+          .from('products')
+          .select('*')
+          .eq('id', item.product_id)
+          .single();
+
+        if (error || !product) {
+          errorCount++;
+          continue;
+        }
+
+        // Cast correto dos tipos para Product
+        const productForCart = {
+          id: product.id,
+          name: product.name,
+          category: product.category,
+          subcategory: product.subcategory || undefined,
+          price: Number(product.price),
+          image: product.image || '',
+          description: product.description || '',
+          stock: product.stock,
+          min_stock: product.min_stock || 10,
+          discount_value: product.discount_value ? Number(product.discount_value) : undefined,
+          discount_type: (product.discount_type === 'fixed' || product.discount_type === 'percent') 
+            ? product.discount_type as 'fixed' | 'percent'
+            : undefined,
+          display_order: product.display_order || 0,
+        };
+
+        // Adicionar ao carrinho
+        await addToCart(productForCart, item.flavor);
+        successCount++;
+      } catch (error) {
+        console.error('Erro ao adicionar item:', error);
+        errorCount++;
+      }
+    }
+
+    if (successCount > 0) {
+      toast.success(`${successCount} ${successCount === 1 ? 'item adicionado' : 'itens adicionados'} ao carrinho!`);
+      navigate('/cart');
+    }
+
+    if (errorCount > 0) {
+      toast.warning(`${errorCount} ${errorCount === 1 ? 'item não pôde' : 'itens não puderam'} ser adicionado${errorCount === 1 ? '' : 's'} (produto indisponível ou esgotado)`);
+    }
   };
 
   if (isLoading) {
@@ -262,12 +323,39 @@ export default function MyOrders() {
 
                     <Separator />
 
-                    {/* Total */}
-                    <div className="flex items-center justify-between">
-                      <span className="text-lg font-semibold">Total do Pedido</span>
-                      <span className="text-2xl font-bold text-primary">
-                        R$ {Number(order.total_amount).toFixed(2)}
-                      </span>
+                    {/* Motivo de Cancelamento */}
+                    {order.status === 'cancelled' && order.cancellation_reason && (
+                      <>
+                        <Alert variant="destructive">
+                          <AlertCircle className="h-4 w-4" />
+                          <AlertDescription>
+                            <strong>Motivo do cancelamento:</strong> {order.cancellation_reason}
+                          </AlertDescription>
+                        </Alert>
+                        <Separator />
+                      </>
+                    )}
+
+                    {/* Total e Ações */}
+                    <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg font-semibold">Total do Pedido:</span>
+                        <span className="text-2xl font-bold text-primary">
+                          R$ {Number(order.total_amount).toFixed(2)}
+                        </span>
+                      </div>
+                      
+                      {/* Botão Reordenar - disponível para pedidos entregues ou cancelados */}
+                      {(order.status === 'delivered' || order.status === 'cancelled') && (
+                        <Button
+                          variant="outline"
+                          onClick={() => handleReorder(order)}
+                          className="w-full md:w-auto"
+                        >
+                          <RefreshCw className="mr-2 h-4 w-4" />
+                          Pedir Novamente
+                        </Button>
+                      )}
                     </div>
                   </div>
                 </CardContent>
