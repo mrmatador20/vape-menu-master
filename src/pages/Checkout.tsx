@@ -363,7 +363,7 @@ const Checkout = () => {
             neighborhood: validatedData.bairro,
             city: validatedData.cidade,
           },
-          cep: cleanCep,
+          cep: cleanCep.padStart(8, '0'), // Garantir 8 dígitos com zero à esquerda
           shippingCost: shippingCost || 0,
           paymentMethod: validatedData.paymentMethod,
           changeAmount: validatedData.changeAmount,
