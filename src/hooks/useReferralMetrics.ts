@@ -81,7 +81,7 @@ export const useReferralMetrics = () => {
           profiles(full_name),
           referral_tiers(name, badge_color)
         `)
-        .order('total_earned', { ascending: false })
+        .order('total_successful_referrals', { ascending: false })
         .limit(10);
 
       // Métricas dos últimos 6 meses
