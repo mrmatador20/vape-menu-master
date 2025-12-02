@@ -10,8 +10,8 @@ const corsHeaders = {
 async function verifyWebhookSignature(req: Request, body: any): Promise<boolean> {
   const secret = Deno.env.get('MERCADOPAGO_WEBHOOK_SECRET');
   if (!secret) {
-    console.warn('[MercadoPago Webhook] No webhook secret configured - skipping validation');
-    return true; // Allow if no secret configured (for backward compatibility)
+    console.error('[MercadoPago Webhook] Webhook secret not configured - rejecting request');
+    return false; // Reject if no secret configured
   }
 
   const xSignature = req.headers.get('x-signature');
