@@ -20,3 +20,12 @@ verify_jwt = false
 
 [functions.process-referral]
 verify_jwt = true
+
+[functions.notify-delivery-review]
+verify_jwt = false
+
+[functions.notify-new-device]
+verify_jwt = false
+
+[functions.notify-referral-points]
+verify_jwt = false
