@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Pencil, Trash2, Gift, TrendingUp, Users, Settings } from "lucide-react";
+import { Plus, Pencil, Trash2, Gift, TrendingUp, Users, Settings, BarChart3 } from "lucide-react";
 import { useAllReferralPoints, useAdjustPoints } from "@/hooks/useReferralPoints";
 import { useAllReferralRewards, useDeleteReferralReward } from "@/hooks/useReferralRewards";
 import { ReferralRewardFormDialog } from "@/components/admin/ReferralRewardFormDialog";
@@ -17,6 +18,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useSettingByKey, useUpdateSetting } from "@/hooks/useSettings";
 
 export default function Referrals() {
+  const navigate = useNavigate();
   const [rewardDialogOpen, setRewardDialogOpen] = useState(false);
   const [editingReward, setEditingReward] = useState<any>(null);
   const [adjustPointsDialogOpen, setAdjustPointsDialogOpen] = useState(false);
@@ -134,10 +136,16 @@ export default function Referrals() {
             Gerencie recompensas, pontos dos clientes e acompanhe o programa de indicação
           </p>
         </div>
-        <Button onClick={() => setCouponSettingsOpen(true)} variant="outline">
-          <Settings className="h-4 w-4 mr-2" />
-          Configurar Cupons
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={() => navigate('/admin/referrals/metrics')} variant="outline">
+            <BarChart3 className="h-4 w-4 mr-2" />
+            Ver Métricas
+          </Button>
+          <Button onClick={() => setCouponSettingsOpen(true)} variant="outline">
+            <Settings className="h-4 w-4 mr-2" />
+            Configurar Cupons
+          </Button>
+        </div>
       </div>
 
       {/* Configuração de Pontos por Indicação */}

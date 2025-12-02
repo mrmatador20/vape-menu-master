@@ -16,9 +16,10 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Separator } from '@/components/ui/separator';
 import { MFAEnrollDialog } from '@/components/MFAEnrollDialog';
 import { ChangePasswordDialog } from '@/components/ChangePasswordDialog';
-import { ActivityLogsCard } from '@/components/ActivityLogsCard';
 import { ReferralCard } from '@/components/ReferralCard';
 import { UserCouponsCard } from '@/components/UserCouponsCard';
+import { ActivityLogsCard } from '@/components/ActivityLogsCard';
+import { ReferralTierBadge } from '@/components/ReferralTierBadge';
 import { AvatarUpload } from '@/components/AvatarUpload';
 import { Badge } from '@/components/ui/badge';
 import { SavedAddressesManager } from '@/components/SavedAddressesManager';
@@ -588,6 +589,9 @@ const Profile = () => {
 
           {/* Referral System */}
           <ReferralCard />
+
+          {/* Referral Tier Badge */}
+          <ReferralTierBadge />
 
           {/* User Coupons */}
           <UserCouponsCard />
