@@ -6,7 +6,7 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import { ArrowLeft, Loader2, CheckCircle2, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import Header from '@/components/Header';
 import { supabase } from '@/integrations/supabase/client';
@@ -55,6 +55,9 @@ const Checkout = () => {
   const [selectedSavedAddress, setSelectedSavedAddress] = useState<Tables<'saved_addresses'> | null>(null);
   const [saveAddress, setSaveAddress] = useState(false);
   const [addressLabel, setAddressLabel] = useState('');
+  const [cepValidation, setCepValidation] = useState<'valid' | 'invalid' | 'idle'>('idle');
+  const [rateLimitBlock, setRateLimitBlock] = useState<{ blocked: boolean; expiresAt: string | null }>({ blocked: false, expiresAt: null });
+  const [remainingTime, setRemainingTime] = useState<string>('');
 
   const [formData, setFormData] = useState({
     rua: '',
@@ -109,6 +112,72 @@ const Checkout = () => {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
+  // Verificar rate limiting
+  useEffect(() => {
+    const checkRateLimit = async () => {
+      if (!userId) return;
+
+      const { data, error } = await supabase
+        .from('rate_limit_tracking')
+        .select('is_blocked, block_expires_at')
+        .eq('identifier', userId)
+        .eq('action_type', 'order_create')
+        .maybeSingle();
+
+      if (error) {
+        console.error('Erro ao verificar rate limit:', error);
+        return;
+      }
+
+      if (data?.is_blocked && data.block_expires_at) {
+        const expiresAt = new Date(data.block_expires_at);
+        const now = new Date();
+        
+        if (expiresAt > now) {
+          setRateLimitBlock({ blocked: true, expiresAt: data.block_expires_at });
+        } else {
+          setRateLimitBlock({ blocked: false, expiresAt: null });
+        }
+      } else {
+        setRateLimitBlock({ blocked: false, expiresAt: null });
+      }
+    };
+
+    checkRateLimit();
+    const interval = setInterval(checkRateLimit, 5000); // Verifica a cada 5 segundos
+
+    return () => clearInterval(interval);
+  }, [userId]);
+
+  // Calcular tempo restante do bloqueio
+  useEffect(() => {
+    if (!rateLimitBlock.blocked || !rateLimitBlock.expiresAt) {
+      setRemainingTime('');
+      return;
+    }
+
+    const updateRemainingTime = () => {
+      const expiresAt = new Date(rateLimitBlock.expiresAt!);
+      const now = new Date();
+      const diffMs = expiresAt.getTime() - now.getTime();
+
+      if (diffMs <= 0) {
+        setRemainingTime('');
+        setRateLimitBlock({ blocked: false, expiresAt: null });
+        return;
+      }
+
+      const minutes = Math.floor(diffMs / 60000);
+      const seconds = Math.floor((diffMs % 60000) / 1000);
+      setRemainingTime(`${minutes}:${seconds.toString().padStart(2, '0')}`);
+    };
+
+    updateRemainingTime();
+    const interval = setInterval(updateRemainingTime, 1000);
+
+    return () => clearInterval(interval);
+  }, [rateLimitBlock]);
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
@@ -147,8 +216,13 @@ const Checkout = () => {
     
     setFormData(prev => ({ ...prev, cep: formatted }));
 
-    // Consultar ViaCEP quando CEP tiver 8 dígitos
-    if (cleanCep.length === 8) {
+    // Validação em tempo real do formato
+    if (cleanCep.length === 0) {
+      setCepValidation('idle');
+    } else if (cleanCep.length === 8) {
+      setCepValidation('valid');
+      
+      // Consultar ViaCEP quando CEP tiver 8 dígitos
       const cepData = await lookupCep(cleanCep);
       
       if (cepData) {
@@ -158,7 +232,11 @@ const Checkout = () => {
           bairro: cepData.bairro || prev.bairro,
           cidade: cepData.localidade || prev.cidade,
         }));
+      } else {
+        setCepValidation('invalid');
       }
+    } else {
+      setCepValidation('invalid');
     }
   };
 
@@ -615,17 +693,38 @@ const Checkout = () => {
 
               <div>
                 <Label htmlFor="cep">CEP</Label>
-                <Input
-                  id="cep"
-                  name="cep"
-                  value={formData.cep}
-                  onChange={(e) => handleCepChange(e.target.value)}
-                  placeholder="00000-000"
-                  maxLength={9}
-                  required
-                  disabled={isSubmitting || isLoadingCep}
-                />
-                {cleanCep.length === 8 && (
+                <div className="relative">
+                  <Input
+                    id="cep"
+                    name="cep"
+                    value={formData.cep}
+                    onChange={(e) => handleCepChange(e.target.value)}
+                    placeholder="00000-000"
+                    maxLength={9}
+                    required
+                    disabled={isSubmitting || isLoadingCep}
+                    className={`pr-10 ${
+                      cepValidation === 'valid' ? 'border-green-500 focus-visible:ring-green-500' :
+                      cepValidation === 'invalid' ? 'border-destructive focus-visible:ring-destructive' :
+                      ''
+                    }`}
+                  />
+                  {cepValidation !== 'idle' && (
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                      {cepValidation === 'valid' ? (
+                        <CheckCircle2 className="h-5 w-5 text-green-500" />
+                      ) : (
+                        <XCircle className="h-5 w-5 text-destructive" />
+                      )}
+                    </div>
+                  )}
+                </div>
+                {cepValidation === 'invalid' && formData.cep.length > 0 && (
+                  <p className="text-sm text-destructive mt-1">
+                    CEP inválido ou não encontrado
+                  </p>
+                )}
+                {cleanCep.length === 8 && cepValidation === 'valid' && (
                   baseShippingCost !== null ? (
                     qualifiesForFreeShipping ? (
                       <p className="text-sm text-green-600 mt-1">
@@ -815,9 +914,14 @@ const Checkout = () => {
               <Button
                 type="submit" 
                 className="w-full"
-                disabled={isSubmitting}
+                disabled={isSubmitting || rateLimitBlock.blocked}
               >
-                {isSubmitting ? (
+                {rateLimitBlock.blocked ? (
+                  <>
+                    <XCircle className="mr-2 h-4 w-4" />
+                    Bloqueado por {remainingTime}
+                  </>
+                ) : isSubmitting ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Processando...
@@ -826,6 +930,11 @@ const Checkout = () => {
                   'Finalizar Pedido via WhatsApp'
                 )}
               </Button>
+              {rateLimitBlock.blocked && (
+                <p className="text-sm text-center text-destructive mt-2">
+                  Você atingiu o limite de tentativas. Aguarde {remainingTime} para tentar novamente.
+                </p>
+              )}
             </form>
           </Card>
 
