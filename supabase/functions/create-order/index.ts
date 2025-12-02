@@ -21,7 +21,7 @@ const orderRequestSchema = z.object({
     neighborhood: z.string().trim().min(1).max(100),
     city: z.string().trim().min(1).max(100),
   }),
-  cep: z.string().trim().min(8).max(8),
+  cep: z.string().trim().min(8).max(9), // Aceita CEP com ou sem traço (XXXXX-XXX ou XXXXXXXX)
   shippingCost: z.number().min(0),
   paymentMethod: z.enum(['pix', 'dinheiro']),
   changeAmount: z.string().trim().optional(),
