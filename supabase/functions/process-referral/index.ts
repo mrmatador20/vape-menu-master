@@ -17,27 +17,6 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Authenticate the user
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      console.error('[process-referral] Missing Authorization header');
-      return new Response(
-        JSON.stringify({ error: 'Unauthorized' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
-      );
-    }
-
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(token);
-    
-    if (authError || !user) {
-      console.error('[process-referral] Authentication failed');
-      return new Response(
-        JSON.stringify({ error: 'Unauthorized' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
-      );
-    }
-
     const { orderId, referralCode } = await req.json();
 
     console.log('[process-referral] Processing referral for order:', { orderId, referralCode });
@@ -84,15 +63,6 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ error: 'Order not found' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 404 }
-      );
-    }
-
-    // 2.1. Verify the authenticated user owns this order
-    if (order.user_id !== user.id) {
-      console.error('[process-referral] User does not own this order');
-      return new Response(
-        JSON.stringify({ error: 'Unauthorized - Order does not belong to user' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 403 }
       );
     }
 
