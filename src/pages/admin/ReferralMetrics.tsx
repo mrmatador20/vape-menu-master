@@ -181,48 +181,61 @@ export default function ReferralMetrics() {
           Top 10 Indicadores
         </h3>
         <div className="space-y-3">
-          {metrics.topReferrers.map((referrer: any, index: number) => {
-            const tier = referrer.referral_tiers;
-            const profile = referrer.profiles;
-            
-            return (
-              <div
-                key={referrer.user_id}
-                className="flex items-center justify-between p-3 rounded-lg bg-muted/50"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary font-bold">
-                    #{index + 1}
+          {metrics.topReferrers.length === 0 ? (
+            <p className="text-center text-muted-foreground py-4">
+              Nenhum indicador encontrado ainda
+            </p>
+          ) : (
+            metrics.topReferrers.map((referrer: any, index: number) => {
+              const tier = referrer.referral_tiers;
+              const profile = referrer.profiles;
+              
+              return (
+                <div
+                  key={referrer.user_id}
+                  className="flex items-center justify-between p-4 rounded-lg bg-muted/50 hover:bg-muted/70 transition-colors"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10 text-primary font-bold text-lg">
+                      #{index + 1}
+                    </div>
+                    <div>
+                      <p className="font-semibold text-base">
+                        {profile?.full_name || 'Usuário Anônimo'}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        <span className="font-medium text-primary">
+                          {referrer.total_successful_referrals}
+                        </span>{' '}
+                        indicações confirmadas
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-semibold">
-                      {profile?.full_name || 'Usuário Anônimo'}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {referrer.total_successful_referrals} indicações confirmadas
-                    </p>
+                  <div className="flex items-center gap-3">
+                    <div className="text-right">
+                      <p className="font-semibold text-lg text-primary">
+                        {referrer.total_earned} pts
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Total acumulado
+                      </p>
+                    </div>
+                    {tier && (
+                      <Badge
+                        className="h-7"
+                        style={{
+                          backgroundColor: tier.badge_color,
+                          color: '#fff',
+                        }}
+                      >
+                        {tier.name}
+                      </Badge>
+                    )}
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <div className="text-right">
-                    <p className="font-semibold text-lg text-primary">
-                      {referrer.total_earned} pts
-                    </p>
-                  </div>
-                  {tier && (
-                    <Badge
-                      style={{
-                        backgroundColor: tier.badge_color,
-                        color: '#fff',
-                      }}
-                    >
-                      {tier.name}
-                    </Badge>
-                  )}
-                </div>
-              </div>
-            );
-          })}
+              );
+            })
+          )}
         </div>
       </Card>
     </div>
