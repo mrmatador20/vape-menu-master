@@ -372,7 +372,7 @@ const Checkout = () => {
         }
       });
 
-      // ✅ CORREÇÃO 5: Melhor tratamento de erros para mobile
+      // ✅ CORREÇÃO: Tratamento completo de erros incluindo rate limiting
       if (response.error) {
         console.error('[Checkout] Edge function error:', response.error);
         
@@ -402,19 +402,30 @@ const Checkout = () => {
           errorMessage = response.error.message;
         }
         
-        // Log detalhado para debug mobile
+        // Tratamento especial para rate limiting (status 429)
+        const status = response.error.context?.status;
+        if (status === 429) {
+          console.log('[Checkout] Rate limit detected - status 429');
+          // A mensagem do rate limiting já vem do backend, apenas garantir que seja exibida
+          if (errorMessage.includes('bloqueada') || errorMessage.includes('tentativas')) {
+            toast.error(errorMessage, { duration: 8000 }); // Duração maior para ler
+            return;
+          }
+        }
+        
+        // Log detalhado para debug
         console.error('[Checkout] Error details:', {
           message: errorMessage,
           details: errorDetails,
-          status: response.error.context?.status,
-          headers: response.error.context?.headers,
+          status: status,
+          fullError: JSON.stringify(response.error, null, 2)
         });
         
         // Mostrar erro ao usuário
         if (errorDetails) {
-          toast.error(`${errorMessage}: ${errorDetails}`);
+          toast.error(`${errorMessage}: ${errorDetails}`, { duration: 6000 });
         } else {
-          toast.error(errorMessage);
+          toast.error(errorMessage, { duration: 6000 });
         }
         
         return;
