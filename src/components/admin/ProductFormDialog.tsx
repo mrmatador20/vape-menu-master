@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -43,7 +43,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Product } from "@/context/CartContext";
 import { useFlavors, Flavor } from "@/hooks/useFlavors";
 import { FlavorFormDialog } from "./FlavorFormDialog";
-import { Trash2, Edit, Plus } from "lucide-react";
+import { Trash2, Edit, Plus, Upload, Link, Loader2 } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const productSchema = z.object({
   name: z.string().min(1, "Nome é obrigatório"),
@@ -73,7 +74,69 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
   const [isFlavorDialogOpen, setIsFlavorDialogOpen] = useState(false);
   const [editingFlavor, setEditingFlavor] = useState<Flavor | null>(null);
   const [deleteFlavorId, setDeleteFlavorId] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { data: flavors } = useFlavors(product?.id || "");
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    if (!allowedTypes.includes(file.type)) {
+      toast({
+        title: "Tipo de arquivo inválido",
+        description: "Use imagens JPG, PNG, WebP ou GIF",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: "Arquivo muito grande",
+        description: "O tamanho máximo é 5MB",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+      const filePath = `products/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('product-images')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('product-images')
+        .getPublicUrl(filePath);
+
+      form.setValue('image', publicUrl);
+      toast({
+        title: "Imagem enviada",
+        description: "A imagem foi carregada com sucesso.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erro ao enviar imagem",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
 
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productSchema),
@@ -389,10 +452,70 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
               name="image"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>URL da Imagem</FormLabel>
-                  <FormControl>
-                    <Input placeholder="https://..." {...field} />
-                  </FormControl>
+                  <FormLabel>Imagem do Produto</FormLabel>
+                  <Tabs defaultValue="upload" className="w-full">
+                    <TabsList className="grid w-full grid-cols-2">
+                      <TabsTrigger value="upload" className="flex items-center gap-2">
+                        <Upload className="h-4 w-4" />
+                        Upload
+                      </TabsTrigger>
+                      <TabsTrigger value="url" className="flex items-center gap-2">
+                        <Link className="h-4 w-4" />
+                        URL
+                      </TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="upload" className="mt-3">
+                      <div className="space-y-3">
+                        <input
+                          type="file"
+                          ref={fileInputRef}
+                          onChange={handleFileUpload}
+                          accept="image/jpeg,image/png,image/webp,image/gif"
+                          className="hidden"
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="w-full"
+                          onClick={() => fileInputRef.current?.click()}
+                          disabled={isUploading}
+                        >
+                          {isUploading ? (
+                            <>
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              Enviando...
+                            </>
+                          ) : (
+                            <>
+                              <Upload className="h-4 w-4 mr-2" />
+                              Selecionar imagem do computador
+                            </>
+                          )}
+                        </Button>
+                        <p className="text-xs text-muted-foreground">
+                          JPG, PNG, WebP ou GIF. Máximo 5MB.
+                        </p>
+                      </div>
+                    </TabsContent>
+                    <TabsContent value="url" className="mt-3">
+                      <FormControl>
+                        <Input placeholder="https://..." {...field} />
+                      </FormControl>
+                    </TabsContent>
+                  </Tabs>
+                  {field.value && (
+                    <div className="mt-3">
+                      <p className="text-sm text-muted-foreground mb-2">Pré-visualização:</p>
+                      <img 
+                        src={field.value} 
+                        alt="Preview" 
+                        className="w-32 h-32 object-cover rounded-lg border"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).style.display = 'none';
+                        }}
+                      />
+                    </div>
+                  )}
                   <FormMessage />
                 </FormItem>
               )}
