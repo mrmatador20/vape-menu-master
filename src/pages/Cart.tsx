@@ -1,13 +1,33 @@
+import { useEffect, useState } from 'react';
 import { useCart } from '@/context/CartContext';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Minus, Plus, Trash2, ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Header from '@/components/Header';
+import { supabase } from '@/integrations/supabase/client';
 
 const Cart = () => {
   const { items, removeFromCart, updateQuantity, totalPrice, getFinalPrice } = useCart();
   const navigate = useNavigate();
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setIsAuthenticated(!!session);
+    };
+    checkAuth();
+  }, []);
+
+  const handleCheckout = () => {
+    if (isAuthenticated) {
+      navigate('/checkout');
+    } else {
+      // Redirect to auth with return URL
+      navigate('/auth', { state: { from: { pathname: '/checkout' } } });
+    }
+  };
 
   if (items.length === 0) {
     return (
@@ -121,9 +141,9 @@ const Cart = () => {
               <Button
                 className="w-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-glow"
                 size="lg"
-                onClick={() => navigate('/checkout')}
+                onClick={handleCheckout}
               >
-                Finalizar Pedido
+                {isAuthenticated ? 'Finalizar Pedido' : 'Entrar para Finalizar'}
               </Button>
             </div>
           </Card>
