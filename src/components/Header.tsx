@@ -1,4 +1,4 @@
-import { ShoppingCart, Settings, Package, LogOut, User, Menu, Sparkles, Droplet, Flame, ChevronDown, Grid3x3 } from 'lucide-react';
+import { ShoppingCart, Settings, Package, LogOut, User, Menu, Sparkles, Droplet, Flame, ChevronDown, Grid3x3, LogIn } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCart } from '@/context/CartContext';
 import { useNavigate } from 'react-router-dom';
@@ -277,7 +277,7 @@ const Header = () => {
             )}
           </Button>
 
-          {isLoggedIn && (
+          {isLoggedIn ? (
             <>
               <Button
                 variant="outline"
@@ -300,6 +300,16 @@ const Header = () => {
                 <LogOut className="h-5 w-5 text-destructive" />
               </Button>
             </>
+          ) : (
+            <Button
+              variant="default"
+              size="sm"
+              className="gap-2"
+              onClick={() => handleNavigate('/auth')}
+            >
+              <LogIn className="h-4 w-4" />
+              <span>Entrar</span>
+            </Button>
           )}
         </div>
 
@@ -433,7 +443,7 @@ const Header = () => {
                 )}
               </Button>
 
-              {isLoggedIn && (
+              {isLoggedIn ? (
                 <>
                   <Button
                     variant="outline"
@@ -458,6 +468,16 @@ const Header = () => {
                     <span>Sair</span>
                   </Button>
                 </>
+              ) : (
+                <Button
+                  variant="default"
+                  className="w-full justify-start gap-3 animate-fade-in"
+                  style={{ animationDelay: `${(role === 'admin' ? 200 : 150) + categories.length * 50}ms` }}
+                  onClick={() => handleNavigate('/auth')}
+                >
+                  <LogIn className="h-5 w-5" />
+                  <span>Entrar</span>
+                </Button>
               )}
             </div>
           </SheetContent>
