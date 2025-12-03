@@ -3,11 +3,36 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Minus, Plus, Trash2, ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import Header from '@/components/Header';
 
 const Cart = () => {
   const { items, removeFromCart, updateQuantity, totalPrice, getFinalPrice } = useCart();
   const navigate = useNavigate();
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setIsAuthenticated(!!session);
+    };
+    checkAuth();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
+      setIsAuthenticated(!!session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleCheckout = () => {
+    if (!isAuthenticated) {
+      navigate('/auth');
+    } else {
+      navigate('/checkout');
+    }
+  };
 
   if (items.length === 0) {
     return (
@@ -121,7 +146,7 @@ const Cart = () => {
               <Button
                 className="w-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-glow"
                 size="lg"
-                onClick={() => navigate('/checkout')}
+                onClick={handleCheckout}
               >
                 Finalizar Pedido
               </Button>

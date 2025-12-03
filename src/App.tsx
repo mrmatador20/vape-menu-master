@@ -64,9 +64,7 @@ const App = () => (
               } />
               <Route path="/cart" element={
                 <ResetFlowGuard>
-                  <ProtectedRoute>
-                    <Cart />
-                  </ProtectedRoute>
+                  <Cart />
                 </ResetFlowGuard>
               } />
               <Route path="/checkout" element={
