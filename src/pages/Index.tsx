@@ -49,7 +49,7 @@ const Index = () => {
   // Filtra produtos por categoria, subcategoria e busca
   const filteredProducts = useMemo(() => {
     let filtered = activeCategory === 'all' 
-      ? products || []
+      ? (products || []).filter(p => p.visible_in_all !== false)
       : products?.filter(p => p.category === activeCategory) || [];
     
     // Filtra por subcategoria se uma foi selecionada
