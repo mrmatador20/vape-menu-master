@@ -16,6 +16,7 @@ export interface Product {
   discount_value?: number;
   discount_type?: 'percent' | 'fixed';
   display_order?: number;
+  visible_in_all?: boolean;
 }
 
 export interface CartItem extends Product {

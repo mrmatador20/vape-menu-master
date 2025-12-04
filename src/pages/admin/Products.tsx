@@ -2,7 +2,8 @@ import { useState } from "react";
 import { useProducts } from "@/hooks/useProducts";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Search, Edit, Trash2, AlertTriangle, Loader2 } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Plus, Search, Edit, Trash2, AlertTriangle, Loader2, Eye, EyeOff } from "lucide-react";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Navigate } from "react-router-dom";
 import {
@@ -82,6 +83,29 @@ export default function AdminProducts() {
     setDeleteProductId(null);
   };
 
+  const handleToggleVisibility = async (productId: string, visible: boolean) => {
+    const { error } = await supabase
+      .from('products')
+      .update({ visible_in_all: visible })
+      .eq('id', productId);
+
+    if (error) {
+      toast({
+        title: "Erro ao atualizar",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: visible ? "Produto visível em Todos" : "Produto oculto em Todos",
+        description: visible 
+          ? "O produto agora aparece na aba Todos." 
+          : "O produto só aparece na sua categoria.",
+      });
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+    }
+  };
+
   const getStockBadge = (stock: number, minStock: number) => {
     if (stock === 0) return <Badge variant="destructive">Sem estoque</Badge>;
     if (stock <= minStock) return <Badge variant="outline" className="text-orange-500 border-orange-500">Estoque baixo</Badge>;
@@ -125,17 +149,18 @@ export default function AdminProducts() {
               <TableHead>Estoque</TableHead>
               <TableHead>Alerta</TableHead>
               <TableHead>Status</TableHead>
+              <TableHead>Visível em Todos</TableHead>
               <TableHead className="text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={9} className="text-center">Carregando...</TableCell>
+                <TableCell colSpan={10} className="text-center">Carregando...</TableCell>
               </TableRow>
             ) : filteredProducts?.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={9} className="text-center">Nenhum produto encontrado</TableCell>
+                <TableCell colSpan={10} className="text-center">Nenhum produto encontrado</TableCell>
               </TableRow>
             ) : (
               filteredProducts?.map((product) => (
@@ -154,6 +179,19 @@ export default function AdminProducts() {
                   <TableCell>{product.stock}</TableCell>
                   <TableCell>{product.min_stock}</TableCell>
                   <TableCell>{getStockBadge(product.stock, product.min_stock)}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        checked={(product as any).visible_in_all !== false}
+                        onCheckedChange={(checked) => handleToggleVisibility(product.id, checked)}
+                      />
+                      {(product as any).visible_in_all !== false ? (
+                        <Eye className="h-4 w-4 text-green-500" />
+                      ) : (
+                        <EyeOff className="h-4 w-4 text-muted-foreground" />
+                      )}
+                    </div>
+                  </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
                       <Button

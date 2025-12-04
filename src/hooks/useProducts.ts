@@ -26,6 +26,7 @@ export const useProducts = () => {
         discount_value: product.discount_value || 0,
         discount_type: product.discount_type || 'percent',
         display_order: product.display_order || 0,
+        visible_in_all: product.visible_in_all ?? true,
       })).sort((a, b) => {
         // Primeiro ordena por display_order
         if (a.display_order !== b.display_order) {

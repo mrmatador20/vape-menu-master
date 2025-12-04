@@ -502,6 +502,7 @@ export type Database = {
           price: number
           stock: number
           subcategory: string | null
+          visible_in_all: boolean
         }
         Insert: {
           category: string
@@ -517,6 +518,7 @@ export type Database = {
           price: number
           stock?: number
           subcategory?: string | null
+          visible_in_all?: boolean
         }
         Update: {
           category?: string
@@ -532,6 +534,7 @@ export type Database = {
           price?: number
           stock?: number
           subcategory?: string | null
+          visible_in_all?: boolean
         }
         Relationships: []
       }
