@@ -7,6 +7,7 @@ import { CartProvider } from "./context/CartContext";
 import { AuthStateProvider } from "./context/AuthStateContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { AuthInterceptor } from "./components/AuthInterceptor";
+import { SessionTimeoutProvider } from "./components/SessionTimeoutProvider";
 import Index from "./pages/Index";
 import Cart from "./pages/Cart";
 import Checkout from "./pages/Checkout";
@@ -56,6 +57,7 @@ const App = () => (
         <BrowserRouter>
           <AuthStateProvider>
             <AuthInterceptor>
+              <SessionTimeoutProvider>
               <Routes>
               <Route path="/" element={
                 <ResetFlowGuard>
@@ -142,6 +144,7 @@ const App = () => (
                 </ResetFlowGuard>
               } />
               </Routes>
+              </SessionTimeoutProvider>
             </AuthInterceptor>
           </AuthStateProvider>
         </BrowserRouter>
