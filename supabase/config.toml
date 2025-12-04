@@ -4,7 +4,7 @@ project_id = "bupbucfdisqedteazifs"
 verify_jwt = true
 
 [functions.audit-log]
-verify_jwt = false
+verify_jwt = true
 
 [functions.detect-anomalies]
 verify_jwt = true
@@ -22,10 +22,10 @@ verify_jwt = false
 verify_jwt = true
 
 [functions.notify-delivery-review]
-verify_jwt = false
+verify_jwt = true
 
 [functions.notify-new-device]
-verify_jwt = false
+verify_jwt = true
 
 [functions.notify-referral-points]
-verify_jwt = false
+verify_jwt = true
