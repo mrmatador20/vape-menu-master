@@ -8,6 +8,7 @@ import { useForm } from "react-hook-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useEffect } from "react";
 
 interface DiscountFormDialogProps {
   open: boolean;
@@ -46,6 +47,39 @@ export function DiscountFormDialog({ open, onOpenChange, discount }: DiscountFor
   });
 
   const scheduleType = watch('schedule_type');
+
+  // Reset form when discount prop changes or dialog opens
+  useEffect(() => {
+    if (open) {
+      if (discount) {
+        reset({
+          code: discount.code,
+          type: discount.type,
+          value: discount.value,
+          schedule_type: discount.schedule_type,
+          start_time: discount.start_time,
+          end_time: discount.end_time,
+          day_of_week: discount.day_of_week || 0,
+          valid_until: discount.valid_until ? discount.valid_until.split('T')[0] : null,
+          is_active: discount.is_active,
+          max_uses: discount.max_uses,
+        });
+      } else {
+        reset({
+          code: '',
+          type: 'percent',
+          value: 0,
+          schedule_type: 'permanent',
+          start_time: null,
+          end_time: null,
+          day_of_week: 0,
+          valid_until: null,
+          is_active: true,
+          max_uses: null,
+        });
+      }
+    }
+  }, [discount, open, reset]);
 
   const saveMutation = useMutation({
     mutationFn: async (data: any) => {
