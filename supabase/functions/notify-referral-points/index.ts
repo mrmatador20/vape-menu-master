@@ -20,9 +20,83 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
+    // SECURITY: Verify authentication token
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      console.error('[notify-referral-points] Missing Authorization header');
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized - Missing token' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(token);
+
+    if (authError || !user) {
+      console.error('[notify-referral-points] Auth error');
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const { referrerId, pointsAwarded, orderId } = await req.json();
 
-    console.log('[notify-referral-points] Sending notification:', { referrerId, pointsAwarded });
+    console.log('[notify-referral-points] Processing notification');
+
+    if (!referrerId || !pointsAwarded) {
+      return new Response(
+        JSON.stringify({ error: 'referrerId and pointsAwarded are required' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // SECURITY: Verify caller has permission (must be admin or the referrer themselves)
+    const isOwnNotification = user.id === referrerId;
+    
+    if (!isOwnNotification) {
+      // Check if caller is admin
+      const { data: userRole } = await supabaseClient
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      
+      if (!userRole || userRole.role !== 'admin') {
+        console.error('[notify-referral-points] Unauthorized: User is not referrer or admin');
+        return new Response(
+          JSON.stringify({ error: 'Forbidden - Not authorized to trigger this notification' }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
+    // SECURITY: Validate orderId if provided - ensure it exists and has valid referral
+    if (orderId) {
+      const { data: order, error: orderError } = await supabaseClient
+        .from('orders')
+        .select('referred_by_code, referral_points_awarded')
+        .eq('id', orderId)
+        .single();
+
+      if (orderError || !order) {
+        console.error('[notify-referral-points] Order not found');
+        return new Response(
+          JSON.stringify({ error: 'Order not found' }),
+          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Verify this order actually has a referral code
+      if (!order.referred_by_code) {
+        console.error('[notify-referral-points] Order has no referral code');
+        return new Response(
+          JSON.stringify({ error: 'Order has no referral' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
 
     // Buscar informações do referrer
     const { data: referrerProfile, error: profileError } = await supabaseClient
@@ -32,7 +106,7 @@ serve(async (req) => {
       .single();
 
     if (profileError || !referrerProfile) {
-      console.error('[notify-referral-points] Error fetching referrer profile:', profileError);
+      console.error('[notify-referral-points] Referrer profile not found');
       return new Response(
         JSON.stringify({ error: 'Referrer profile not found' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 404 }
@@ -40,10 +114,10 @@ serve(async (req) => {
     }
 
     // Buscar email do referrer
-    const { data: { user }, error: userError } = await supabaseClient.auth.admin.getUserById(referrerId);
+    const { data: { user: referrerUser }, error: userError } = await supabaseClient.auth.admin.getUserById(referrerId);
 
-    if (userError || !user?.email) {
-      console.error('[notify-referral-points] Error fetching referrer email:', userError);
+    if (userError || !referrerUser?.email) {
+      console.error('[notify-referral-points] Referrer email not found');
       return new Response(
         JSON.stringify({ error: 'Referrer email not found' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 404 }
@@ -60,10 +134,12 @@ serve(async (req) => {
     const currentBalance = pointsData?.points_balance || 0;
     const totalEarned = pointsData?.total_earned || 0;
 
+    console.log('[notify-referral-points] Sending email notification');
+
     // Enviar email de notificação
     const emailResponse = await resend.emails.send({
       from: 'NebulaVape <onboarding@resend.dev>',
-      to: [user.email],
+      to: [referrerUser.email],
       subject: '🎉 Você ganhou pontos de indicação!',
       html: `
         <!DOCTYPE html>
@@ -227,17 +303,17 @@ serve(async (req) => {
       `,
     });
 
-    console.log('[notify-referral-points] Email sent:', emailResponse);
+    console.log('[notify-referral-points] Email sent successfully');
 
     return new Response(
-      JSON.stringify({ success: true, emailResponse }),
+      JSON.stringify({ success: true }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error) {
-    console.error('[notify-referral-points] Error:', error);
+    console.error('[notify-referral-points] Error:', error instanceof Error ? error.message : 'Unknown error');
     return new Response(
-      JSON.stringify({ error: 'Internal server error', details: error instanceof Error ? error.message : String(error) }),
+      JSON.stringify({ error: 'Internal server error' }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
     );
   }

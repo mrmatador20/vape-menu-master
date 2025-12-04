@@ -32,10 +32,30 @@ const handler = async (req: Request): Promise<Response> => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
+    // SECURITY: Verify authentication token
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      console.error("[notify-delivery-review] Missing Authorization header");
+      return new Response(
+        JSON.stringify({ error: "Unauthorized - Missing token" }),
+        { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    const token = authHeader.replace("Bearer ", "");
+    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
+
+    if (authError || !user) {
+      console.error("[notify-delivery-review] Auth error:", authError?.message || "User not found");
+      return new Response(
+        JSON.stringify({ error: "Unauthorized" }),
+        { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
     const { orderId, userId, userName, orderItems }: NotifyDeliveryReviewRequest = await req.json();
 
     console.log("[notify-delivery-review] Processing for order:", orderId);
-    console.log("[notify-delivery-review] User ID:", userId);
 
     if (!orderId || !userId) {
       console.error("[notify-delivery-review] Missing required fields");
@@ -45,11 +65,54 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
+    // SECURITY: Verify caller has permission (must be the user themselves OR an admin)
+    const isOwnOrder = user.id === userId;
+    
+    if (!isOwnOrder) {
+      // Check if caller is admin
+      const { data: userRole } = await supabaseAdmin
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      
+      if (!userRole || userRole.role !== 'admin') {
+        console.error("[notify-delivery-review] Unauthorized: User is not owner or admin");
+        return new Response(
+          JSON.stringify({ error: "Forbidden - Not authorized to trigger this notification" }),
+          { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        );
+      }
+    }
+
+    // SECURITY: Verify the order belongs to the target userId
+    const { data: order, error: orderError } = await supabaseAdmin
+      .from('orders')
+      .select('user_id, status')
+      .eq('id', orderId)
+      .single();
+
+    if (orderError || !order) {
+      console.error("[notify-delivery-review] Order not found");
+      return new Response(
+        JSON.stringify({ error: "Order not found" }),
+        { status: 404, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    if (order.user_id !== userId) {
+      console.error("[notify-delivery-review] Order does not belong to specified user");
+      return new Response(
+        JSON.stringify({ error: "Forbidden - Order user mismatch" }),
+        { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
     // Buscar email do usuário via auth.users (usando service role)
     const { data: userData, error: userError } = await supabaseAdmin.auth.admin.getUserById(userId);
     
     if (userError || !userData?.user?.email) {
-      console.error("[notify-delivery-review] Error fetching user email:", userError);
+      console.error("[notify-delivery-review] Error fetching user email");
       return new Response(
         JSON.stringify({ error: "Could not fetch user email" }),
         { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
@@ -57,7 +120,7 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     const userEmail = userData.user.email;
-    console.log("[notify-delivery-review] User email found:", userEmail);
+    console.log("[notify-delivery-review] Sending notification email");
 
     // Generate product list HTML
     const productsHtml = orderItems
@@ -148,12 +211,11 @@ const handler = async (req: Request): Promise<Response> => {
 
     if (!emailResponse.ok) {
       const errorData = await emailResponse.text();
-      console.error("[notify-delivery-review] Email error:", errorData);
-      throw new Error(`Failed to send email: ${errorData}`);
+      console.error("[notify-delivery-review] Email error");
+      throw new Error("Failed to send email");
     }
 
-    const emailResult = await emailResponse.json();
-    console.log("[notify-delivery-review] Email sent successfully:", emailResult);
+    console.log("[notify-delivery-review] Email sent successfully");
 
     // Log notification
     await supabaseAdmin.from("security_notification_logs").insert({
@@ -162,10 +224,10 @@ const handler = async (req: Request): Promise<Response> => {
       channel: "email",
       recipient: userEmail,
       subject: "Avalie seu pedido",
-      message_content: `Solicitação de avaliação enviada para pedido ${orderId}`,
+      message_content: `Solicitação de avaliação enviada para pedido ${orderId.slice(0, 8)}`,
       status: "sent",
       delivered_at: new Date().toISOString(),
-      metadata: { orderId, itemCount: orderItems.length },
+      metadata: { orderId: orderId.slice(0, 8), itemCount: orderItems.length },
     });
 
     return new Response(
@@ -176,9 +238,9 @@ const handler = async (req: Request): Promise<Response> => {
       }
     );
   } catch (error: any) {
-    console.error("[notify-delivery-review] Error:", error);
+    console.error("[notify-delivery-review] Error:", error.message);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: "Internal server error" }),
       {
         status: 500,
         headers: { "Content-Type": "application/json", ...corsHeaders },
