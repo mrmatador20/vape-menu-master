@@ -29,3 +29,6 @@ verify_jwt = true
 
 [functions.notify-referral-points]
 verify_jwt = true
+
+[functions.notify-log-cleanup]
+verify_jwt = true

@@ -1,6 +1,7 @@
 import { Loader2 } from 'lucide-react';
 import { useUserRole } from '@/hooks/useUserRole';
 import { Navigate } from 'react-router-dom';
+import LogRetentionSettings from '@/components/admin/LogRetentionSettings';
 
 export default function Settings() {
   const { data: role, isLoading: roleLoading } = useUserRole();
@@ -22,13 +23,14 @@ export default function Settings() {
       <div>
         <h1 className="text-3xl font-bold">Configurações do Sistema</h1>
         <p className="text-muted-foreground mt-1">
-          Configure as opções gerais da loja
+          Configure as opções gerais da loja e segurança
         </p>
       </div>
 
-      <div className="text-center py-12 text-muted-foreground">
-        <p>Nenhuma configuração disponível no momento.</p>
-        <p className="text-sm mt-2">
+      <LogRetentionSettings />
+
+      <div className="text-center py-6 text-muted-foreground border-t">
+        <p className="text-sm">
           Configure o frete grátis por CEP na página de Taxas de Entrega.
         </p>
       </div>
