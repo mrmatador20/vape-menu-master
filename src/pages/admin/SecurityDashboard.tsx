@@ -5,7 +5,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Shield, AlertTriangle, Activity, Lock, TrendingUp, TrendingDown, Eye, AlertCircle, Loader2 } from 'lucide-react';
 import { useSecurityMetrics } from '@/hooks/useSecurityMetrics';
-import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
@@ -13,6 +13,9 @@ import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { useUserRole } from '@/hooks/useUserRole';
 import { Navigate } from 'react-router-dom';
+import SecurityReportExport from '@/components/admin/SecurityReportExport';
+import AnomalyAlertSettings from '@/components/admin/AnomalyAlertSettings';
+import FieldEncryptionInfo from '@/components/admin/FieldEncryptionInfo';
 
 const COLORS = ['#ef4444', '#f59e0b', '#10b981', '#3b82f6'];
 
@@ -346,6 +349,14 @@ const SecurityDashboard = () => {
           </div>
         </CardContent>
       </Card>
+      {/* Security Tools Section */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        <SecurityReportExport />
+        <AnomalyAlertSettings />
+      </div>
+
+      {/* Field Encryption Info */}
+      <FieldEncryptionInfo />
     </div>
   );
 };
