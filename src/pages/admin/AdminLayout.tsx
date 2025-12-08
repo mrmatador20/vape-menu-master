@@ -4,15 +4,17 @@ import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import { useUserRole } from "@/hooks/useUserRole";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState, useRef } from "react";
-import { Loader2 } from "lucide-react";
+import { Loader2, ShieldAlert, ShieldCheck } from "lucide-react";
 import { MFAVerificationGate } from "@/components/MFAVerificationGate";
 import { useAuthGuard } from "@/hooks/useAuthGuard";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function AdminLayout() {
   const { data: role, isLoading: roleLoading } = useUserRole();
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
-  const [adminAuthState, setAdminAuthState] = useState<'checking' | 'requires_2fa' | 'authenticated'>('checking');
+  const [adminAuthState, setAdminAuthState] = useState<'checking' | 'requires_2fa' | 'authenticated' | 'no_2fa_configured'>('checking');
   const [challengeData, setChallengeData] = useState<any>(null);
   const { checkAuthRequires2FA } = useAuthGuard();
   const location = useLocation();
@@ -47,11 +49,11 @@ export default function AdminLayout() {
       try {
         const authCheck = await checkAuthRequires2FA();
         
-        // If user doesn't have 2FA enabled, allow access (they passed login auth)
+        // CRITICAL: Admin MUST have 2FA enabled to access dashboard
         if (!authCheck.has2FAEnabled) {
-          console.log('🔐 Admin: User has no 2FA enabled, allowing access');
-          sessionStorage.setItem('admin_2fa_verified', 'true');
-          setAdminAuthState('authenticated');
+          console.log('🔐 Admin: User has no 2FA enabled - BLOCKING ACCESS');
+          setAdminAuthState('no_2fa_configured');
+          toast.error('Você precisa configurar 2FA para acessar o painel administrativo');
           return;
         }
 
@@ -164,6 +166,49 @@ export default function AdminLayout() {
   // Block if not authenticated or not admin
   if (!isAuthenticated || role !== 'admin') {
     return <Navigate to="/" state={{ from: location }} replace />;
+  }
+
+  // Block admin access if 2FA is not configured
+  if (adminAuthState === 'no_2fa_configured') {
+    return (
+      <div className="min-h-screen bg-gradient-hero flex items-center justify-center p-4">
+        <Card className="max-w-md w-full">
+          <CardHeader className="text-center">
+            <div className="mx-auto mb-4 h-16 w-16 rounded-full bg-destructive/10 flex items-center justify-center">
+              <ShieldAlert className="h-8 w-8 text-destructive" />
+            </div>
+            <CardTitle className="text-xl">Acesso Bloqueado</CardTitle>
+            <CardDescription>
+              Para acessar o painel administrativo, você precisa ter a autenticação de dois fatores (2FA) configurada em sua conta.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="bg-muted/50 rounded-lg p-4 text-sm text-muted-foreground">
+              <div className="flex items-start gap-3">
+                <ShieldCheck className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="font-medium text-foreground mb-1">Por que 2FA é obrigatório?</p>
+                  <p>O painel administrativo contém dados sensíveis. A autenticação de dois fatores adiciona uma camada extra de segurança para proteger sua conta e os dados da empresa.</p>
+                </div>
+              </div>
+            </div>
+            <Button 
+              onClick={() => navigate('/profile')} 
+              className="w-full"
+            >
+              Configurar 2FA no Perfil
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={() => navigate('/')} 
+              className="w-full"
+            >
+              Voltar para o Início
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
   // Show 2FA gate for admin access
