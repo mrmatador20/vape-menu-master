@@ -25,6 +25,11 @@ export default function AdminLayout() {
     });
   }, []);
 
+  // Clear admin 2FA verification on mount - ALWAYS require 2FA for admin access
+  useEffect(() => {
+    sessionStorage.removeItem('admin_2fa_verified');
+  }, []);
+
   // Check admin 2FA verification on component mount
   useEffect(() => {
     const checkAdminAuth = async () => {
@@ -34,14 +39,8 @@ export default function AdminLayout() {
 
       hasCheckedRef.current = true;
 
-      // Check if admin 2FA was verified in this session
-      const adminVerified = sessionStorage.getItem('admin_2fa_verified') === 'true';
-      
-      if (adminVerified) {
-        console.log('🔐 Admin: Already verified 2FA for admin access');
-        setAdminAuthState('authenticated');
-        return;
-      }
+      // ALWAYS require 2FA for admin access - no session caching
+      console.log('🔐 Admin: Requiring 2FA verification for admin dashboard access');
 
       console.log('🔐 Admin: Checking 2FA requirements for admin access');
       
