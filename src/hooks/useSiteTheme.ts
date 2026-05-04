@@ -34,6 +34,48 @@ export interface ThemePreset {
 
 export const THEME_PRESETS: ThemePreset[] = [
   {
+    id: 'ivory-gold',
+    name: 'Ivory & Gold (sofisticado)',
+    description: 'Marfim cremoso com dourado champanhe — luxo discreto',
+    values: {
+      theme_primary: '38 55% 52%',
+      theme_background: '40 30% 97%',
+      theme_foreground: '30 15% 15%',
+      theme_card: '0 0% 100%',
+      theme_card_foreground: '30 15% 15%',
+      theme_accent: '38 65% 58%',
+      theme_border: '38 25% 88%',
+    },
+  },
+  {
+    id: 'onyx-champagne',
+    name: 'Onyx & Champagne',
+    description: 'Preto profundo com dourado champanhe — alta perfumaria',
+    values: {
+      theme_primary: '40 60% 60%',
+      theme_background: '30 8% 8%',
+      theme_foreground: '40 30% 94%',
+      theme_card: '30 8% 12%',
+      theme_card_foreground: '40 30% 94%',
+      theme_accent: '40 70% 65%',
+      theme_border: '35 12% 22%',
+    },
+  },
+  {
+    id: 'pearl-rose',
+    name: 'Pérola & Rosé',
+    description: 'Branco perolado com rosé gold — feminino e refinado',
+    values: {
+      theme_primary: '15 45% 55%',
+      theme_background: '20 30% 98%',
+      theme_foreground: '20 20% 18%',
+      theme_card: '0 0% 100%',
+      theme_card_foreground: '20 20% 18%',
+      theme_accent: '15 55% 62%',
+      theme_border: '20 25% 90%',
+    },
+  },
+  {
     id: 'dark',
     name: 'Escuro Neon (padrão)',
     description: 'Fundo escuro com destaques em ciano',
