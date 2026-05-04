@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/sheet';
 import { Separator } from '@/components/ui/separator';
 import { useProducts } from '@/hooks/useProducts';
+import { useSiteIdentity } from '@/hooks/useSiteIdentity';
 import {
   Accordion,
   AccordionContent,
@@ -41,6 +42,8 @@ const Header = () => {
   const navigate = useNavigate();
   const { data: role } = useUserRole();
   const { data: products } = useProducts();
+  const { data: siteIdentity } = useSiteIdentity();
+  const siteName = siteIdentity?.site_name ?? 'NebulaVape';
   const { isNavigationBlocked } = useAuthState();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -139,7 +142,7 @@ const Header = () => {
           <div className="flex items-center space-x-2">
             <div className="h-8 w-8 rounded-lg bg-gradient-primary" />
             <span className="text-xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-              NebulaVape
+              {siteName}
             </span>
           </div>
           <div className="text-sm text-muted-foreground">
@@ -159,7 +162,7 @@ const Header = () => {
         >
           <div className="h-8 w-8 rounded-lg bg-gradient-primary" />
           <span className="text-xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-            NebulaVape
+            {siteName}
           </span>
         </div>
         
