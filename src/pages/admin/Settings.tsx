@@ -2,6 +2,7 @@ import { Loader2 } from 'lucide-react';
 import { useUserRole } from '@/hooks/useUserRole';
 import { Navigate } from 'react-router-dom';
 import LogRetentionSettings from '@/components/admin/LogRetentionSettings';
+import SiteIdentitySettings from '@/components/admin/SiteIdentitySettings';
 
 export default function Settings() {
   const { data: role, isLoading: roleLoading } = useUserRole();
@@ -26,6 +27,8 @@ export default function Settings() {
           Configure as opções gerais da loja e segurança
         </p>
       </div>
+
+      <SiteIdentitySettings />
 
       <LogRetentionSettings />
 

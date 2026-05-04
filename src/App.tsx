@@ -8,6 +8,7 @@ import { AuthStateProvider } from "./context/AuthStateContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { AuthInterceptor } from "./components/AuthInterceptor";
 import { SessionTimeoutProvider } from "./components/SessionTimeoutProvider";
+import { SiteIdentityProvider } from "./components/SiteIdentityProvider";
 import Index from "./pages/Index";
 import Cart from "./pages/Cart";
 import Checkout from "./pages/Checkout";
@@ -57,6 +58,7 @@ const App = () => (
         <BrowserRouter>
           <AuthStateProvider>
             <AuthInterceptor>
+              <SiteIdentityProvider>
               <SessionTimeoutProvider>
               <Routes>
               <Route path="/" element={
@@ -145,6 +147,7 @@ const App = () => (
               } />
               </Routes>
               </SessionTimeoutProvider>
+              </SiteIdentityProvider>
             </AuthInterceptor>
           </AuthStateProvider>
         </BrowserRouter>
