@@ -13,14 +13,14 @@ export interface SiteTheme {
 }
 
 export const THEME_DEFAULTS: SiteTheme = {
-  theme_preset: 'dark',
-  theme_primary: '195 100% 50%',
-  theme_background: '220 25% 8%',
-  theme_foreground: '180 100% 95%',
-  theme_card: '220 20% 12%',
-  theme_card_foreground: '180 100% 95%',
-  theme_accent: '195 100% 60%',
-  theme_border: '220 15% 22%',
+  theme_preset: 'ivory-gold',
+  theme_primary: '38 55% 52%',
+  theme_background: '40 30% 97%',
+  theme_foreground: '30 15% 15%',
+  theme_card: '0 0% 100%',
+  theme_card_foreground: '30 15% 15%',
+  theme_accent: '38 65% 58%',
+  theme_border: '38 25% 88%',
 };
 
 export const THEME_KEYS = Object.keys(THEME_DEFAULTS) as (keyof SiteTheme)[];
