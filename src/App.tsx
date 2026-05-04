@@ -60,6 +60,7 @@ const App = () => (
           <AuthStateProvider>
             <AuthInterceptor>
               <SiteIdentityProvider>
+              <SiteThemeProvider>
               <SessionTimeoutProvider>
               <Routes>
               <Route path="/" element={
