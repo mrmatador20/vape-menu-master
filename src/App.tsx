@@ -9,6 +9,7 @@ import { ProtectedRoute } from "./components/ProtectedRoute";
 import { AuthInterceptor } from "./components/AuthInterceptor";
 import { SessionTimeoutProvider } from "./components/SessionTimeoutProvider";
 import { SiteIdentityProvider } from "./components/SiteIdentityProvider";
+import { SiteThemeProvider } from "./components/SiteThemeProvider";
 import Index from "./pages/Index";
 import Cart from "./pages/Cart";
 import Checkout from "./pages/Checkout";
@@ -59,6 +60,7 @@ const App = () => (
           <AuthStateProvider>
             <AuthInterceptor>
               <SiteIdentityProvider>
+              <SiteThemeProvider>
               <SessionTimeoutProvider>
               <Routes>
               <Route path="/" element={
@@ -147,6 +149,7 @@ const App = () => (
               } />
               </Routes>
               </SessionTimeoutProvider>
+              </SiteThemeProvider>
               </SiteIdentityProvider>
             </AuthInterceptor>
           </AuthStateProvider>
