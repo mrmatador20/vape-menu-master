@@ -149,6 +149,7 @@ const App = () => (
               } />
               </Routes>
               </SessionTimeoutProvider>
+              </SiteThemeProvider>
               </SiteIdentityProvider>
             </AuthInterceptor>
           </AuthStateProvider>
