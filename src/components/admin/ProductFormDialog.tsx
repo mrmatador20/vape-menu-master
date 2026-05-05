@@ -57,6 +57,7 @@ const productSchema = z.object({
   discount_type: z.enum(['percent', 'fixed']).optional(),
   discount_value: z.string().optional(),
   image: z.string().url("URL inválida").optional().or(z.literal("")),
+  images: z.array(z.string().url()).max(12, "Máximo de 12 imagens").optional(),
   description: z.string().optional(),
 });
 
