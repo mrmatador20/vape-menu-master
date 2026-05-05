@@ -45,6 +45,7 @@ import { useFlavors, Flavor } from "@/hooks/useFlavors";
 import { FlavorFormDialog } from "./FlavorFormDialog";
 import { Trash2, Edit, Plus, Upload, Link, Loader2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ProductImagesField } from "./ProductImagesField";
 
 const productSchema = z.object({
   name: z.string().min(1, "Nome é obrigatório"),
@@ -57,6 +58,7 @@ const productSchema = z.object({
   discount_type: z.enum(['percent', 'fixed']).optional(),
   discount_value: z.string().optional(),
   image: z.string().url("URL inválida").optional().or(z.literal("")),
+  images: z.array(z.string().url()).max(12, "Máximo de 12 imagens").optional(),
   description: z.string().optional(),
 });
 
@@ -151,6 +153,7 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
       discount_type: "percent",
       discount_value: "0",
       image: "",
+      images: [],
       description: "",
     },
   });
@@ -168,6 +171,9 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
         discount_type: ((product as any).discount_type || 'percent') as 'percent' | 'fixed',
         discount_value: ((product as any).discount_value || 0).toString(),
         image: product.image || "",
+        images: (product as any).images && (product as any).images.length
+          ? (product as any).images
+          : (product.image ? [product.image] : []),
         description: product.description || "",
       });
     } else {
@@ -182,6 +188,7 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
         discount_type: "percent",
         discount_value: "0",
         image: "",
+        images: [],
         description: "",
       });
     }
@@ -225,7 +232,8 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
       display_order: parseInt(values.display_order),
       discount_type: values.discount_type || 'percent',
       discount_value: parseFloat(values.discount_value || "0"),
-      image: values.image || null,
+      image: (values.images && values.images[0]) || values.image || null,
+      images: values.images ?? [],
       description: values.description || null,
     };
 
@@ -449,73 +457,17 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
 
             <FormField
               control={form.control}
-              name="image"
+              name="images"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Imagem do Produto</FormLabel>
-                  <Tabs defaultValue="upload" className="w-full">
-                    <TabsList className="grid w-full grid-cols-2">
-                      <TabsTrigger value="upload" className="flex items-center gap-2">
-                        <Upload className="h-4 w-4" />
-                        Upload
-                      </TabsTrigger>
-                      <TabsTrigger value="url" className="flex items-center gap-2">
-                        <Link className="h-4 w-4" />
-                        URL
-                      </TabsTrigger>
-                    </TabsList>
-                    <TabsContent value="upload" className="mt-3">
-                      <div className="space-y-3">
-                        <input
-                          type="file"
-                          ref={fileInputRef}
-                          onChange={handleFileUpload}
-                          accept="image/jpeg,image/png,image/webp,image/gif"
-                          className="hidden"
-                        />
-                        <Button
-                          type="button"
-                          variant="outline"
-                          className="w-full"
-                          onClick={() => fileInputRef.current?.click()}
-                          disabled={isUploading}
-                        >
-                          {isUploading ? (
-                            <>
-                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                              Enviando...
-                            </>
-                          ) : (
-                            <>
-                              <Upload className="h-4 w-4 mr-2" />
-                              Selecionar imagem do computador
-                            </>
-                          )}
-                        </Button>
-                        <p className="text-xs text-muted-foreground">
-                          JPG, PNG, WebP ou GIF. Máximo 5MB.
-                        </p>
-                      </div>
-                    </TabsContent>
-                    <TabsContent value="url" className="mt-3">
-                      <FormControl>
-                        <Input placeholder="https://..." {...field} />
-                      </FormControl>
-                    </TabsContent>
-                  </Tabs>
-                  {field.value && (
-                    <div className="mt-3">
-                      <p className="text-sm text-muted-foreground mb-2">Pré-visualização:</p>
-                      <img 
-                        src={field.value} 
-                        alt="Preview" 
-                        className="w-32 h-32 object-cover rounded-lg border"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).style.display = 'none';
-                        }}
-                      />
-                    </div>
-                  )}
+                  <FormLabel>Fotos do Produto (até 12)</FormLabel>
+                  <ProductImagesField
+                    value={field.value ?? []}
+                    onChange={(next) => {
+                      field.onChange(next);
+                      form.setValue('image', next[0] ?? '');
+                    }}
+                  />
                   <FormMessage />
                 </FormItem>
               )}

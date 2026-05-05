@@ -10,6 +10,7 @@ export interface Product {
   subcategory?: string;
   price: number;
   image: string;
+  images?: string[];
   description: string;
   stock: number;
   min_stock: number;

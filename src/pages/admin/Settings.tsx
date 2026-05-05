@@ -4,6 +4,7 @@ import { Navigate } from 'react-router-dom';
 import LogRetentionSettings from '@/components/admin/LogRetentionSettings';
 import SiteIdentitySettings from '@/components/admin/SiteIdentitySettings';
 import SiteThemeSettings from '@/components/admin/SiteThemeSettings';
+import CategoriesSettings from '@/components/admin/CategoriesSettings';
 
 export default function Settings() {
   const { data: role, isLoading: roleLoading } = useUserRole();
@@ -32,6 +33,8 @@ export default function Settings() {
       <SiteIdentitySettings />
 
       <SiteThemeSettings />
+
+      <CategoriesSettings />
 
       <LogRetentionSettings />
 
