@@ -86,10 +86,10 @@ const Index = () => {
       <section className="py-20 px-4">
         <div className="container max-w-4xl text-center space-y-6">
           <h1 className="text-5xl md:text-6xl font-bold bg-gradient-primary bg-clip-text text-transparent animate-in fade-in slide-in-from-bottom-4 duration-1000">
-            Bem-vindo à NebulaVape
+            {siteIdentity?.site_hero_title ?? 'Bem-vindo'}
           </h1>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-1000 delay-150">
-            Aqui você encontra uma variedade de produtos de tabacaria com entrega rápida. Explore nossas categorias de vapers, acessórios, tabacos e muito mais.
+          <p className="text-xl text-muted-foreground max-w-2xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-1000 delay-150 whitespace-pre-line">
+            {siteIdentity?.site_hero_subtitle ?? ''}
           </p>
         </div>
       </section>
