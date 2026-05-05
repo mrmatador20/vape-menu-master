@@ -9,10 +9,12 @@ import { CategoryCarousel } from '@/components/CategoryCarousel';
 import { BannerCarousel } from '@/components/BannerCarousel';
 import { Loader2 } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
+import { useSiteIdentity } from '@/hooks/useSiteIdentity';
 
 const Index = () => {
   const { addToCart } = useCart();
   const { data: products, isLoading } = useProducts();
+  const { data: siteIdentity } = useSiteIdentity();
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [activeSubcategory, setActiveSubcategory] = useState<string>('all');
