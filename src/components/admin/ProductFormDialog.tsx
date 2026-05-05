@@ -188,6 +188,7 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
         discount_type: "percent",
         discount_value: "0",
         image: "",
+        images: [],
         description: "",
       });
     }
