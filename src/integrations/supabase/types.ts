@@ -497,6 +497,7 @@ export type Database = {
           display_order: number | null
           id: string
           image: string | null
+          images: string[]
           min_stock: number | null
           name: string
           price: number
@@ -513,6 +514,7 @@ export type Database = {
           display_order?: number | null
           id?: string
           image?: string | null
+          images?: string[]
           min_stock?: number | null
           name: string
           price: number
@@ -529,6 +531,7 @@ export type Database = {
           display_order?: number | null
           id?: string
           image?: string | null
+          images?: string[]
           min_stock?: number | null
           name?: string
           price?: number
