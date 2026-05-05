@@ -20,6 +20,7 @@ export const useProducts = () => {
         subcategory: product.subcategory || undefined,
         price: Number(product.price),
         image: product.image,
+        images: (product as any).images || (product.image ? [product.image] : []),
         description: product.description,
         stock: product.stock,
         min_stock: product.min_stock || 10,
