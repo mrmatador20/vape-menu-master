@@ -171,6 +171,9 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
         discount_type: ((product as any).discount_type || 'percent') as 'percent' | 'fixed',
         discount_value: ((product as any).discount_value || 0).toString(),
         image: product.image || "",
+        images: (product as any).images && (product as any).images.length
+          ? (product as any).images
+          : (product.image ? [product.image] : []),
         description: product.description || "",
       });
     } else {
