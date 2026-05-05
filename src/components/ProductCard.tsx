@@ -115,11 +115,27 @@ const ProductCard = ({ product, onAddToCart }: ProductCardProps) => {
           </div>
         )}
         <img
-          src={product.image}
+          src={gallery[activeImage] || product.image}
           alt={product.name}
           className={`w-full h-full object-cover transition-transform duration-300 ${!isOutOfStock && 'group-hover:scale-110'}`}
         />
       </div>
+      {gallery.length > 1 && (
+        <div className="flex gap-1.5 px-3 pt-3 overflow-x-auto">
+          {gallery.map((url, i) => (
+            <button
+              key={url + i}
+              type="button"
+              onClick={() => setActiveImage(i)}
+              className={`flex-shrink-0 h-12 w-12 rounded border-2 overflow-hidden transition-all ${
+                i === activeImage ? 'border-primary' : 'border-transparent opacity-70 hover:opacity-100'
+              }`}
+            >
+              <img src={url} alt={`${product.name} ${i + 1}`} className="w-full h-full object-cover" />
+            </button>
+          ))}
+        </div>
+      )}
       <div className="p-4 space-y-3">
         <div>
           <h3 className="font-semibold text-lg text-foreground group-hover:text-primary transition-colors">
