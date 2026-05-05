@@ -29,6 +29,10 @@ const ProductCard = ({ product, onAddToCart }: ProductCardProps) => {
   const [isDescriptionOpen, setIsDescriptionOpen] = useState(false);
   const [showReviews, setShowReviews] = useState(false);
   const [currentPrice, setCurrentPrice] = useState(product.price);
+  const gallery = (product.images && product.images.length > 0)
+    ? product.images
+    : (product.image ? [product.image] : []);
+  const [activeImage, setActiveImage] = useState(0);
   const { data: flavors } = useFlavors(product.id);
 
   // Atualiza o preço quando as variantes ou flavor selecionado mudam
