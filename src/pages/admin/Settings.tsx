@@ -34,6 +34,8 @@ export default function Settings() {
 
       <SiteThemeSettings />
 
+      <CategoriesSettings />
+
       <LogRetentionSettings />
 
       <div className="text-center py-6 text-muted-foreground border-t">
