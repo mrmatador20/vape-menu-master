@@ -232,7 +232,8 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
       display_order: parseInt(values.display_order),
       discount_type: values.discount_type || 'percent',
       discount_value: parseFloat(values.discount_value || "0"),
-      image: values.image || null,
+      image: (values.images && values.images[0]) || values.image || null,
+      images: values.images ?? [],
       description: values.description || null,
     };
 
