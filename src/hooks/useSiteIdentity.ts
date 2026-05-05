@@ -8,6 +8,8 @@ export interface SiteIdentity {
   site_pwa_short_name: string;
   site_footer_text: string;
   site_browser_title: string;
+  site_hero_title: string;
+  site_hero_subtitle: string;
 }
 
 const DEFAULTS: SiteIdentity = {
@@ -17,6 +19,8 @@ const DEFAULTS: SiteIdentity = {
   site_pwa_short_name: 'NebulaVape',
   site_footer_text: '© NebulaVape - Todos os direitos reservados',
   site_browser_title: 'NebulaVape - Venda de Vapers',
+  site_hero_title: 'Bem-vindo à NebulaVape',
+  site_hero_subtitle: 'Aqui você encontra uma variedade de produtos de tabacaria com entrega rápida. Explore nossas categorias de vapers, acessórios, tabacos e muito mais.',
 };
 
 export const SITE_IDENTITY_KEYS = Object.keys(DEFAULTS) as (keyof SiteIdentity)[];
