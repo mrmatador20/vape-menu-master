@@ -45,6 +45,7 @@ import { useFlavors, Flavor } from "@/hooks/useFlavors";
 import { FlavorFormDialog } from "./FlavorFormDialog";
 import { Trash2, Edit, Plus, Upload, Link, Loader2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ProductImagesField } from "./ProductImagesField";
 
 const productSchema = z.object({
   name: z.string().min(1, "Nome é obrigatório"),
