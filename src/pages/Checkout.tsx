@@ -749,28 +749,33 @@ const Checkout = () => {
                 )}
               </div>
 
-              {/* Campo CPF - Opcional, mas obrigatório para PIX */}
-              <div>
-                <Label htmlFor="cpf">
-                  CPF {formData.paymentMethod === 'pix' && <span className="text-destructive">*</span>}
-                  {formData.paymentMethod !== 'pix' && <span className="text-muted-foreground text-xs">(opcional)</span>}
-                </Label>
-                <Input
-                  id="cpf"
-                  name="cpf"
-                  value={formData.cpf}
-                  onChange={(e) => handleCpfChange(e.target.value)}
-                  placeholder="000.000.000-00"
-                  maxLength={14}
-                  required={formData.paymentMethod === 'pix'}
-                  disabled={isSubmitting}
-                />
-                {formData.paymentMethod === 'pix' && (
-                  <p className="text-xs text-muted-foreground mt-1">
-                    CPF necessário para gerar o QR Code PIX
-                  </p>
-                )}
-              </div>
+              {/* Campo CPF - Obrigatório para pagamentos online */}
+              {(() => {
+                const onlinePay = ['pix', 'credit', 'debit'].includes(formData.paymentMethod);
+                return (
+                  <div>
+                    <Label htmlFor="cpf">
+                      CPF {onlinePay && <span className="text-destructive">*</span>}
+                      {!onlinePay && <span className="text-muted-foreground text-xs">(opcional)</span>}
+                    </Label>
+                    <Input
+                      id="cpf"
+                      name="cpf"
+                      value={formData.cpf}
+                      onChange={(e) => handleCpfChange(e.target.value)}
+                      placeholder="000.000.000-00"
+                      maxLength={14}
+                      required={onlinePay}
+                      disabled={isSubmitting}
+                    />
+                    {onlinePay && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        CPF necessário para processar o pagamento online via Asaas.
+                      </p>
+                    )}
+                  </div>
+                );
+              })()}
 
               {/* Opção para salvar endereço */}
               {!selectedSavedAddress && (
