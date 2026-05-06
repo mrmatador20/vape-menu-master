@@ -532,7 +532,8 @@ const Checkout = () => {
         .join('\n');
       
       // Montando a mensagem para o WhatsApp
-      let message = `*Novo Pedido #${order.id}*\n\n*Itens:*\n${itemsList}\n\n*Subtotal: R$ ${subtotal.toFixed(2)}*\n*Taxa de Entrega (CEP ${validatedData.cep}): R$ ${(shippingCost || 0).toFixed(2)}*\n*Total: R$ ${order.total.toFixed(2)}*\n\n*Endereço de Entrega:*\n${validatedData.rua}, ${validatedData.numero}\n${validatedData.bairro} - ${validatedData.cidade}\nCEP: ${validatedData.cep}\n\n*Forma de Pagamento:* ${validatedData.paymentMethod === 'pix' ? 'PIX' : 'Dinheiro'}`;
+      const paymentLabels: Record<string, string> = { pix: 'PIX', credit: 'Cartão de Crédito', debit: 'Cartão de Débito', dinheiro: 'Dinheiro' };
+      let message = `*Novo Pedido #${order.id}*\n\n*Itens:*\n${itemsList}\n\n*Subtotal: R$ ${subtotal.toFixed(2)}*\n*Taxa de Entrega (CEP ${validatedData.cep}): R$ ${(shippingCost || 0).toFixed(2)}*\n*Total: R$ ${order.total.toFixed(2)}*\n\n*Endereço de Entrega:*\n${validatedData.rua}, ${validatedData.numero}\n${validatedData.bairro} - ${validatedData.cidade}\nCEP: ${validatedData.cep}\n\n*Forma de Pagamento:* ${paymentLabels[validatedData.paymentMethod] || validatedData.paymentMethod}`;
 
       // Se o pagamento for em dinheiro e houver troco
       if (validatedData.paymentMethod === 'dinheiro' && validatedData.changeAmount) {
