@@ -25,18 +25,18 @@ const checkoutSchema = z.object({
   bairro: z.string().trim().min(1, 'Bairro é obrigatório').max(100, 'Bairro deve ter no máximo 100 caracteres'),
   cidade: z.string().trim().min(1, 'Cidade é obrigatória').max(100, 'Cidade deve ter no máximo 100 caracteres'),
   cep: z.string().trim().min(8, 'CEP é obrigatório').max(9, 'CEP inválido'),
-  paymentMethod: z.enum(['pix', 'dinheiro']),
+  paymentMethod: z.enum(['pix', 'credit', 'debit', 'dinheiro']),
   changeAmount: z.string().optional(),
   cpf: z.string().optional(),
 }).refine((data) => {
-  // Se for PIX, CPF é obrigatório
-  if (data.paymentMethod === 'pix') {
+  // CPF obrigatório para PIX, Crédito e Débito (necessário para Asaas)
+  if (data.paymentMethod === 'pix' || data.paymentMethod === 'credit' || data.paymentMethod === 'debit') {
     const cleanCpf = data.cpf?.replace(/\D/g, '') || '';
     return cleanCpf.length === 11;
   }
   return true;
 }, {
-  message: 'CPF é obrigatório para pagamento PIX',
+  message: 'CPF é obrigatório para pagamento online (PIX/Cartão)',
   path: ['cpf'],
 });
 
