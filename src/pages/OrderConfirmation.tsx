@@ -118,26 +118,23 @@ const OrderConfirmation = () => {
                   Pedido #{orderData.orderId.slice(-8).toUpperCase()}
                 </p>
               </div>
-              {orderData.paymentMethod === 'pix' && !paymentConfirmed ? (
+              {['pix', 'credit', 'debit'].includes(orderData.paymentMethod) && !paymentConfirmed ? (
                 <Button
                   onClick={() => setShowPixDialog(true)}
                   size="lg"
                   className="gap-2"
                 >
                   <CreditCard className="w-5 h-5" />
-                  Ver QR Code PIX
+                  {orderData.paymentMethod === 'pix' ? 'Ver QR Code PIX' : 'Pagar com Cartão'}
                 </Button>
               ) : (
                 <Button
                   onClick={handleOpenWhatsApp}
                   size="lg"
                   className="gap-2"
-                  disabled={orderData.paymentMethod === 'pix' && !paymentConfirmed}
                 >
                   <MessageCircle className="w-5 h-5" />
-                  {orderData.paymentMethod === 'pix' && !paymentConfirmed
-                    ? 'Aguardando Pagamento...'
-                    : 'Abrir WhatsApp'}
+                  Abrir WhatsApp
                 </Button>
               )}
             </div>
