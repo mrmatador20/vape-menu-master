@@ -7,7 +7,7 @@ import { CheckCircle2, MessageCircle, Package, MapPin, CreditCard, Home } from '
 import Header from '@/components/Header';
 import { z } from 'zod';
 import { toast } from 'sonner';
-import { MercadoPagoPixDialog } from '@/components/MercadoPagoPixDialog';
+import { AsaasPaymentDialog } from '@/components/AsaasPaymentDialog';
 
 const orderItemSchema = z.object({
   name: z.string().min(1, 'Nome do produto é obrigatório'),
@@ -68,11 +68,11 @@ const OrderConfirmation = () => {
 
     setOrderData(validationResult.data);
     
-    // Show PIX dialog automatically if payment method is PIX
-    if (validationResult.data.paymentMethod === 'pix') {
+    // Show Asaas dialog automatically for all online payments
+    if (['pix', 'credit', 'debit'].includes(validationResult.data.paymentMethod)) {
       setShowPixDialog(true);
     } else {
-      // For other payment methods, consider payment confirmed immediately
+      // For dinheiro, consider payment confirmed immediately
       setPaymentConfirmed(true);
     }
   }, [location.state, navigate]);
@@ -118,26 +118,23 @@ const OrderConfirmation = () => {
                   Pedido #{orderData.orderId.slice(-8).toUpperCase()}
                 </p>
               </div>
-              {orderData.paymentMethod === 'pix' && !paymentConfirmed ? (
+              {['pix', 'credit', 'debit'].includes(orderData.paymentMethod) && !paymentConfirmed ? (
                 <Button
                   onClick={() => setShowPixDialog(true)}
                   size="lg"
                   className="gap-2"
                 >
                   <CreditCard className="w-5 h-5" />
-                  Ver QR Code PIX
+                  {orderData.paymentMethod === 'pix' ? 'Ver QR Code PIX' : 'Pagar com Cartão'}
                 </Button>
               ) : (
                 <Button
                   onClick={handleOpenWhatsApp}
                   size="lg"
                   className="gap-2"
-                  disabled={orderData.paymentMethod === 'pix' && !paymentConfirmed}
                 >
                   <MessageCircle className="w-5 h-5" />
-                  {orderData.paymentMethod === 'pix' && !paymentConfirmed
-                    ? 'Aguardando Pagamento...'
-                    : 'Abrir WhatsApp'}
+                  Abrir WhatsApp
                 </Button>
               )}
             </div>
@@ -260,14 +257,15 @@ const OrderConfirmation = () => {
         </div>
       </div>
 
-      {/* MercadoPago PIX Dialog */}
-      {orderData && orderData.paymentMethod === 'pix' && (
-        <MercadoPagoPixDialog
+      {/* Asaas Payment Dialog (PIX e Cartão) */}
+      {orderData && ['pix', 'credit', 'debit'].includes(orderData.paymentMethod) && (
+        <AsaasPaymentDialog
           open={showPixDialog}
           onOpenChange={setShowPixDialog}
           orderId={orderData.orderId}
           amount={orderData.totalAmount}
           description={`Pedido #${orderData.orderId.slice(-8).toUpperCase()}`}
+          paymentMethod={orderData.paymentMethod as 'pix' | 'credit' | 'debit'}
           payerCpf={orderData.cpf}
           onPaymentConfirmed={() => {
             setPaymentConfirmed(true);

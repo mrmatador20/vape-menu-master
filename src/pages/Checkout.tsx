@@ -25,18 +25,18 @@ const checkoutSchema = z.object({
   bairro: z.string().trim().min(1, 'Bairro é obrigatório').max(100, 'Bairro deve ter no máximo 100 caracteres'),
   cidade: z.string().trim().min(1, 'Cidade é obrigatória').max(100, 'Cidade deve ter no máximo 100 caracteres'),
   cep: z.string().trim().min(8, 'CEP é obrigatório').max(9, 'CEP inválido'),
-  paymentMethod: z.enum(['pix', 'dinheiro']),
+  paymentMethod: z.enum(['pix', 'credit', 'debit', 'dinheiro']),
   changeAmount: z.string().optional(),
   cpf: z.string().optional(),
 }).refine((data) => {
-  // Se for PIX, CPF é obrigatório
-  if (data.paymentMethod === 'pix') {
+  // CPF obrigatório para PIX, Crédito e Débito (necessário para Asaas)
+  if (data.paymentMethod === 'pix' || data.paymentMethod === 'credit' || data.paymentMethod === 'debit') {
     const cleanCpf = data.cpf?.replace(/\D/g, '') || '';
     return cleanCpf.length === 11;
   }
   return true;
 }, {
-  message: 'CPF é obrigatório para pagamento PIX',
+  message: 'CPF é obrigatório para pagamento online (PIX/Cartão)',
   path: ['cpf'],
 });
 
@@ -532,7 +532,8 @@ const Checkout = () => {
         .join('\n');
       
       // Montando a mensagem para o WhatsApp
-      let message = `*Novo Pedido #${order.id}*\n\n*Itens:*\n${itemsList}\n\n*Subtotal: R$ ${subtotal.toFixed(2)}*\n*Taxa de Entrega (CEP ${validatedData.cep}): R$ ${(shippingCost || 0).toFixed(2)}*\n*Total: R$ ${order.total.toFixed(2)}*\n\n*Endereço de Entrega:*\n${validatedData.rua}, ${validatedData.numero}\n${validatedData.bairro} - ${validatedData.cidade}\nCEP: ${validatedData.cep}\n\n*Forma de Pagamento:* ${validatedData.paymentMethod === 'pix' ? 'PIX' : 'Dinheiro'}`;
+      const paymentLabels: Record<string, string> = { pix: 'PIX', credit: 'Cartão de Crédito', debit: 'Cartão de Débito', dinheiro: 'Dinheiro' };
+      let message = `*Novo Pedido #${order.id}*\n\n*Itens:*\n${itemsList}\n\n*Subtotal: R$ ${subtotal.toFixed(2)}*\n*Taxa de Entrega (CEP ${validatedData.cep}): R$ ${(shippingCost || 0).toFixed(2)}*\n*Total: R$ ${order.total.toFixed(2)}*\n\n*Endereço de Entrega:*\n${validatedData.rua}, ${validatedData.numero}\n${validatedData.bairro} - ${validatedData.cidade}\nCEP: ${validatedData.cep}\n\n*Forma de Pagamento:* ${paymentLabels[validatedData.paymentMethod] || validatedData.paymentMethod}`;
 
       // Se o pagamento for em dinheiro e houver troco
       if (validatedData.paymentMethod === 'dinheiro' && validatedData.changeAmount) {
@@ -748,28 +749,33 @@ const Checkout = () => {
                 )}
               </div>
 
-              {/* Campo CPF - Opcional, mas obrigatório para PIX */}
-              <div>
-                <Label htmlFor="cpf">
-                  CPF {formData.paymentMethod === 'pix' && <span className="text-destructive">*</span>}
-                  {formData.paymentMethod !== 'pix' && <span className="text-muted-foreground text-xs">(opcional)</span>}
-                </Label>
-                <Input
-                  id="cpf"
-                  name="cpf"
-                  value={formData.cpf}
-                  onChange={(e) => handleCpfChange(e.target.value)}
-                  placeholder="000.000.000-00"
-                  maxLength={14}
-                  required={formData.paymentMethod === 'pix'}
-                  disabled={isSubmitting}
-                />
-                {formData.paymentMethod === 'pix' && (
-                  <p className="text-xs text-muted-foreground mt-1">
-                    CPF necessário para gerar o QR Code PIX
-                  </p>
-                )}
-              </div>
+              {/* Campo CPF - Obrigatório para pagamentos online */}
+              {(() => {
+                const onlinePay = ['pix', 'credit', 'debit'].includes(formData.paymentMethod);
+                return (
+                  <div>
+                    <Label htmlFor="cpf">
+                      CPF {onlinePay && <span className="text-destructive">*</span>}
+                      {!onlinePay && <span className="text-muted-foreground text-xs">(opcional)</span>}
+                    </Label>
+                    <Input
+                      id="cpf"
+                      name="cpf"
+                      value={formData.cpf}
+                      onChange={(e) => handleCpfChange(e.target.value)}
+                      placeholder="000.000.000-00"
+                      maxLength={14}
+                      required={onlinePay}
+                      disabled={isSubmitting}
+                    />
+                    {onlinePay && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        CPF necessário para processar o pagamento online via Asaas.
+                      </p>
+                    )}
+                  </div>
+                );
+              })()}
 
               {/* Opção para salvar endereço */}
               {!selectedSavedAddress && (
@@ -816,6 +822,14 @@ const Checkout = () => {
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="pix" id="pix" />
                     <Label htmlFor="pix" className="cursor-pointer">PIX</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="credit" id="credit" />
+                    <Label htmlFor="credit" className="cursor-pointer">Cartão de Crédito</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="debit" id="debit" />
+                    <Label htmlFor="debit" className="cursor-pointer">Cartão de Débito</Label>
                   </div>
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="dinheiro" id="dinheiro" />
