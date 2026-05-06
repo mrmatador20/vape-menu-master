@@ -257,14 +257,15 @@ const OrderConfirmation = () => {
         </div>
       </div>
 
-      {/* MercadoPago PIX Dialog */}
-      {orderData && orderData.paymentMethod === 'pix' && (
-        <MercadoPagoPixDialog
+      {/* Asaas Payment Dialog (PIX e Cartão) */}
+      {orderData && ['pix', 'credit', 'debit'].includes(orderData.paymentMethod) && (
+        <AsaasPaymentDialog
           open={showPixDialog}
           onOpenChange={setShowPixDialog}
           orderId={orderData.orderId}
           amount={orderData.totalAmount}
           description={`Pedido #${orderData.orderId.slice(-8).toUpperCase()}`}
+          paymentMethod={orderData.paymentMethod as 'pix' | 'credit' | 'debit'}
           payerCpf={orderData.cpf}
           onPaymentConfirmed={() => {
             setPaymentConfirmed(true);
