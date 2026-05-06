@@ -68,11 +68,11 @@ const OrderConfirmation = () => {
 
     setOrderData(validationResult.data);
     
-    // Show PIX dialog automatically if payment method is PIX
-    if (validationResult.data.paymentMethod === 'pix') {
+    // Show Asaas dialog automatically for all online payments
+    if (['pix', 'credit', 'debit'].includes(validationResult.data.paymentMethod)) {
       setShowPixDialog(true);
     } else {
-      // For other payment methods, consider payment confirmed immediately
+      // For dinheiro, consider payment confirmed immediately
       setPaymentConfirmed(true);
     }
   }, [location.state, navigate]);
