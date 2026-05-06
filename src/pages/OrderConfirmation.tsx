@@ -7,7 +7,7 @@ import { CheckCircle2, MessageCircle, Package, MapPin, CreditCard, Home } from '
 import Header from '@/components/Header';
 import { z } from 'zod';
 import { toast } from 'sonner';
-import { MercadoPagoPixDialog } from '@/components/MercadoPagoPixDialog';
+import { AsaasPaymentDialog } from '@/components/AsaasPaymentDialog';
 
 const orderItemSchema = z.object({
   name: z.string().min(1, 'Nome do produto é obrigatório'),
