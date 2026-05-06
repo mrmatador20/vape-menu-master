@@ -819,6 +819,14 @@ const Checkout = () => {
                     <Label htmlFor="pix" className="cursor-pointer">PIX</Label>
                   </div>
                   <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="credit" id="credit" />
+                    <Label htmlFor="credit" className="cursor-pointer">Cartão de Crédito</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="debit" id="debit" />
+                    <Label htmlFor="debit" className="cursor-pointer">Cartão de Débito</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
                     <RadioGroupItem value="dinheiro" id="dinheiro" />
                     <Label htmlFor="dinheiro" className="cursor-pointer">Dinheiro</Label>
                   </div>
