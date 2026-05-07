@@ -23,7 +23,7 @@ const orderRequestSchema = z.object({
   }),
   cep: z.string().trim().min(8).max(8),
   shippingCost: z.number().min(0),
-  paymentMethod: z.enum(['pix', 'dinheiro']),
+  paymentMethod: z.enum(['pix', 'credit', 'debit', 'dinheiro']),
   changeAmount: z.string().trim().optional(),
   discountCode: z.string().trim().max(50).optional(),
   referralCode: z.string().trim().max(8).optional(),
@@ -473,10 +473,11 @@ serve(async (req) => {
     console.log('[create-order] Creating order in database with total:', finalAmount);
     // Create the order with server-side validated data
     // PIX orders start as pending_payment, others as pending
-    const initialStatus = orderData.paymentMethod === 'pix' ? 'pending_payment' : 'pending';
+    const onlinePayment = ['pix', 'credit', 'debit'].includes(orderData.paymentMethod);
+    const initialStatus = onlinePayment ? 'pending_payment' : 'pending';
     
-    // PIX QR codes expire after 30 minutes
-    const expiresAt = orderData.paymentMethod === 'pix' 
+    // Online payment links expire after 30 minutes
+    const expiresAt = onlinePayment
       ? new Date(Date.now() + 30 * 60 * 1000).toISOString()
       : null;
     
