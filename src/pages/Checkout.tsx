@@ -268,6 +268,19 @@ const Checkout = () => {
     setFormData(prev => ({ ...prev, paymentMethod: value }));
   };
 
+  const handlePhoneChange = (phone: string) => {
+    const clean = phone.replace(/\D/g, '').slice(0, 11);
+    let formatted = clean;
+    if (clean.length > 10) {
+      formatted = `(${clean.slice(0, 2)}) ${clean.slice(2, 7)}-${clean.slice(7, 11)}`;
+    } else if (clean.length > 6) {
+      formatted = `(${clean.slice(0, 2)}) ${clean.slice(2, 6)}-${clean.slice(6, 10)}`;
+    } else if (clean.length > 2) {
+      formatted = `(${clean.slice(0, 2)}) ${clean.slice(2)}`;
+    }
+    setFormData(prev => ({ ...prev, customerPhone: formatted }));
+  };
+
   const handleCpfChange = (cpf: string) => {
     const cleanCpf = cpf.replace(/\D/g, '');
     let formatted = cleanCpf;
