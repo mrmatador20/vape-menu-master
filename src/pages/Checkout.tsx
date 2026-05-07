@@ -574,7 +574,7 @@ const Checkout = () => {
       
       // Montando a mensagem para o WhatsApp
       const paymentLabels: Record<string, string> = { pix: 'PIX', credit: 'Cartão de Crédito', debit: 'Cartão de Débito', dinheiro: 'Dinheiro' };
-      let message = `*Novo Pedido #${order.id}*\n\n*Itens:*\n${itemsList}\n\n*Subtotal: R$ ${subtotal.toFixed(2)}*\n*Taxa de Entrega (CEP ${validatedData.cep}): R$ ${(shippingCost || 0).toFixed(2)}*\n*Total: R$ ${order.total.toFixed(2)}*\n\n*Endereço de Entrega:*\n${validatedData.rua}, ${validatedData.numero}\n${validatedData.bairro} - ${validatedData.cidade}\nCEP: ${validatedData.cep}\n\n*Forma de Pagamento:* ${paymentLabels[validatedData.paymentMethod] || validatedData.paymentMethod}`;
+      let message = `*Novo Pedido #${order.id}*\n\n*Cliente:* ${validatedData.customerName}\n*Telefone:* ${validatedData.customerPhone}\n\n*Itens:*\n${itemsList}\n\n*Subtotal: R$ ${subtotal.toFixed(2)}*\n*Taxa de Entrega (CEP ${validatedData.cep}): R$ ${(shippingCost || 0).toFixed(2)}*\n*Total: R$ ${order.total.toFixed(2)}*\n\n*Endereço de Entrega:*\n${validatedData.rua}, ${validatedData.numero}${validatedData.complemento ? ` - ${validatedData.complemento}` : ''}\n${validatedData.bairro} - ${validatedData.cidade}${validatedData.estado ? `/${validatedData.estado}` : ''}\nCEP: ${validatedData.cep}\n\n*Forma de Pagamento:* ${paymentLabels[validatedData.paymentMethod] || validatedData.paymentMethod}`;
 
       // Se o pagamento for em dinheiro e houver troco
       if (validatedData.paymentMethod === 'dinheiro' && validatedData.changeAmount) {
