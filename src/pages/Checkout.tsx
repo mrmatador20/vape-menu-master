@@ -254,6 +254,7 @@ const Checkout = () => {
           rua: cepData.logradouro || prev.rua,
           bairro: cepData.bairro || prev.bairro,
           cidade: cepData.localidade || prev.cidade,
+          estado: cepData.uf || prev.estado,
         }));
       } else {
         setCepValidation('invalid');
