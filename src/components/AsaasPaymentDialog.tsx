@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Loader2, Copy, CheckCircle2, Clock, ExternalLink } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Loader2, Copy, CheckCircle2, Clock, Lock } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -19,77 +21,152 @@ interface AsaasPaymentDialogProps {
   onPaymentConfirmed: () => void;
 }
 
+// Máscaras
+const maskCard = (v: string) =>
+  v.replace(/\D/g, '').slice(0, 19).replace(/(\d{4})(?=\d)/g, '$1 ').trim();
+const maskExpiry = (v: string) => {
+  const d = v.replace(/\D/g, '').slice(0, 4);
+  return d.length > 2 ? `${d.slice(0, 2)}/${d.slice(2)}` : d;
+};
+const maskCcv = (v: string) => v.replace(/\D/g, '').slice(0, 4);
+
+// Validação Luhn
+const luhnCheck = (num: string): boolean => {
+  const digits = num.replace(/\D/g, '');
+  if (digits.length < 13) return false;
+  let sum = 0;
+  let alt = false;
+  for (let i = digits.length - 1; i >= 0; i--) {
+    let n = parseInt(digits[i], 10);
+    if (alt) { n *= 2; if (n > 9) n -= 9; }
+    sum += n;
+    alt = !alt;
+  }
+  return sum % 10 === 0;
+};
+
 export const AsaasPaymentDialog = ({
-  open,
-  onOpenChange,
-  orderId,
-  amount,
-  description,
-  paymentMethod,
-  payerName,
-  payerEmail,
-  payerCpf,
-  payerPhone,
-  onPaymentConfirmed,
+  open, onOpenChange, orderId, amount, description, paymentMethod,
+  payerName, payerEmail, payerCpf, payerPhone, onPaymentConfirmed,
 }: AsaasPaymentDialogProps) => {
-  const [isLoading, setIsLoading] = useState(true);
+  const isCard = paymentMethod === 'credit' || paymentMethod === 'debit';
+  const [phase, setPhase] = useState<'form' | 'processing' | 'pix' | 'confirmed' | 'error'>(
+    isCard ? 'form' : 'processing'
+  );
   const [qrCodeBase64, setQrCodeBase64] = useState<string | null>(null);
   const [qrCode, setQrCode] = useState<string | null>(null);
-  const [invoiceUrl, setInvoiceUrl] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
-  const [paymentStatus, setPaymentStatus] = useState<'pending' | 'confirmed' | 'error'>('pending');
+  const [errorMsg, setErrorMsg] = useState<string>('');
+
+  // Estado dos campos do cartão (apenas em memória, nunca persistido)
+  const [card, setCard] = useState({
+    holderName: '',
+    number: '',
+    expiry: '',
+    ccv: '',
+  });
 
   useEffect(() => {
-    if (open) {
+    if (!open) return;
+    if (!isCard) {
       createPayment();
-      const cleanup = startPolling();
-      return cleanup;
     }
+    return () => {
+      // Limpa dados sensíveis ao fechar
+      setCard({ holderName: '', number: '', expiry: '', ccv: '' });
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
-  const createPayment = async () => {
-    try {
-      setIsLoading(true);
-      const { data, error } = await supabase.functions.invoke('create-asaas-payment', {
-        body: { orderId, amount, description, paymentMethod, payerName, payerEmail, payerCpf, payerPhone },
-      });
-
-      if (error || !data?.success) {
-        console.error('[Asaas] Error:', error, data);
-        toast.error(data?.error || 'Erro ao gerar pagamento. Tente novamente.');
-        setPaymentStatus('error');
-        return;
-      }
-
-      setQrCodeBase64(data.qrCodeBase64 || null);
-      setQrCode(data.qrCode || null);
-      setInvoiceUrl(data.invoiceUrl || null);
-      toast.success(paymentMethod === 'pix' ? 'QR Code PIX gerado!' : 'Pagamento criado!');
-    } catch (e) {
-      console.error('[Asaas] Error:', e);
-      toast.error('Erro ao gerar pagamento.');
-      setPaymentStatus('error');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const startPolling = () => {
+  // Polling para confirmar via webhook
+  useEffect(() => {
+    if (!open || phase === 'form' || phase === 'confirmed') return;
     const interval = setInterval(async () => {
       const { data } = await supabase.from('orders').select('status').eq('id', orderId).single();
       if (data?.status === 'confirmed') {
-        setPaymentStatus('confirmed');
+        setPhase('confirmed');
         clearInterval(interval);
         toast.success('Pagamento confirmado!');
         onPaymentConfirmed();
       } else if (data?.status === 'cancelled') {
-        setPaymentStatus('error');
+        setPhase('error');
+        setErrorMsg('Pagamento cancelado.');
         clearInterval(interval);
-        toast.error('Pagamento cancelado.');
       }
     }, 3000);
     const timeoutId = setTimeout(() => clearInterval(interval), 600000);
     return () => { clearInterval(interval); clearTimeout(timeoutId); };
+  }, [open, phase, orderId, onPaymentConfirmed]);
+
+  const createPayment = async (cardData?: typeof card) => {
+    try {
+      setPhase('processing');
+      setErrorMsg('');
+
+      const body: Record<string, unknown> = {
+        orderId, amount, description, paymentMethod,
+        payerName, payerEmail, payerCpf, payerPhone,
+      };
+
+      if (isCard && cardData) {
+        const [mm, yy] = cardData.expiry.split('/');
+        body.cardHolderName = cardData.holderName.trim();
+        body.cardNumber = cardData.number.replace(/\D/g, '');
+        body.cardExpiryMonth = mm;
+        body.cardExpiryYear = yy;
+        body.cardCcv = cardData.ccv;
+        body.cardHolderCpf = payerCpf;
+      }
+
+      const { data, error } = await supabase.functions.invoke('create-asaas-payment', { body });
+
+      // Limpa dados sensíveis IMEDIATAMENTE após o envio
+      if (isCard) setCard({ holderName: '', number: '', expiry: '', ccv: '' });
+
+      if (error || !data?.success) {
+        const msg = (data as any)?.error || 'Erro ao processar pagamento.';
+        setErrorMsg(msg);
+        setPhase('error');
+        toast.error(msg);
+        return;
+      }
+
+      if (data.confirmed) {
+        setPhase('confirmed');
+        toast.success('Pagamento aprovado!');
+        onPaymentConfirmed();
+        return;
+      }
+
+      if (paymentMethod === 'pix') {
+        setQrCodeBase64(data.qrCodeBase64 || null);
+        setQrCode(data.qrCode || null);
+        setPhase('pix');
+        toast.success('QR Code PIX gerado!');
+      } else {
+        // Cartão pendente: aguardar webhook
+        setPhase('processing');
+        toast.info('Aguardando confirmação do pagamento...');
+      }
+    } catch (e) {
+      setErrorMsg('Erro ao processar pagamento.');
+      setPhase('error');
+    }
+  };
+
+  const handleSubmitCard = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!card.holderName.trim() || card.holderName.trim().length < 3) {
+      toast.error('Nome do titular inválido'); return;
+    }
+    const num = card.number.replace(/\D/g, '');
+    if (!luhnCheck(num)) { toast.error('Número do cartão inválido'); return; }
+    const [mm, yy] = card.expiry.split('/');
+    if (!mm || !yy || parseInt(mm) < 1 || parseInt(mm) > 12 || yy.length !== 2) {
+      toast.error('Validade inválida (MM/AA)'); return;
+    }
+    if (card.ccv.length < 3) { toast.error('CVV inválido'); return; }
+    createPayment(card);
   };
 
   const handleCopy = () => {
@@ -101,7 +178,7 @@ export const AsaasPaymentDialog = ({
     }
   };
 
-  const title = paymentStatus === 'confirmed'
+  const title = phase === 'confirmed'
     ? 'Pagamento Confirmado!'
     : paymentMethod === 'pix' ? 'Pagamento PIX' : 'Pagamento com Cartão';
 
@@ -113,21 +190,64 @@ export const AsaasPaymentDialog = ({
         </DialogHeader>
 
         <div className="space-y-4">
-          {isLoading && (
+          {phase === 'form' && isCard && (
+            <form onSubmit={handleSubmitCard} className="space-y-3" autoComplete="off">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/50 p-2 rounded">
+                <Lock className="w-3.5 h-3.5" />
+                <span>Conexão segura. Dados processados pelo Asaas.</span>
+              </div>
+              <div>
+                <Label htmlFor="holderName">Nome impresso no cartão</Label>
+                <Input id="holderName" value={card.holderName} autoComplete="cc-name"
+                  onChange={(e) => setCard({ ...card, holderName: e.target.value.toUpperCase() })}
+                  placeholder="COMO ESTÁ NO CARTÃO" maxLength={100} required />
+              </div>
+              <div>
+                <Label htmlFor="cardNumber">Número do cartão</Label>
+                <Input id="cardNumber" inputMode="numeric" autoComplete="cc-number"
+                  value={card.number}
+                  onChange={(e) => setCard({ ...card, number: maskCard(e.target.value) })}
+                  placeholder="0000 0000 0000 0000" required />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label htmlFor="expiry">Validade (MM/AA)</Label>
+                  <Input id="expiry" inputMode="numeric" autoComplete="cc-exp"
+                    value={card.expiry}
+                    onChange={(e) => setCard({ ...card, expiry: maskExpiry(e.target.value) })}
+                    placeholder="MM/AA" required />
+                </div>
+                <div>
+                  <Label htmlFor="ccv">CVV</Label>
+                  <Input id="ccv" inputMode="numeric" autoComplete="cc-csc"
+                    value={card.ccv}
+                    onChange={(e) => setCard({ ...card, ccv: maskCcv(e.target.value) })}
+                    placeholder="123" required />
+                </div>
+              </div>
+              <Button type="submit" className="w-full" size="lg">
+                Pagar R$ {amount.toFixed(2)}
+              </Button>
+            </form>
+          )}
+
+          {phase === 'processing' && (
             <div className="flex flex-col items-center py-8 space-y-4">
               <Loader2 className="w-8 h-8 animate-spin text-primary" />
-              <p className="text-sm text-muted-foreground">Gerando pagamento...</p>
+              <p className="text-sm text-muted-foreground">
+                {isCard ? 'Processando pagamento...' : 'Gerando pagamento...'}
+              </p>
             </div>
           )}
 
-          {!isLoading && paymentStatus === 'error' && (
+          {phase === 'error' && (
             <div className="text-center py-8">
-              <p className="text-destructive mb-4">Erro ao gerar pagamento</p>
-              <Button onClick={createPayment}>Tentar Novamente</Button>
+              <p className="text-destructive mb-4">{errorMsg || 'Erro ao processar pagamento'}</p>
+              <Button onClick={() => setPhase(isCard ? 'form' : 'processing')}>Tentar Novamente</Button>
             </div>
           )}
 
-          {!isLoading && paymentStatus === 'confirmed' && (
+          {phase === 'confirmed' && (
             <div className="flex flex-col items-center py-8 space-y-4">
               <div className="w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center">
                 <CheckCircle2 className="w-10 h-10 text-green-600" />
@@ -136,20 +256,16 @@ export const AsaasPaymentDialog = ({
             </div>
           )}
 
-          {!isLoading && paymentStatus === 'pending' && paymentMethod === 'pix' && qrCodeBase64 && (
+          {phase === 'pix' && qrCodeBase64 && (
             <>
               <div className="flex flex-col items-center space-y-4">
-                <img
-                  src={`data:image/png;base64,${qrCodeBase64}`}
-                  alt="QR Code PIX"
-                  className="w-64 h-64 border-2 border-border rounded-lg"
-                />
+                <img src={`data:image/png;base64,${qrCodeBase64}`} alt="QR Code PIX"
+                  className="w-64 h-64 border-2 border-border rounded-lg" />
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Clock className="w-4 h-4 animate-pulse" />
                   <span>Aguardando pagamento...</span>
                 </div>
               </div>
-
               {qrCode && (
                 <div className="space-y-2">
                   <p className="text-sm font-medium text-center">Ou copie o código PIX:</p>
@@ -163,23 +279,6 @@ export const AsaasPaymentDialog = ({
                 </div>
               )}
             </>
-          )}
-
-          {!isLoading && paymentStatus === 'pending' && paymentMethod !== 'pix' && invoiceUrl && (
-            <div className="flex flex-col items-center py-4 space-y-4">
-              <p className="text-sm text-center text-muted-foreground">
-                Clique no botão abaixo para concluir o pagamento com cartão de forma segura no ambiente Asaas.
-              </p>
-              <Button asChild size="lg" className="gap-2">
-                <a href={invoiceUrl} target="_blank" rel="noopener noreferrer">
-                  <ExternalLink className="w-4 h-4" /> Pagar com Cartão
-                </a>
-              </Button>
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Clock className="w-4 h-4 animate-pulse" />
-                <span>Aguardando confirmação...</span>
-              </div>
-            </div>
           )}
 
           <div className="text-xs text-center text-muted-foreground">
