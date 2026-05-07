@@ -8,26 +8,86 @@ const corsHeaders = {
 
 const ASAAS_BASE_URL = 'https://api.asaas.com/v3';
 
+// Sanitiza dados sensíveis para logs (PCI-DSS)
+const safeLog = (msg: string, data?: any) => {
+  if (data) {
+    const cloned = JSON.parse(JSON.stringify(data));
+    const strip = (o: any) => {
+      if (!o || typeof o !== 'object') return;
+      for (const k of Object.keys(o)) {
+        if (/(card|cvv|ccv|number|holder|expiry|expir|secret|token)/i.test(k)) {
+          o[k] = '[REDACTED]';
+        } else if (typeof o[k] === 'object') strip(o[k]);
+      }
+    };
+    strip(cloned);
+    console.log(msg, JSON.stringify(cloned));
+  } else {
+    console.log(msg);
+  }
+};
+
+// Rate limit em memória (anti-fraude básico)
+const attempts = new Map<string, { count: number; resetAt: number }>();
+const RATE_LIMIT_MAX = 5;
+const RATE_LIMIT_WINDOW_MS = 60 * 1000;
+
+const checkRateLimit = (key: string): boolean => {
+  const now = Date.now();
+  const record = attempts.get(key);
+  if (!record || record.resetAt < now) {
+    attempts.set(key, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
+    return true;
+  }
+  if (record.count >= RATE_LIMIT_MAX) return false;
+  record.count++;
+  return true;
+};
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    const body = await req.json();
     const {
       orderId,
       amount,
       description,
-      paymentMethod, // 'pix' | 'credit' | 'debit'
+      paymentMethod,
       payerName,
       payerEmail,
       payerCpf,
       payerPhone,
-    } = await req.json();
+      // Dados do cartão (apenas para credit/debit) - NÃO são logados nem armazenados
+      cardHolderName,
+      cardNumber,
+      cardExpiryMonth,
+      cardExpiryYear,
+      cardCcv,
+      cardHolderEmail,
+      cardHolderCpf,
+      cardHolderPostalCode,
+      cardHolderAddressNumber,
+      cardHolderPhone,
+    } = body;
+
+    safeLog('[Asaas] Request received', { orderId, paymentMethod, amount });
 
     if (!orderId || !amount || !paymentMethod) {
       return new Response(JSON.stringify({ error: 'Dados incompletos' }), {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Anti-fraude: rate limit por orderId + IP
+    const clientIp = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+    const rateLimitKey = `${orderId}:${clientIp}`;
+    if (!checkRateLimit(rateLimitKey)) {
+      console.warn('[Asaas] Rate limit exceeded for', clientIp);
+      return new Response(JSON.stringify({ error: 'Muitas tentativas. Aguarde um instante.' }), {
+        status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
@@ -60,13 +120,35 @@ serve(async (req) => {
     }
     const roundedAmount = parseFloat(numAmount.toFixed(2));
 
+    // Validação para cartão
+    const isCard = paymentMethod === 'credit' || paymentMethod === 'debit';
+    if (isCard) {
+      if (!cardNumber || !cardHolderName || !cardExpiryMonth || !cardExpiryYear || !cardCcv) {
+        return new Response(JSON.stringify({ error: 'Dados do cartão incompletos' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      const numClean = String(cardNumber).replace(/\D/g, '');
+      if (numClean.length < 13 || numClean.length > 19) {
+        return new Response(JSON.stringify({ error: 'Número do cartão inválido' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      const ccvClean = String(cardCcv).replace(/\D/g, '');
+      if (ccvClean.length < 3 || ccvClean.length > 4) {
+        return new Response(JSON.stringify({ error: 'CVV inválido' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    }
+
     const headers = {
       'Content-Type': 'application/json',
       'access_token': apiKey,
       'User-Agent': 'NebulaVape/1.0',
     };
 
-    // 1. Create or find customer
+    // 1. Criar/buscar cliente
     const customerName = payerName?.toString().substring(0, 100) || 'Cliente';
     const customerEmail = payerEmail?.toString() || `cliente-${cpfNumbers}@nebulavape.com`;
 
@@ -84,15 +166,14 @@ serve(async (req) => {
     });
 
     if (!customerRes.ok) {
-      const txt = await customerRes.text();
-      console.error('[Asaas] Customer error:', customerRes.status, txt);
+      console.error('[Asaas] Customer error status:', customerRes.status);
       return new Response(JSON.stringify({ error: 'Erro ao criar cliente' }), {
         status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
     const customer = await customerRes.json();
 
-    // 2. Create payment
+    // 2. Criar pagamento
     const billingType = paymentMethod === 'pix' ? 'PIX' : (paymentMethod === 'debit' ? 'DEBIT_CARD' : 'CREDIT_CARD');
     const dueDate = new Date();
     dueDate.setDate(dueDate.getDate() + 1);
@@ -106,6 +187,27 @@ serve(async (req) => {
       externalReference: orderId,
     };
 
+    // Para cartão: enviamos os dados DIRETAMENTE ao Asaas (que tokeniza/cobra na hora).
+    // Os dados não são persistidos no nosso back-end nem aparecem em logs.
+    if (isCard) {
+      paymentBody.creditCard = {
+        holderName: String(cardHolderName).substring(0, 100),
+        number: String(cardNumber).replace(/\D/g, ''),
+        expiryMonth: String(cardExpiryMonth).padStart(2, '0'),
+        expiryYear: String(cardExpiryYear).length === 2 ? `20${cardExpiryYear}` : String(cardExpiryYear),
+        ccv: String(cardCcv).replace(/\D/g, ''),
+      };
+      paymentBody.creditCardHolderInfo = {
+        name: String(cardHolderName).substring(0, 100),
+        email: cardHolderEmail || customerEmail,
+        cpfCnpj: (cardHolderCpf ? String(cardHolderCpf).replace(/\D/g, '') : cpfNumbers),
+        postalCode: cardHolderPostalCode ? String(cardHolderPostalCode).replace(/\D/g, '') : '00000000',
+        addressNumber: cardHolderAddressNumber || 'S/N',
+        phone: cardHolderPhone ? String(cardHolderPhone).replace(/\D/g, '') : (payerPhone ? String(payerPhone).replace(/\D/g, '') : undefined),
+      };
+      paymentBody.remoteIp = clientIp;
+    }
+
     const paymentRes = await fetch(`${ASAAS_BASE_URL}/payments`, {
       method: 'POST',
       headers,
@@ -113,16 +215,17 @@ serve(async (req) => {
     });
 
     if (!paymentRes.ok) {
-      const txt = await paymentRes.text();
-      console.error('[Asaas] Payment error:', paymentRes.status, txt);
-      return new Response(JSON.stringify({ error: 'Erro ao criar pagamento' }), {
-        status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      const errJson = await paymentRes.json().catch(() => ({}));
+      console.error('[Asaas] Payment error status:', paymentRes.status, 'code:', errJson?.errors?.[0]?.code);
+      const userMsg = errJson?.errors?.[0]?.description || 'Erro ao processar pagamento';
+      return new Response(JSON.stringify({ error: userMsg }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
     const payment = await paymentRes.json();
-    console.log('[Asaas] Payment created:', payment.id);
+    safeLog('[Asaas] Payment created', { id: payment.id, status: payment.status });
 
-    // 3. For PIX, fetch QR code
+    // 3. Para PIX, buscar QR Code
     let qrCodeBase64: string | null = null;
     let pixPayload: string | null = null;
 
@@ -136,30 +239,37 @@ serve(async (req) => {
         qrCodeBase64 = qr.encodedImage;
         pixPayload = qr.payload;
       } else {
-        console.error('[Asaas] QR Code error:', await qrRes.text());
+        console.error('[Asaas] QR Code error status:', qrRes.status);
       }
     }
 
-    // 4. Update order
+    // 4. Atualizar pedido (status final virá via webhook)
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
-    await supabase.from('orders').update({ status: 'pending_payment' }).eq('id', orderId);
+
+    // Para cartão, se já confirmado pelo Asaas, marcamos. Senão webhook decide.
+    let orderStatus = 'pending_payment';
+    if (isCard && (payment.status === 'CONFIRMED' || payment.status === 'RECEIVED')) {
+      orderStatus = 'confirmed';
+    }
+    await supabase.from('orders').update({ status: orderStatus }).eq('id', orderId);
 
     return new Response(
       JSON.stringify({
         success: true,
         paymentId: payment.id,
         billingType,
-        invoiceUrl: payment.invoiceUrl,
+        status: payment.status,
+        confirmed: orderStatus === 'confirmed',
         qrCodeBase64,
         qrCode: pixPayload,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
-    console.error('[Asaas] Error:', error);
+    console.error('[Asaas] Error type:', (error as Error).name);
     return new Response(JSON.stringify({ error: 'Erro ao processar pagamento' }), {
       status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
