@@ -430,13 +430,17 @@ export type Database = {
       orders: {
         Row: {
           address_city: string
+          address_complement: string | null
           address_neighborhood: string
           address_number: string
+          address_state: string | null
           address_street: string
           cancellation_reason: string | null
           cep: string | null
           change_amount: number | null
           created_at: string | null
+          customer_name: string | null
+          customer_phone: string | null
           expires_at: string | null
           id: string
           payment_method: string
@@ -449,13 +453,17 @@ export type Database = {
         }
         Insert: {
           address_city: string
+          address_complement?: string | null
           address_neighborhood: string
           address_number: string
+          address_state?: string | null
           address_street: string
           cancellation_reason?: string | null
           cep?: string | null
           change_amount?: number | null
           created_at?: string | null
+          customer_name?: string | null
+          customer_phone?: string | null
           expires_at?: string | null
           id?: string
           payment_method: string
@@ -468,13 +476,17 @@ export type Database = {
         }
         Update: {
           address_city?: string
+          address_complement?: string | null
           address_neighborhood?: string
           address_number?: string
+          address_state?: string | null
           address_street?: string
           cancellation_reason?: string | null
           cep?: string | null
           change_amount?: number | null
           created_at?: string | null
+          customer_name?: string | null
+          customer_phone?: string | null
           expires_at?: string | null
           id?: string
           payment_method?: string
@@ -891,6 +903,7 @@ export type Database = {
         Row: {
           cep: string
           city: string
+          complement: string | null
           created_at: string
           id: string
           is_default: boolean
@@ -905,6 +918,7 @@ export type Database = {
         Insert: {
           cep: string
           city: string
+          complement?: string | null
           created_at?: string
           id?: string
           is_default?: boolean
@@ -919,6 +933,7 @@ export type Database = {
         Update: {
           cep?: string
           city?: string
+          complement?: string | null
           created_at?: string
           id?: string
           is_default?: boolean

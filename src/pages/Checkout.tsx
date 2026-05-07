@@ -20,16 +20,19 @@ import { Tables } from '@/integrations/supabase/types';
 import { Checkbox } from '@/components/ui/checkbox';
 
 const checkoutSchema = z.object({
-  rua: z.string().trim().min(1, 'Rua é obrigatória').max(100, 'Rua deve ter no máximo 100 caracteres'),
-  numero: z.string().trim().min(1, 'Número é obrigatório').max(20, 'Número deve ter no máximo 20 caracteres'),
-  bairro: z.string().trim().min(1, 'Bairro é obrigatório').max(100, 'Bairro deve ter no máximo 100 caracteres'),
-  cidade: z.string().trim().min(1, 'Cidade é obrigatória').max(100, 'Cidade deve ter no máximo 100 caracteres'),
-  cep: z.string().trim().min(8, 'CEP é obrigatório').max(9, 'CEP inválido'),
+  customerName: z.string().trim().min(2, 'Nome completo é obrigatório').max(120, 'Nome muito longo'),
+  customerPhone: z.string().trim().refine((v) => v.replace(/\D/g, '').length >= 10 && v.replace(/\D/g, '').length <= 11, 'Telefone inválido'),
+  rua: z.string().trim().min(1, 'Rua é obrigatória').max(100),
+  numero: z.string().trim().min(1, 'Número é obrigatório').max(20),
+  complemento: z.string().trim().max(100).optional(),
+  bairro: z.string().trim().min(1, 'Bairro é obrigatório').max(100),
+  cidade: z.string().trim().min(1, 'Cidade é obrigatória').max(100),
+  estado: z.string().trim().max(2).optional(),
+  cep: z.string().trim().refine((v) => v.replace(/\D/g, '').length === 8, 'CEP inválido'),
   paymentMethod: z.enum(['pix', 'credit', 'debit', 'dinheiro']),
   changeAmount: z.string().optional(),
   cpf: z.string().optional(),
 }).refine((data) => {
-  // CPF obrigatório para PIX, Crédito e Débito (necessário para Asaas)
   if (data.paymentMethod === 'pix' || data.paymentMethod === 'credit' || data.paymentMethod === 'debit') {
     const cleanCpf = data.cpf?.replace(/\D/g, '') || '';
     return cleanCpf.length === 11;
@@ -60,10 +63,14 @@ const Checkout = () => {
   const [remainingTime, setRemainingTime] = useState<string>('');
 
   const [formData, setFormData] = useState({
+    customerName: '',
+    customerPhone: '',
     rua: '',
     numero: '',
+    complemento: '',
     bairro: '',
     cidade: '',
+    estado: '',
     cep: '',
     paymentMethod: 'pix',
     changeAmount: '',
@@ -92,12 +99,25 @@ const Checkout = () => {
   const { isLoading: isLoadingCep, lookupCep } = useCepLookup();
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (!session) {
         toast.error('Você precisa estar logado para fazer um pedido');
         navigate('/auth');
       } else {
         setUserId(session.user.id);
+        // Pré-preencher nome e telefone com dados do perfil
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('full_name, phone')
+          .eq('id', session.user.id)
+          .maybeSingle();
+        if (profile) {
+          setFormData(prev => ({
+            ...prev,
+            customerName: prev.customerName || profile.full_name || '',
+            customerPhone: prev.customerPhone || profile.phone || '',
+          }));
+        }
       }
     });
 
@@ -183,26 +203,29 @@ const Checkout = () => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSavedAddressSelect = (address: Tables<'saved_addresses'> | null) => {
+  const handleSavedAddressSelect = (address: any | null) => {
     setSelectedSavedAddress(address);
     if (address) {
       setFormData(prev => ({
         ...prev,
         rua: address.street,
         numero: address.number,
+        complemento: address.complement || '',
         bairro: address.neighborhood,
         cidade: address.city,
+        estado: address.state || '',
         cep: address.cep,
       }));
-      setSaveAddress(false); // Não precisa salvar se já está usando um endereço salvo
+      setSaveAddress(false);
     } else {
-      // Limpar formulário ao selecionar "Novo Endereço"
       setFormData(prev => ({
         ...prev,
         rua: '',
         numero: '',
+        complemento: '',
         bairro: '',
         cidade: '',
+        estado: '',
         cep: '',
       }));
     }
@@ -231,6 +254,7 @@ const Checkout = () => {
           rua: cepData.logradouro || prev.rua,
           bairro: cepData.bairro || prev.bairro,
           cidade: cepData.localidade || prev.cidade,
+          estado: cepData.uf || prev.estado,
         }));
       } else {
         setCepValidation('invalid');
@@ -242,6 +266,19 @@ const Checkout = () => {
 
   const handlePaymentChange = (value: string) => {
     setFormData(prev => ({ ...prev, paymentMethod: value }));
+  };
+
+  const handlePhoneChange = (phone: string) => {
+    const clean = phone.replace(/\D/g, '').slice(0, 11);
+    let formatted = clean;
+    if (clean.length > 10) {
+      formatted = `(${clean.slice(0, 2)}) ${clean.slice(2, 7)}-${clean.slice(7, 11)}`;
+    } else if (clean.length > 6) {
+      formatted = `(${clean.slice(0, 2)}) ${clean.slice(2, 6)}-${clean.slice(6, 10)}`;
+    } else if (clean.length > 2) {
+      formatted = `(${clean.slice(0, 2)}) ${clean.slice(2)}`;
+    }
+    setFormData(prev => ({ ...prev, customerPhone: formatted }));
   };
 
   const handleCpfChange = (cpf: string) => {
@@ -435,11 +472,15 @@ const Checkout = () => {
             flavor: item.flavor,
             price: getFinalPrice(item) // ✅ Enviar preço já com desconto aplicado
           })),
+          customerName: validatedData.customerName,
+          customerPhone: validatedData.customerPhone,
           address: {
             street: validatedData.rua,
             number: validatedData.numero,
+            complement: validatedData.complemento || undefined,
             neighborhood: validatedData.bairro,
             city: validatedData.cidade,
+            state: validatedData.estado || undefined,
           },
           cep: cleanCep.padStart(8, '0'), // Garantir 8 dígitos com zero à esquerda
           shippingCost: shippingCost || 0,
@@ -533,7 +574,7 @@ const Checkout = () => {
       
       // Montando a mensagem para o WhatsApp
       const paymentLabels: Record<string, string> = { pix: 'PIX', credit: 'Cartão de Crédito', debit: 'Cartão de Débito', dinheiro: 'Dinheiro' };
-      let message = `*Novo Pedido #${order.id}*\n\n*Itens:*\n${itemsList}\n\n*Subtotal: R$ ${subtotal.toFixed(2)}*\n*Taxa de Entrega (CEP ${validatedData.cep}): R$ ${(shippingCost || 0).toFixed(2)}*\n*Total: R$ ${order.total.toFixed(2)}*\n\n*Endereço de Entrega:*\n${validatedData.rua}, ${validatedData.numero}\n${validatedData.bairro} - ${validatedData.cidade}\nCEP: ${validatedData.cep}\n\n*Forma de Pagamento:* ${paymentLabels[validatedData.paymentMethod] || validatedData.paymentMethod}`;
+      let message = `*Novo Pedido #${order.id}*\n\n*Cliente:* ${validatedData.customerName}\n*Telefone:* ${validatedData.customerPhone}\n\n*Itens:*\n${itemsList}\n\n*Subtotal: R$ ${subtotal.toFixed(2)}*\n*Taxa de Entrega (CEP ${validatedData.cep}): R$ ${(shippingCost || 0).toFixed(2)}*\n*Total: R$ ${order.total.toFixed(2)}*\n\n*Endereço de Entrega:*\n${validatedData.rua}, ${validatedData.numero}${validatedData.complemento ? ` - ${validatedData.complemento}` : ''}\n${validatedData.bairro} - ${validatedData.cidade}${validatedData.estado ? `/${validatedData.estado}` : ''}\nCEP: ${validatedData.cep}\n\n*Forma de Pagamento:* ${paymentLabels[validatedData.paymentMethod] || validatedData.paymentMethod}`;
 
       // Se o pagamento for em dinheiro e houver troco
       if (validatedData.paymentMethod === 'dinheiro' && validatedData.changeAmount) {
@@ -550,12 +591,13 @@ const Checkout = () => {
           label: addressLabel.trim(),
           street: validatedData.rua,
           number: validatedData.numero,
+          complement: validatedData.complemento || null,
           neighborhood: validatedData.bairro,
           city: validatedData.cidade,
           cep: validatedData.cep,
-          state: undefined,
+          state: validatedData.estado || null,
           is_default: false,
-        });
+        } as any);
       }
       
       toast.success('Pedido realizado com sucesso!');
@@ -644,52 +686,65 @@ const Checkout = () => {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <Label htmlFor="rua">Rua</Label>
-                <Input
-                  id="rua"
-                  name="rua"
-                  value={formData.rua}
-                  onChange={handleInputChange}
-                  required
-                  disabled={isSubmitting}
-                />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="customerName">Nome completo *</Label>
+                  <Input
+                    id="customerName"
+                    name="customerName"
+                    value={formData.customerName}
+                    onChange={handleInputChange}
+                    placeholder="Seu nome"
+                    required
+                    maxLength={120}
+                    disabled={isSubmitting}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="customerPhone">Telefone *</Label>
+                  <Input
+                    id="customerPhone"
+                    name="customerPhone"
+                    value={formData.customerPhone}
+                    onChange={(e) => handlePhoneChange(e.target.value)}
+                    placeholder="(00) 00000-0000"
+                    maxLength={16}
+                    required
+                    disabled={isSubmitting}
+                  />
+                </div>
               </div>
 
               <div>
-                <Label htmlFor="numero">Número</Label>
-                <Input
-                  id="numero"
-                  name="numero"
-                  value={formData.numero}
-                  onChange={handleInputChange}
-                  required
-                  disabled={isSubmitting}
-                />
+                <Label htmlFor="rua">Rua *</Label>
+                <Input id="rua" name="rua" value={formData.rua} onChange={handleInputChange} required disabled={isSubmitting} />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="numero">Número *</Label>
+                  <Input id="numero" name="numero" value={formData.numero} onChange={handleInputChange} required disabled={isSubmitting} />
+                </div>
+                <div>
+                  <Label htmlFor="complemento">Complemento</Label>
+                  <Input id="complemento" name="complemento" value={formData.complemento} onChange={handleInputChange} placeholder="Apto, bloco..." maxLength={100} disabled={isSubmitting} />
+                </div>
               </div>
 
               <div>
-                <Label htmlFor="bairro">Bairro</Label>
-                <Input
-                  id="bairro"
-                  name="bairro"
-                  value={formData.bairro}
-                  onChange={handleInputChange}
-                  required
-                  disabled={isSubmitting}
-                />
+                <Label htmlFor="bairro">Bairro *</Label>
+                <Input id="bairro" name="bairro" value={formData.bairro} onChange={handleInputChange} required disabled={isSubmitting} />
               </div>
 
-              <div>
-                <Label htmlFor="cidade">Cidade</Label>
-                <Input
-                  id="cidade"
-                  name="cidade"
-                  value={formData.cidade}
-                  onChange={handleInputChange}
-                  required
-                  disabled={isSubmitting}
-                />
+              <div className="grid grid-cols-3 gap-4">
+                <div className="col-span-2">
+                  <Label htmlFor="cidade">Cidade *</Label>
+                  <Input id="cidade" name="cidade" value={formData.cidade} onChange={handleInputChange} required disabled={isSubmitting} />
+                </div>
+                <div>
+                  <Label htmlFor="estado">UF</Label>
+                  <Input id="estado" name="estado" value={formData.estado} onChange={(e) => setFormData(prev => ({ ...prev, estado: e.target.value.toUpperCase().slice(0,2) }))} maxLength={2} placeholder="SP" disabled={isSubmitting} />
+                </div>
               </div>
 
               <div>

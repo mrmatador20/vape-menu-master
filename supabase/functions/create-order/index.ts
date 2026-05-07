@@ -15,11 +15,15 @@ const orderRequestSchema = z.object({
     flavor: z.string().trim().max(50).optional(),
     price: z.number().nonnegative().optional(), // ✅ Aceitar preço do frontend
   })).min(1),
+  customerName: z.string().trim().min(2).max(120),
+  customerPhone: z.string().trim().min(10).max(20),
   address: z.object({
     street: z.string().trim().min(1).max(100),
     number: z.string().trim().min(1).max(20),
+    complement: z.string().trim().max(100).optional(),
     neighborhood: z.string().trim().min(1).max(100),
     city: z.string().trim().min(1).max(100),
+    state: z.string().trim().max(2).optional(),
   }),
   cep: z.string().trim().min(8).max(8),
   shippingCost: z.number().min(0),
@@ -54,11 +58,15 @@ interface Flavor {
 
 interface OrderRequest {
   items: OrderItem[];
+  customerName: string;
+  customerPhone: string;
   address: {
     street: string;
     number: string;
+    complement?: string;
     neighborhood: string;
     city: string;
+    state?: string;
   };
   cep: string;
   shippingCost: number;
@@ -485,12 +493,16 @@ serve(async (req) => {
       .from('orders')
       .insert({
         user_id: user.id,
+        customer_name: orderData.customerName,
+        customer_phone: orderData.customerPhone.replace(/\D/g, ''),
         payment_method: orderData.paymentMethod,
         change_amount: orderData.changeAmount ? parseFloat(orderData.changeAmount) : null,
         address_street: orderData.address.street,
         address_number: orderData.address.number,
+        address_complement: orderData.address.complement || null,
         address_neighborhood: orderData.address.neighborhood,
         address_city: orderData.address.city,
+        address_state: orderData.address.state || null,
         cep: orderData.cep,
         shipping_cost: finalShippingCost,
         total_amount: finalAmount,
