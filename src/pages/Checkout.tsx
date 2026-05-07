@@ -472,11 +472,15 @@ const Checkout = () => {
             flavor: item.flavor,
             price: getFinalPrice(item) // ✅ Enviar preço já com desconto aplicado
           })),
+          customerName: validatedData.customerName,
+          customerPhone: validatedData.customerPhone,
           address: {
             street: validatedData.rua,
             number: validatedData.numero,
+            complement: validatedData.complemento || undefined,
             neighborhood: validatedData.bairro,
             city: validatedData.cidade,
+            state: validatedData.estado || undefined,
           },
           cep: cleanCep.padStart(8, '0'), // Garantir 8 dígitos com zero à esquerda
           shippingCost: shippingCost || 0,
