@@ -99,12 +99,25 @@ const Checkout = () => {
   const { isLoading: isLoadingCep, lookupCep } = useCepLookup();
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (!session) {
         toast.error('Você precisa estar logado para fazer um pedido');
         navigate('/auth');
       } else {
         setUserId(session.user.id);
+        // Pré-preencher nome e telefone com dados do perfil
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('full_name, phone')
+          .eq('id', session.user.id)
+          .maybeSingle();
+        if (profile) {
+          setFormData(prev => ({
+            ...prev,
+            customerName: prev.customerName || profile.full_name || '',
+            customerPhone: prev.customerPhone || profile.phone || '',
+          }));
+        }
       }
     });
 
