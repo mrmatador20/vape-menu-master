@@ -203,26 +203,29 @@ const Checkout = () => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSavedAddressSelect = (address: Tables<'saved_addresses'> | null) => {
+  const handleSavedAddressSelect = (address: any | null) => {
     setSelectedSavedAddress(address);
     if (address) {
       setFormData(prev => ({
         ...prev,
         rua: address.street,
         numero: address.number,
+        complemento: address.complement || '',
         bairro: address.neighborhood,
         cidade: address.city,
+        estado: address.state || '',
         cep: address.cep,
       }));
-      setSaveAddress(false); // Não precisa salvar se já está usando um endereço salvo
+      setSaveAddress(false);
     } else {
-      // Limpar formulário ao selecionar "Novo Endereço"
       setFormData(prev => ({
         ...prev,
         rua: '',
         numero: '',
+        complemento: '',
         bairro: '',
         cidade: '',
+        estado: '',
         cep: '',
       }));
     }
