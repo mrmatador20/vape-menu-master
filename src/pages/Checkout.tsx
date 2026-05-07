@@ -63,10 +63,14 @@ const Checkout = () => {
   const [remainingTime, setRemainingTime] = useState<string>('');
 
   const [formData, setFormData] = useState({
+    customerName: '',
+    customerPhone: '',
     rua: '',
     numero: '',
+    complemento: '',
     bairro: '',
     cidade: '',
+    estado: '',
     cep: '',
     paymentMethod: 'pix',
     changeAmount: '',
