@@ -591,12 +591,13 @@ const Checkout = () => {
           label: addressLabel.trim(),
           street: validatedData.rua,
           number: validatedData.numero,
+          complement: validatedData.complemento || null,
           neighborhood: validatedData.bairro,
           city: validatedData.cidade,
           cep: validatedData.cep,
-          state: undefined,
+          state: validatedData.estado || null,
           is_default: false,
-        });
+        } as any);
       }
       
       toast.success('Pedido realizado com sucesso!');
