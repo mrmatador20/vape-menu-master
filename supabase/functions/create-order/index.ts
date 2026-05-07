@@ -15,11 +15,15 @@ const orderRequestSchema = z.object({
     flavor: z.string().trim().max(50).optional(),
     price: z.number().nonnegative().optional(), // ✅ Aceitar preço do frontend
   })).min(1),
+  customerName: z.string().trim().min(2).max(120),
+  customerPhone: z.string().trim().min(10).max(20),
   address: z.object({
     street: z.string().trim().min(1).max(100),
     number: z.string().trim().min(1).max(20),
+    complement: z.string().trim().max(100).optional(),
     neighborhood: z.string().trim().min(1).max(100),
     city: z.string().trim().min(1).max(100),
+    state: z.string().trim().max(2).optional(),
   }),
   cep: z.string().trim().min(8).max(8),
   shippingCost: z.number().min(0),
