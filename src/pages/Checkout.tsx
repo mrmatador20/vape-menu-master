@@ -20,16 +20,19 @@ import { Tables } from '@/integrations/supabase/types';
 import { Checkbox } from '@/components/ui/checkbox';
 
 const checkoutSchema = z.object({
-  rua: z.string().trim().min(1, 'Rua é obrigatória').max(100, 'Rua deve ter no máximo 100 caracteres'),
-  numero: z.string().trim().min(1, 'Número é obrigatório').max(20, 'Número deve ter no máximo 20 caracteres'),
-  bairro: z.string().trim().min(1, 'Bairro é obrigatório').max(100, 'Bairro deve ter no máximo 100 caracteres'),
-  cidade: z.string().trim().min(1, 'Cidade é obrigatória').max(100, 'Cidade deve ter no máximo 100 caracteres'),
-  cep: z.string().trim().min(8, 'CEP é obrigatório').max(9, 'CEP inválido'),
+  customerName: z.string().trim().min(2, 'Nome completo é obrigatório').max(120, 'Nome muito longo'),
+  customerPhone: z.string().trim().refine((v) => v.replace(/\D/g, '').length >= 10 && v.replace(/\D/g, '').length <= 11, 'Telefone inválido'),
+  rua: z.string().trim().min(1, 'Rua é obrigatória').max(100),
+  numero: z.string().trim().min(1, 'Número é obrigatório').max(20),
+  complemento: z.string().trim().max(100).optional(),
+  bairro: z.string().trim().min(1, 'Bairro é obrigatório').max(100),
+  cidade: z.string().trim().min(1, 'Cidade é obrigatória').max(100),
+  estado: z.string().trim().max(2).optional(),
+  cep: z.string().trim().refine((v) => v.replace(/\D/g, '').length === 8, 'CEP inválido'),
   paymentMethod: z.enum(['pix', 'credit', 'debit', 'dinheiro']),
   changeAmount: z.string().optional(),
   cpf: z.string().optional(),
 }).refine((data) => {
-  // CPF obrigatório para PIX, Crédito e Débito (necessário para Asaas)
   if (data.paymentMethod === 'pix' || data.paymentMethod === 'credit' || data.paymentMethod === 'debit') {
     const cleanCpf = data.cpf?.replace(/\D/g, '') || '';
     return cleanCpf.length === 11;
