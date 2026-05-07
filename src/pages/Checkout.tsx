@@ -686,52 +686,65 @@ const Checkout = () => {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <Label htmlFor="rua">Rua</Label>
-                <Input
-                  id="rua"
-                  name="rua"
-                  value={formData.rua}
-                  onChange={handleInputChange}
-                  required
-                  disabled={isSubmitting}
-                />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="customerName">Nome completo *</Label>
+                  <Input
+                    id="customerName"
+                    name="customerName"
+                    value={formData.customerName}
+                    onChange={handleInputChange}
+                    placeholder="Seu nome"
+                    required
+                    maxLength={120}
+                    disabled={isSubmitting}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="customerPhone">Telefone *</Label>
+                  <Input
+                    id="customerPhone"
+                    name="customerPhone"
+                    value={formData.customerPhone}
+                    onChange={(e) => handlePhoneChange(e.target.value)}
+                    placeholder="(00) 00000-0000"
+                    maxLength={16}
+                    required
+                    disabled={isSubmitting}
+                  />
+                </div>
               </div>
 
               <div>
-                <Label htmlFor="numero">Número</Label>
-                <Input
-                  id="numero"
-                  name="numero"
-                  value={formData.numero}
-                  onChange={handleInputChange}
-                  required
-                  disabled={isSubmitting}
-                />
+                <Label htmlFor="rua">Rua *</Label>
+                <Input id="rua" name="rua" value={formData.rua} onChange={handleInputChange} required disabled={isSubmitting} />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="numero">Número *</Label>
+                  <Input id="numero" name="numero" value={formData.numero} onChange={handleInputChange} required disabled={isSubmitting} />
+                </div>
+                <div>
+                  <Label htmlFor="complemento">Complemento</Label>
+                  <Input id="complemento" name="complemento" value={formData.complemento} onChange={handleInputChange} placeholder="Apto, bloco..." maxLength={100} disabled={isSubmitting} />
+                </div>
               </div>
 
               <div>
-                <Label htmlFor="bairro">Bairro</Label>
-                <Input
-                  id="bairro"
-                  name="bairro"
-                  value={formData.bairro}
-                  onChange={handleInputChange}
-                  required
-                  disabled={isSubmitting}
-                />
+                <Label htmlFor="bairro">Bairro *</Label>
+                <Input id="bairro" name="bairro" value={formData.bairro} onChange={handleInputChange} required disabled={isSubmitting} />
               </div>
 
-              <div>
-                <Label htmlFor="cidade">Cidade</Label>
-                <Input
-                  id="cidade"
-                  name="cidade"
-                  value={formData.cidade}
-                  onChange={handleInputChange}
-                  required
-                  disabled={isSubmitting}
-                />
+              <div className="grid grid-cols-3 gap-4">
+                <div className="col-span-2">
+                  <Label htmlFor="cidade">Cidade *</Label>
+                  <Input id="cidade" name="cidade" value={formData.cidade} onChange={handleInputChange} required disabled={isSubmitting} />
+                </div>
+                <div>
+                  <Label htmlFor="estado">UF</Label>
+                  <Input id="estado" name="estado" value={formData.estado} onChange={(e) => setFormData(prev => ({ ...prev, estado: e.target.value.toUpperCase().slice(0,2) }))} maxLength={2} placeholder="SP" disabled={isSubmitting} />
+                </div>
               </div>
 
               <div>
