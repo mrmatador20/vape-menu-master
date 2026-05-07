@@ -493,12 +493,16 @@ serve(async (req) => {
       .from('orders')
       .insert({
         user_id: user.id,
+        customer_name: orderData.customerName,
+        customer_phone: orderData.customerPhone.replace(/\D/g, ''),
         payment_method: orderData.paymentMethod,
         change_amount: orderData.changeAmount ? parseFloat(orderData.changeAmount) : null,
         address_street: orderData.address.street,
         address_number: orderData.address.number,
+        address_complement: orderData.address.complement || null,
         address_neighborhood: orderData.address.neighborhood,
         address_city: orderData.address.city,
+        address_state: orderData.address.state || null,
         cep: orderData.cep,
         shipping_cost: finalShippingCost,
         total_amount: finalAmount,
