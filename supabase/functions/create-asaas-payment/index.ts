@@ -197,13 +197,20 @@ serve(async (req) => {
         expiryYear: String(cardExpiryYear).length === 2 ? `20${cardExpiryYear}` : String(cardExpiryYear),
         ccv: String(cardCcv).replace(/\D/g, ''),
       };
+      const phoneClean = (cardHolderPhone ? String(cardHolderPhone) : (payerPhone ? String(payerPhone) : '')).replace(/\D/g, '');
+      if (phoneClean.length < 10 || phoneClean.length > 11) {
+        return new Response(JSON.stringify({ error: 'Telefone do titular do cartão é obrigatório (com DDD).' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
       paymentBody.creditCardHolderInfo = {
         name: String(cardHolderName).substring(0, 100),
         email: cardHolderEmail || customerEmail,
         cpfCnpj: (cardHolderCpf ? String(cardHolderCpf).replace(/\D/g, '') : cpfNumbers),
         postalCode: cardHolderPostalCode ? String(cardHolderPostalCode).replace(/\D/g, '') : '00000000',
         addressNumber: cardHolderAddressNumber || 'S/N',
-        phone: cardHolderPhone ? String(cardHolderPhone).replace(/\D/g, '') : (payerPhone ? String(payerPhone).replace(/\D/g, '') : undefined),
+        phone: phoneClean,
+        mobilePhone: phoneClean,
       };
       paymentBody.remoteIp = clientIp;
     }
