@@ -456,6 +456,14 @@ const Checkout = () => {
     try {
       const validatedData = checkoutSchema.parse(formData);
 
+      // Asaas exige valor mínimo de R$ 5,00 para cartão
+      const orderTotal = totalPrice + (shippingCost || 0);
+      if ((validatedData.paymentMethod === 'credit' || validatedData.paymentMethod === 'debit') && orderTotal < 5) {
+        toast.error('O valor mínimo para pagamento com cartão é R$ 5,00. Use PIX ou Dinheiro, ou adicione mais itens ao carrinho.');
+        setIsSubmitting(false);
+        return;
+      }
+
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session) {
