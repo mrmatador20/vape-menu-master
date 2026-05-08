@@ -13,18 +13,18 @@ import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 
 interface OrderSummaryItem {
-  name: string;
-  quantity: number;
-  price: number;
+  name?: string;
+  quantity?: number;
+  price?: number;
   flavor?: string;
   image?: string;
 }
 
 interface OrderSummaryAddress {
-  rua: string;
-  numero: string;
-  bairro: string;
-  cidade: string;
+  rua?: string;
+  numero?: string;
+  bairro?: string;
+  cidade?: string;
   cep?: string;
 }
 
