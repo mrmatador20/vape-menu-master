@@ -33,6 +33,8 @@ const orderDataSchema = z.object({
   }),
   changeAmount: z.number().nonnegative('Valor de troco deve ser não negativo').optional(),
   cpf: z.string().optional(),
+  customerName: z.string().optional(),
+  customerPhone: z.string().optional(),
   whatsappMessage: z.string().min(1, 'Mensagem do WhatsApp é obrigatória'),
 });
 
