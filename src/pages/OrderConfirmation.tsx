@@ -269,6 +269,8 @@ const OrderConfirmation = () => {
           description={`Pedido #${orderData.orderId.slice(-8).toUpperCase()}`}
           paymentMethod={orderData.paymentMethod as 'pix' | 'credit' | 'debit'}
           payerCpf={orderData.cpf}
+          payerName={orderData.customerName}
+          payerPhone={orderData.customerPhone}
           onPaymentConfirmed={() => {
             setPaymentConfirmed(true);
             setShowPixDialog(false);
