@@ -271,6 +271,10 @@ const OrderConfirmation = () => {
           payerCpf={orderData.cpf}
           payerName={orderData.customerName}
           payerPhone={orderData.customerPhone}
+          items={orderData.items}
+          address={orderData.address}
+          shippingCost={orderData.shippingCost}
+          subtotal={subtotal}
           onPaymentConfirmed={() => {
             setPaymentConfirmed(true);
             setShowPixDialog(false);
