@@ -632,6 +632,8 @@ const Checkout = () => {
           paymentMethod: formData.paymentMethod,
           changeAmount: validatedData.changeAmount ? Number(validatedData.changeAmount) : undefined,
           cpf: validatedData.cpf ? validatedData.cpf.replace(/\D/g, '') : undefined,
+          customerName: validatedData.nomeCompleto,
+          customerPhone: validatedData.telefone ? validatedData.telefone.replace(/\D/g, '') : undefined,
           whatsappMessage: message
         }
       });
