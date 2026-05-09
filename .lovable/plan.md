@@ -1,88 +1,84 @@
-## Refatoração completa do Admin de Produtos
+# Refatoração Premium do Admin Panel — Fox Velour
 
-Transformar o cadastro/listagem de produtos em um painel profissional escalável, com gestão visual de categorias/subcategorias, modal em abas e variantes em tabela com gerador de combinações.
+Refatoração ampla e em múltiplas camadas. Antes de codar, alinho o escopo abaixo para evitar retrabalho.
 
----
+## 1. Navegação e Arquitetura
 
-### 1. Banco de dados (migration)
+- **Remover** `/admin/pix-payments` da sidebar e do `App.tsx` (mantém arquivo como legado opcional).
+- **Agrupar sidebar** com submenus colapsáveis usando shadcn `Collapsible`:
+  - "Configurações de Venda" → Descontos, Taxas de Entrega, Indicações.
+  - "Catálogo" → Produtos, Categorias, Banners.
+  - "Operações" → Pedidos, Avaliações.
+  - "Insights" → Dashboard, Estatísticas, Métricas Indicações.
+  - "Sistema" → Segurança, Auditoria, Configurações.
+- **Slide-overs** (shadcn `Sheet` lado direito, `max-w-2xl`/`max-w-4xl`) substituindo `Dialog` em:
+  - `ProductFormDialog` → `ProductFormSheet`
+  - `OrderDetail` (extrair de `Orders.tsx`) → `OrderDetailSheet`
+  - Edição de categoria/subcategoria em `Categories.tsx`
 
-- Criar tabela `subcategories` (id, name, category_id, display_order) — categorias já existem em `categories`.
-- Adicionar colunas em `flavors`:
-  - `sku` (text, opcional)
-  - `size` (text, opcional) — separar tamanho/cor para gerar combinações
-- Backfill: popular `categories` e `subcategories` a partir de `products.category` / `products.subcategory` distintos.
-- Manter `products.category` / `products.subcategory` como texto (compatibilidade) — sincronizar via select pelos nomes da tabela.
+## 2. Catálogo
 
-### 2. Hooks novos
+- **Categorias (Tree View)**: refatorar `Categories.tsx` para árvore expandível Categoria → Subcategorias com contagem `(N)` ao lado, drag-handle visual (sem persist no escopo dessa task — apenas exibição). Reusar `useCategories` + `useSubcategories`.
+- **Motor de variantes**: já existe `GenerateVariantsDialog` + `VariantsTable`. Vou:
+  - Permitir matriz visual (linhas=tamanhos, colunas=cores) com inputs inline de estoque/preço.
+  - SKU autogerado mas editável; preço e estoque por célula.
+- **CategoryCombobox/SubcategoryCombobox**: já existem com criação inline. Garantir uso no novo Sheet.
 
-- `useCategories` — lista categorias + contagem de produtos (join client-side).
-- `useSubcategories(categoryId)` — subcategorias da categoria selecionada + contagem.
-- Atualizar `useFlavors` para incluir novos campos.
+## 3. Mesa de Operações (Pedidos)
 
-### 3. Painel de Categorias e Subcategorias
+- Em `Orders.tsx`:
+  - Adicionar coluna **Status Financeiro** (Pago / Pendente / Expirado / Reembolsado) derivado de `payment_method` + `status`.
+  - Manter coluna **Status Logístico** (Em separação / Enviado / Entregue / Cancelado).
+  - **Checkboxes** por linha + header → barra de ações em massa (Alterar status, Imprimir etiquetas).
+  - **OrderDetailSheet**: timeline de eventos (criação → confirmação → envio → entrega) + bloco "Pagamento PIX" mostrando ID da transação, link de cobrança e expiração quando PIX.
 
-Nova página `src/pages/admin/Categories.tsx` (rota `/admin/categories`, link na sidebar) com:
-- Lista visual de categorias (card com nome, contagem, ações).
-- Drag handle para reordenar (`display_order`).
-- Inline edit, criar, excluir (com confirmação se houver produtos).
-- Painel lateral mostrando subcategorias da categoria selecionada (mesmo padrão).
-- Busca instantânea.
+> Para PIX, vou ler de `orders` os campos disponíveis (`expires_at`, etc). Não criarei novas tabelas.
 
-Substituir `CategoriesSettings.tsx` por link para esta página.
+## 4. Dashboard / BI
 
-### 4. Modal de produto (`ProductFormDialog`) — novo layout em abas
+- Em `Dashboard.tsx`:
+  - Adicionar **gráfico de linha** Receita × Tempo (últimos 30 dias) usando `recharts` (já presente via shadcn).
+  - **Gráfico de barras** Vendas por Categoria.
+  - Painel **Ações Urgentes**: produtos com estoque ≤ min_stock + pedidos pendentes de despacho > 24h.
 
-Largura `max-w-4xl`. `Tabs` verticais à esquerda em desktop:
-1. **Informações básicas** — nome, descrição, preço, posição.
-2. **Categorização** — Combobox pesquisável de categoria (com botão "+ nova"), Combobox de subcategoria filtrado (com "+ nova").
-3. **Imagens** — `ProductImagesField` existente, mantido.
-4. **Estoque** — estoque, alerta mínimo, visibilidade.
-5. **Variantes** — só habilitada após criar o produto (precisa de id).
-6. **Descontos** — tipo + valor.
+## 5. Identidade Visual Fox Velour
 
-### 5. Variantes — tabela e gerador
+Atualizar `src/index.css` (tokens HSL):
 
-Nova UI dentro da aba Variantes:
-- Tabela com colunas: Tamanho, Cor (swatch), SKU, Estoque, Preço, Ações (editar, duplicar, excluir).
-- Busca por SKU/nome.
-- Botão **"Gerar combinações"** abre dialog: o usuário lista tamanhos (chips) e cores (chips com cor hex). Sistema gera todas as combinações Tamanho×Cor com estoque/preço padrão e SKU autoincremental.
-- Botão **Duplicar** clona linha.
-- Manter `FlavorFormDialog` para edição manual avançada.
+- `--background`: branco gelo (`40 30% 98%`)
+- `--card`: branco puro (`0 0% 100%`)
+- `--foreground`: preto suave (`30 10% 12%`)
+- `--primary`: dourado queimado (`35 65% 45%`) — CTAs apenas
+- `--radius`: `0.5rem` (8px)
+- Remover sombras pesadas: `--shadow-card` mais sutil.
+- Tipografia: importar Inter via `index.html` e setar `font-family` no body.
 
-### 6. Listagem (`pages/admin/Products.tsx`)
+## Arquivos
 
-- Filtros adicionados acima da tabela: Categoria, Subcategoria (depende de categoria), Estoque (todos / em estoque / baixo / esgotado), Promoção (com/sem), Visibilidade.
-- Busca por nome/sku/categoria.
-- Ordenação por colunas (nome, preço, estoque, posição).
-- Paginação client-side (20/pg).
-- Cards de KPI no topo: Total, Em estoque, Estoque baixo, Esgotados, Em promoção.
-- Visual mais premium (espaçamento, badges, tipografia).
+**Criar:**
+- `src/components/admin/ProductFormSheet.tsx` (wrapper Sheet em volta do form existente)
+- `src/components/admin/OrderDetailSheet.tsx`
+- `src/components/admin/CategoryTree.tsx`
+- `src/components/admin/dashboard/RevenueChart.tsx`
+- `src/components/admin/dashboard/CategorySalesChart.tsx`
+- `src/components/admin/dashboard/UrgentActionsPanel.tsx`
 
-### 7. Visual — paleta Fox Velour
+**Editar:**
+- `src/components/admin/AdminSidebar.tsx` — submenus colapsáveis
+- `src/App.tsx` — remover rota pix-payments
+- `src/pages/admin/Orders.tsx` — colunas duplas, checkboxes, ações em massa, sheet
+- `src/pages/admin/Categories.tsx` — tree view
+- `src/pages/admin/Products.tsx` — usar Sheet
+- `src/pages/admin/Dashboard.tsx` — gráficos + ações urgentes
+- `src/components/admin/VariantsTable.tsx` — matriz inline
+- `src/index.css` — paleta Fox Velour
+- `index.html` — Inter font
 
-Usar tokens já existentes (`--primary` dourado, `background` branco gelo, `foreground` preto suave). Sem novas cores hardcoded — apenas refinar espaçamento/sombras via classes utilitárias.
+## Fora de escopo (follow-up)
 
----
+- Persistência de drag-and-drop de ordem de categorias.
+- Geração real de PDF de etiqueta de envio (vou stub print HTML).
+- Webhook PIX novo / mudanças no schema de pagamentos.
+- Mudanças nas Edge Functions.
 
-### Arquivos criados
-- `supabase/migrations/...sql`
-- `src/hooks/useCategories.ts`
-- `src/hooks/useSubcategories.ts`
-- `src/pages/admin/Categories.tsx`
-- `src/components/admin/CategoryCombobox.tsx`
-- `src/components/admin/SubcategoryCombobox.tsx`
-- `src/components/admin/VariantsTable.tsx`
-- `src/components/admin/GenerateVariantsDialog.tsx`
-
-### Arquivos editados
-- `src/components/admin/ProductFormDialog.tsx` (reestrutura em abas)
-- `src/pages/admin/Products.tsx` (filtros, KPIs, paginação)
-- `src/components/admin/AdminSidebar.tsx` (link Categorias)
-- `src/App.tsx` (rota)
-- `src/hooks/useFlavors.ts` (novos campos)
-- `src/components/admin/FlavorFormDialog.tsx` (campos sku/size)
-
-### Fora de escopo (a confirmar depois)
-- SEO por produto (slug/meta) — mencionado mas exige colunas extras; posso adicionar em follow-up.
-- Compressão automática de imagens no client (libs adicionais).
-- Ícone/cor por categoria — adicionar como follow-up se desejar.
+Confirma para eu seguir? Posso também reduzir escopo se preferir entregar em fases (ex: Fase 1 = Visual + Sidebar + Pedidos; Fase 2 = Dashboard BI + Slide-overs).
