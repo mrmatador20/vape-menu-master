@@ -6,6 +6,7 @@ import {
   User,
   Menu,
   ChevronRight,
+  ChevronLeft,
   LogIn,
   X,
 } from 'lucide-react';
@@ -54,19 +55,34 @@ const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isCategoriesOpen, setIsCategoriesOpen] = useState(false);
   const [isInResetFlow, setIsInResetFlow] = useState(false);
+  const [activeCategoryView, setActiveCategoryView] = useState<string | null>(null);
+  const [mobileCategoryView, setMobileCategoryView] = useState<string | null>(null);
 
-  const categories = useMemo(
-    () => Array.from(new Set(products?.map(p => p.category) || [])).sort(),
+  // Only products that should appear in the storefront
+  const availableProducts = useMemo(
+    () => (products || []).filter(p => p.visible_in_all !== false && (p.stock ?? 0) > 0),
     [products]
   );
 
+  const categories = useMemo(
+    () => Array.from(new Set(availableProducts.map(p => p.category))).sort(),
+    [availableProducts]
+  );
+
   const getCategorySubcategories = (category: string) => {
-    if (!products) return [];
-    const subs = products
+    const subs = availableProducts
       .filter(p => p.category === category && p.subcategory)
       .map(p => p.subcategory as string);
     return Array.from(new Set(subs)).sort();
   };
+
+  // Reset second-level views when menus close
+  useEffect(() => {
+    if (!isCategoriesOpen) setActiveCategoryView(null);
+  }, [isCategoriesOpen]);
+  useEffect(() => {
+    if (!isMenuOpen) setMobileCategoryView(null);
+  }, [isMenuOpen]);
 
   useEffect(() => {
     const checkResetFlow = () => {
@@ -165,69 +181,95 @@ const Header = () => {
             <PopoverContent
               align="start"
               sideOffset={12}
-              className="p-0 border-0 rounded-md bg-card shadow-[0_20px_60px_-15px_hsl(30_10%_12%_/_0.18)] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=open]:slide-in-from-top-2 data-[state=closed]:slide-out-to-top-2"
-              style={{
-                width: categories.length > 8 ? 'min(960px, 94vw)' : `min(${Math.max(560, Math.min(categories.length, 4) * 220)}px, 94vw)`,
-              }}
+              className="w-[520px] max-w-[94vw] p-0 border-0 rounded-md bg-card shadow-[0_20px_60px_-15px_hsl(30_10%_12%_/_0.18)] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=open]:slide-in-from-top-2 data-[state=closed]:slide-out-to-top-2 overflow-hidden"
             >
-              <div className="px-10 pt-8 pb-4 flex items-baseline justify-between">
-                <p className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground">
-                  Coleção
-                </p>
-                <button
-                  type="button"
-                  onClick={() => handleNavigate('/')}
-                  className="group inline-flex items-center gap-1.5 text-[11px] uppercase tracking-[0.2em] text-foreground hover:text-primary transition-colors"
-                >
-                  <span className="border-b border-foreground/40 group-hover:border-primary pb-0.5">
-                    Ver todas
-                  </span>
-                  <ChevronRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" {...ICON_PROPS} />
-                </button>
-              </div>
+              {activeCategoryView === null ? (
+                <div className="animate-fade-in">
+                  <div className="px-10 pt-8 pb-4 flex items-baseline justify-between">
+                    <p className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground">
+                      Coleção
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => handleNavigate('/')}
+                      className="group inline-flex items-center gap-1.5 text-[11px] uppercase tracking-[0.2em] text-foreground hover:text-primary transition-colors"
+                    >
+                      <span className="border-b border-foreground/40 group-hover:border-primary pb-0.5">
+                        Ver todas
+                      </span>
+                      <ChevronRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" {...ICON_PROPS} />
+                    </button>
+                  </div>
 
-              {categories.length > 8 ? (
-                <SidebarMegaMenu
-                  categories={categories}
-                  getSubs={getCategorySubcategories}
-                  onNavigate={handleNavigate}
-                />
+                  <ul className="px-6 pb-6">
+                    {categories.length === 0 && (
+                      <li className="px-4 py-6 text-xs text-muted-foreground tracking-wide">
+                        Nenhuma categoria disponível.
+                      </li>
+                    )}
+                    {categories.map((category) => {
+                      const subs = getCategorySubcategories(category);
+                      return (
+                        <li key={category}>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              subs.length > 0
+                                ? setActiveCategoryView(category)
+                                : handleNavigate(`/?category=${category}`)
+                            }
+                            className="group w-full flex items-center justify-between px-4 py-4 text-left border-b border-border/30 last:border-0 hover:text-primary transition-colors"
+                          >
+                            <span className="text-sm font-medium tracking-wide capitalize">
+                              {category}
+                            </span>
+                            {subs.length > 0 && (
+                              <ChevronRight className="h-4 w-4 text-muted-foreground/60 group-hover:text-primary group-hover:translate-x-0.5 transition-all" {...ICON_PROPS} />
+                            )}
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
               ) : (
-                <div
-                  className="px-10 pb-10 grid gap-x-10 gap-y-8"
-                  style={{
-                    gridTemplateColumns: `repeat(${Math.min(categories.length || 1, 4)}, minmax(0, 1fr))`,
-                  }}
-                >
-                  {categories.map((category) => {
-                    const subs = getCategorySubcategories(category);
-                    return (
-                      <div key={category} className="min-w-0">
-                        <button
-                          type="button"
-                          onClick={() => handleNavigate(`/?category=${category}`)}
-                          className="block w-full text-left text-sm font-semibold tracking-wide capitalize text-foreground hover:text-primary transition-colors pb-3 border-b border-border/40"
-                        >
-                          {category}
-                        </button>
-                        {subs.length > 0 && (
-                          <ul className="mt-3 space-y-2.5">
-                            {subs.map((sub) => (
-                              <li key={sub}>
-                                <button
-                                  type="button"
-                                  onClick={() => handleNavigate(`/?category=${category}&subcategory=${sub}`)}
-                                  className="text-xs font-light tracking-wide capitalize text-muted-foreground hover:text-primary transition-colors"
-                                >
-                                  {sub}
-                                </button>
-                              </li>
-                            ))}
-                          </ul>
-                        )}
-                      </div>
-                    );
-                  })}
+                <div className="animate-fade-in">
+                  <div className="px-10 pt-8 pb-5 flex items-center justify-between border-b border-border/30">
+                    <button
+                      type="button"
+                      onClick={() => setActiveCategoryView(null)}
+                      className="group inline-flex items-center gap-1.5 text-[10px] uppercase tracking-[0.25em] text-muted-foreground hover:text-primary transition-colors"
+                    >
+                      <ChevronLeft className="h-3.5 w-3.5 transition-transform group-hover:-translate-x-0.5" {...ICON_PROPS} />
+                      Voltar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleNavigate(`/?category=${activeCategoryView}`)}
+                      className="text-[10px] uppercase tracking-[0.25em] text-foreground hover:text-primary transition-colors border-b border-foreground/40 hover:border-primary pb-0.5"
+                    >
+                      Ver tudo
+                    </button>
+                  </div>
+
+                  <div className="px-10 pt-6 pb-10">
+                    <h3 className="font-serif text-2xl capitalize text-foreground mb-6 leading-tight">
+                      {activeCategoryView}
+                    </h3>
+                    <ul className="grid grid-cols-2 gap-x-10 gap-y-3.5">
+                      {getCategorySubcategories(activeCategoryView).map((sub) => (
+                        <li key={sub}>
+                          <button
+                            type="button"
+                            onClick={() => handleNavigate(`/?category=${activeCategoryView}&subcategory=${sub}`)}
+                            className="text-sm font-light tracking-wide capitalize text-foreground/80 hover:text-primary transition-colors"
+                          >
+                            {sub}
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 </div>
               )}
             </PopoverContent>
@@ -332,51 +374,88 @@ const Header = () => {
               </SheetHeader>
 
               <div className="px-6 py-6">
-                <p className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground mb-4">
-                  Coleção
-                </p>
-                <button
-                  type="button"
-                  onClick={() => handleNavigate('/')}
-                  className="group inline-flex items-center gap-1.5 mb-5 text-[11px] uppercase tracking-[0.2em] text-foreground hover:text-primary"
-                >
-                  <span className="border-b border-foreground/40 group-hover:border-primary pb-0.5">
-                    Ver todas
-                  </span>
-                  <ChevronRight className="h-3.5 w-3.5" {...ICON_PROPS} />
-                </button>
+                {mobileCategoryView === null ? (
+                  <div className="animate-fade-in">
+                    <p className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground mb-4">
+                      Coleção
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => handleNavigate('/')}
+                      className="group inline-flex items-center gap-1.5 mb-5 text-[11px] uppercase tracking-[0.2em] text-foreground hover:text-primary"
+                    >
+                      <span className="border-b border-foreground/40 group-hover:border-primary pb-0.5">
+                        Ver todas
+                      </span>
+                      <ChevronRight className="h-3.5 w-3.5" {...ICON_PROPS} />
+                    </button>
 
-                <ul className="space-y-1">
-                  {categories.map((category) => {
-                    const subs = getCategorySubcategories(category);
-                    return (
-                      <li key={category} className="py-2 border-b border-border/40 last:border-0">
-                        <button
-                          type="button"
-                          onClick={() => handleNavigate(`/?category=${category}`)}
-                          className="block w-full text-left font-serif text-base capitalize text-foreground hover:text-primary transition-colors leading-loose"
-                        >
-                          {category}
-                        </button>
-                        {subs.length > 0 && (
-                          <ul className="mt-1 space-y-1.5 pl-1">
-                            {subs.map((sub) => (
-                              <li key={sub}>
-                                <button
-                                  type="button"
-                                  onClick={() => handleNavigate(`/?category=${category}&subcategory=${sub}`)}
-                                  className="text-xs tracking-wide capitalize text-muted-foreground hover:text-primary transition-colors"
-                                >
-                                  {sub}
-                                </button>
-                              </li>
-                            ))}
-                          </ul>
-                        )}
-                      </li>
-                    );
-                  })}
-                </ul>
+                    <ul>
+                      {categories.length === 0 && (
+                        <li className="py-3 text-xs text-muted-foreground tracking-wide">
+                          Nenhuma categoria disponível.
+                        </li>
+                      )}
+                      {categories.map((category) => {
+                        const subs = getCategorySubcategories(category);
+                        return (
+                          <li key={category} className="border-b border-border/30 last:border-0">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                subs.length > 0
+                                  ? setMobileCategoryView(category)
+                                  : handleNavigate(`/?category=${category}`)
+                              }
+                              className="w-full flex items-center justify-between py-3.5 text-left text-sm font-medium tracking-wide capitalize text-foreground hover:text-primary transition-colors"
+                            >
+                              <span>{category}</span>
+                              {subs.length > 0 && (
+                                <ChevronRight className="h-4 w-4 text-muted-foreground/60" {...ICON_PROPS} />
+                              )}
+                            </button>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                ) : (
+                  <div className="animate-fade-in">
+                    <button
+                      type="button"
+                      onClick={() => setMobileCategoryView(null)}
+                      className="group inline-flex items-center gap-1.5 mb-5 text-[10px] uppercase tracking-[0.25em] text-muted-foreground hover:text-primary"
+                    >
+                      <ChevronLeft className="h-3.5 w-3.5 group-hover:-translate-x-0.5 transition-transform" {...ICON_PROPS} />
+                      Voltar
+                    </button>
+                    <div className="flex items-baseline justify-between mb-5">
+                      <h3 className="font-serif text-2xl capitalize text-foreground leading-tight">
+                        {mobileCategoryView}
+                      </h3>
+                      <button
+                        type="button"
+                        onClick={() => handleNavigate(`/?category=${mobileCategoryView}`)}
+                        className="text-[10px] uppercase tracking-[0.25em] text-foreground hover:text-primary transition-colors border-b border-foreground/40 hover:border-primary pb-0.5"
+                      >
+                        Ver tudo
+                      </button>
+                    </div>
+                    <ul className="space-y-3">
+                      {getCategorySubcategories(mobileCategoryView).map((sub) => (
+                        <li key={sub}>
+                          <button
+                            type="button"
+                            onClick={() => handleNavigate(`/?category=${mobileCategoryView}&subcategory=${sub}`)}
+                            className="text-sm font-light tracking-wide capitalize text-foreground/80 hover:text-primary transition-colors"
+                          >
+                            {sub}
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
 
                 <div className="mt-8 pt-6 border-t border-border/40 space-y-1">
                   <p className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground mb-3">
@@ -437,70 +516,5 @@ const MobileLink = ({
     {children}
   </button>
 );
-
-const SidebarMegaMenu = ({
-  categories,
-  getSubs,
-  onNavigate,
-}: {
-  categories: string[];
-  getSubs: (c: string) => string[];
-  onNavigate: (path: string) => void;
-}) => {
-  const [active, setActive] = useState(categories[0]);
-  const subs = getSubs(active);
-  return (
-    <div className="grid grid-cols-[260px_1fr] min-h-[360px]">
-      <ul className="border-r border-border/40 py-4 px-4 space-y-0.5 overflow-y-auto max-h-[60vh]">
-        {categories.map((c) => (
-          <li key={c}>
-            <button
-              type="button"
-              onMouseEnter={() => setActive(c)}
-              onFocus={() => setActive(c)}
-              onClick={() => onNavigate(`/?category=${c}`)}
-              className={cn(
-                'w-full text-left px-4 py-2.5 text-sm capitalize tracking-wide transition-colors rounded-sm',
-                active === c
-                  ? 'text-primary bg-accent/40'
-                  : 'text-foreground/85 hover:text-primary'
-              )}
-            >
-              {c}
-            </button>
-          </li>
-        ))}
-      </ul>
-      <div className="px-10 py-6">
-        <button
-          type="button"
-          onClick={() => onNavigate(`/?category=${active}`)}
-          className="text-sm font-semibold tracking-wide capitalize text-foreground hover:text-primary transition-colors pb-3 mb-4 border-b border-border/40 inline-block"
-        >
-          {active} — Ver tudo
-        </button>
-        {subs.length > 0 ? (
-          <ul className="grid grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-3">
-            {subs.map((sub) => (
-              <li key={sub}>
-                <button
-                  type="button"
-                  onClick={() => onNavigate(`/?category=${active}&subcategory=${sub}`)}
-                  className="text-xs font-light tracking-wide capitalize text-muted-foreground hover:text-primary transition-colors"
-                >
-                  {sub}
-                </button>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="text-xs text-muted-foreground tracking-wide">
-            Sem subcategorias.
-          </p>
-        )}
-      </div>
-    </div>
-  );
-};
 
 export default Header;
