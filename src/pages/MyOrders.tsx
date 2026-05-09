@@ -6,13 +6,14 @@ import Header from "@/components/Header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Loader2, Package, Calendar, MapPin, CreditCard, ShoppingBag, RefreshCw, AlertCircle } from "lucide-react";
+import { Loader2, Package, Calendar, MapPin, CreditCard, ShoppingBag, RefreshCw, AlertCircle, QrCode } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { OrderStatusTimeline } from "@/components/OrderStatusTimeline";
 import { useCart } from "@/context/CartContext";
 import { toast } from "sonner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { PostDeliveryReviewDialog } from "@/components/PostDeliveryReviewDialog";
+import { AsaasPaymentDialog } from "@/components/AsaasPaymentDialog";
 
 export default function MyOrders() {
   const navigate = useNavigate();
