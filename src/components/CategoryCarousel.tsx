@@ -40,48 +40,45 @@ export function CategoryCarousel({
   }, [activeCategory, products]);
 
   return (
-    <div className="w-full max-w-6xl mx-auto px-16 sm:px-20 md:px-24 relative space-y-4">
-      {/* Main Categories Carousel */}
+    <div className="w-full max-w-5xl mx-auto px-12 sm:px-16 relative">
       <Carousel
-        opts={{
-          align: "start",
-          loop: false,
-          dragFree: true,
-        }}
+        opts={{ align: "start", loop: false, dragFree: true }}
         className="w-full"
       >
-        <CarouselContent className="-ml-2 md:-ml-3">
-          <CarouselItem className="pl-2 md:pl-3 basis-auto">
-            <Button
-              variant={activeCategory === "all" ? "default" : "outline"}
-              size="lg"
-              className={cn(
-                "whitespace-nowrap transition-all duration-300 hover:scale-105 font-medium px-6",
-                activeCategory === "all" && "shadow-glow scale-105"
-              )}
+        <CarouselContent className="-ml-4">
+          <CarouselItem className="pl-4 basis-auto">
+            <button
+              type="button"
               onClick={() => onCategoryChange("all")}
+              className={cn(
+                "text-[11px] uppercase tracking-[0.25em] py-2 px-1 transition-all border-b",
+                activeCategory === "all"
+                  ? "border-primary text-foreground"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
+              )}
             >
               Todos
-            </Button>
+            </button>
           </CarouselItem>
           {categories.map((category) => (
-            <CarouselItem key={category} className="pl-2 md:pl-3 basis-auto">
-              <Button
-                variant={activeCategory === category ? "default" : "outline"}
-                size="lg"
-                className={cn(
-                  "whitespace-nowrap capitalize transition-all duration-300 hover:scale-105 font-medium px-6",
-                  activeCategory === category && "shadow-glow scale-105"
-                )}
+            <CarouselItem key={category} className="pl-4 basis-auto">
+              <button
+                type="button"
                 onClick={() => onCategoryChange(category)}
+                className={cn(
+                  "text-[11px] uppercase tracking-[0.25em] py-2 px-1 capitalize transition-all border-b",
+                  activeCategory === category
+                    ? "border-primary text-foreground"
+                    : "border-transparent text-muted-foreground hover:text-foreground"
+                )}
               >
                 {category}
-              </Button>
+              </button>
             </CarouselItem>
           ))}
         </CarouselContent>
-        <CarouselPrevious className="-left-12 h-10 w-10 bg-card/90 backdrop-blur-sm border-2 border-border shadow-lg hover:bg-card hover:scale-110 transition-all duration-300" />
-        <CarouselNext className="-right-12 h-10 w-10 bg-card/90 backdrop-blur-sm border-2 border-border shadow-lg hover:bg-card hover:scale-110 transition-all duration-300" />
+        <CarouselPrevious className="-left-2 h-8 w-8 bg-transparent border-0 shadow-none text-muted-foreground hover:text-foreground hover:bg-transparent" />
+        <CarouselNext className="-right-2 h-8 w-8 bg-transparent border-0 shadow-none text-muted-foreground hover:text-foreground hover:bg-transparent" />
       </Carousel>
     </div>
   );
