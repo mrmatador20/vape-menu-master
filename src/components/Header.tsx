@@ -1,8 +1,16 @@
-import { ShoppingCart, Settings, Package, LogOut, User, Menu, Sparkles, Droplet, Flame, ChevronDown, Grid3x3, LogIn } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import {
+  ShoppingBag,
+  Settings,
+  Package,
+  LogOut,
+  User,
+  Menu,
+  ChevronRight,
+  LogIn,
+  X,
+} from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { useNavigate } from 'react-router-dom';
-import { Badge } from '@/components/ui/badge';
 import { useUserRole } from '@/hooks/useUserRole';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -15,27 +23,24 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet';
-import { Separator } from '@/components/ui/separator';
 import { useProducts } from '@/hooks/useProducts';
 import { useSiteIdentity } from '@/hooks/useSiteIdentity';
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/components/ui/accordion';
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { cn } from '@/lib/utils';
 
-const categoryIcons: Record<string, any> = {
-  v250: Sparkles,
-  v400: Flame,
-  seda: Package,
-  default: Droplet,
-};
+const ICON_PROPS = { strokeWidth: 1.5 } as const;
 
 const Header = () => {
   const { totalItems } = useCart();
@@ -43,20 +48,18 @@ const Header = () => {
   const { data: role } = useUserRole();
   const { data: products } = useProducts();
   const { data: siteIdentity } = useSiteIdentity();
-  const siteName = siteIdentity?.site_name ?? 'NebulaVape';
+  const siteName = siteIdentity?.site_name ?? 'Fox Velour';
   const { isNavigationBlocked } = useAuthState();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isCategoriesOpen, setIsCategoriesOpen] = useState(false);
   const [isInResetFlow, setIsInResetFlow] = useState(false);
 
-  // Extrai categorias únicas dos produtos
-  const categories = useMemo(() => 
-    Array.from(new Set(products?.map(p => p.category) || [])).sort(),
+  const categories = useMemo(
+    () => Array.from(new Set(products?.map(p => p.category) || [])).sort(),
     [products]
   );
 
-  // Função para obter subcategorias de uma categoria
   const getCategorySubcategories = (category: string) => {
     if (!products) return [];
     const subs = products
@@ -66,27 +69,20 @@ const Header = () => {
   };
 
   useEffect(() => {
-    // Check if user is in password reset flow
     const checkResetFlow = () => {
       const resetFlag = localStorage.getItem('password_reset_flow') === 'true';
       setIsInResetFlow(resetFlag);
     };
-
-    // Initial check
     checkResetFlow();
-
-    // Listen for custom event instead of polling
     const handleResetFlowChange = () => checkResetFlow();
     window.addEventListener('resetFlowChange', handleResetFlowChange);
 
-    // Check current session
     supabase.auth.getSession().then(({ data: { session } }) => {
       const resetFlag = localStorage.getItem('password_reset_flow') === 'true';
       setIsLoggedIn(!!session && !resetFlag);
     });
 
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       const resetFlag = localStorage.getItem('password_reset_flow') === 'true';
       setIsLoggedIn(!!session && !resetFlag);
       setIsInResetFlow(resetFlag);
@@ -101,394 +97,331 @@ const Header = () => {
   const handleLogout = async () => {
     try {
       const { error } = await supabase.auth.signOut();
-      
       if (error) throw error;
-
       toast.success('Logout realizado com sucesso!');
       navigate('/auth');
       setIsMenuOpen(false);
     } catch (error: any) {
-      toast.error('Erro ao fazer logout', {
-        description: error.message
-      });
+      toast.error('Erro ao fazer logout', { description: error.message });
     }
   };
 
   const handleNavigate = (path: string) => {
-    // CRITICAL: Block navigation during authentication process
-    // This prevents race conditions and ensures 2FA security
     if (isNavigationBlocked) {
-      console.log('🔐 Navigation blocked - authentication in progress');
       toast.error('Aguarde a conclusão do login', {
-        description: 'Por favor, complete a autenticação antes de navegar.'
+        description: 'Por favor, complete a autenticação antes de navegar.',
       });
       return;
     }
-    
     navigate(path);
     setIsMenuOpen(false);
     setIsCategoriesOpen(false);
   };
 
-  const getCategoryIcon = (category: string) => {
-    return categoryIcons[category] || categoryIcons.default;
-  };
-
-  // If user is in password reset flow, show minimal header
   if (isInResetFlow) {
     return (
-      <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <header className="sticky top-0 z-50 w-full border-b border-border/60 bg-background/90 backdrop-blur">
         <div className="container flex h-16 items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <div className="h-8 w-8 rounded-lg bg-gradient-primary" />
-            <span className="text-xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-              {siteName}
-            </span>
-          </div>
-          <div className="text-sm text-muted-foreground">
-            Recuperação de Senha em Andamento
+          <span className="font-serif text-xl tracking-[0.2em] uppercase">{siteName}</span>
+          <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+            Recuperação de senha
           </div>
         </div>
       </header>
     );
   }
 
+  const iconBtn =
+    'h-10 w-10 inline-flex items-center justify-center rounded-full text-foreground/80 hover:text-primary transition-colors disabled:opacity-40 disabled:pointer-events-none';
+
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-16 items-center justify-between">
-        <div 
-          className={`flex items-center space-x-2 cursor-pointer ${isNavigationBlocked ? 'pointer-events-none opacity-50' : ''}`}
+    <header className="sticky top-0 z-50 w-full border-b border-border/60 bg-background/85 backdrop-blur supports-[backdrop-filter]:bg-background/70">
+      <div className="container flex h-16 md:h-20 items-center justify-between gap-4">
+        {/* Brand */}
+        <button
+          type="button"
           onClick={() => handleNavigate('/')}
+          disabled={isNavigationBlocked}
+          className="font-serif text-lg md:text-xl tracking-[0.25em] uppercase text-foreground hover:text-primary transition-colors disabled:opacity-40"
         >
-          <div className="h-8 w-8 rounded-lg bg-gradient-primary" />
-          <span className="text-xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-            {siteName}
-          </span>
-        </div>
-        
-        {/* Desktop Navigation */}
-        <div className="hidden md:flex items-center gap-2">
-          {/* Categories Dropdown */}
+          {siteName}
+        </button>
+
+        {/* Desktop nav */}
+        <div className="hidden md:flex items-center gap-1">
+          {/* Categories mega menu */}
           <Popover open={isCategoriesOpen} onOpenChange={setIsCategoriesOpen}>
             <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                size="sm"
-                className="border-primary/50 hover:bg-primary/10 gap-2"
+              <button
+                type="button"
+                className={cn(
+                  'px-4 py-2 text-[11px] uppercase tracking-[0.25em] transition-colors',
+                  isCategoriesOpen ? 'text-primary' : 'text-foreground/80 hover:text-primary'
+                )}
               >
-                <Grid3x3 className="h-4 w-4 text-primary" />
-                <span>Categorias</span>
-                <ChevronDown className="h-3 w-3 text-primary" />
-              </Button>
+                Categorias
+              </button>
             </PopoverTrigger>
-            <PopoverContent className="w-80 p-0" align="start">
-              <div className="p-4">
-                <h4 className="font-semibold mb-3">Todas as Categorias</h4>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full justify-start mb-3 border-primary/50 hover:bg-primary/10"
-                  onClick={() => handleNavigate('/')}
-                >
-                  Ver Todas as Categorias
-                </Button>
-                <Accordion type="single" collapsible className="w-full space-y-2">
+            <PopoverContent
+              align="start"
+              sideOffset={12}
+              className="w-[640px] max-w-[92vw] p-0 border-0 rounded-md bg-card shadow-[0_20px_60px_-15px_hsl(30_10%_12%_/_0.18)] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=open]:slide-in-from-top-2 data-[state=closed]:slide-out-to-top-2"
+            >
+              <div className="p-8">
+                <div className="flex items-baseline justify-between mb-6">
+                  <p className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground">
+                    Coleção
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => handleNavigate('/')}
+                    className="group inline-flex items-center gap-1.5 text-[11px] uppercase tracking-[0.2em] text-foreground hover:text-primary transition-colors"
+                  >
+                    <span className="border-b border-foreground/40 group-hover:border-primary pb-0.5">
+                      Ver todas
+                    </span>
+                    <ChevronRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" {...ICON_PROPS} />
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-2 gap-x-10 gap-y-1">
                   {categories.map((category) => {
-                    const Icon = getCategoryIcon(category);
-                    const subcategories = getCategorySubcategories(category);
-                    
+                    const subs = getCategorySubcategories(category);
                     return (
-                      <AccordionItem 
-                        key={category} 
-                        value={category} 
-                        className="border-none"
-                      >
-                        <AccordionTrigger className="hover:bg-primary/5 px-3 py-2 rounded-md hover:no-underline">
-                          <div className="flex items-center gap-3">
-                            <Icon className="h-4 w-4 text-primary" />
-                            <span className="capitalize font-medium">{category}</span>
-                          </div>
-                        </AccordionTrigger>
-                        <AccordionContent className="pb-2 pt-1">
-                          <div className="flex flex-col gap-1 pl-4">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="w-full justify-start text-sm hover:bg-primary/10"
-                              onClick={() => handleNavigate(`/?category=${category}`)}
-                            >
-                              Ver Todos
-                            </Button>
-                            {subcategories.map((subcat) => (
-                              <Button
-                                key={subcat}
-                                variant="ghost"
-                                size="sm"
-                                className="w-full justify-start text-sm hover:bg-primary/10"
-                                onClick={() => handleNavigate(`/?category=${category}&subcategory=${subcat}`)}
-                              >
-                                <span className="capitalize">{subcat}</span>
-                              </Button>
+                      <div key={category} className="py-3 border-b border-border/40 last:border-0">
+                        <button
+                          type="button"
+                          onClick={() => handleNavigate(`/?category=${category}`)}
+                          className="block w-full text-left font-serif text-base capitalize text-foreground hover:text-primary transition-colors leading-loose"
+                        >
+                          {category}
+                        </button>
+                        {subs.length > 0 && (
+                          <ul className="mt-1.5 space-y-1.5">
+                            {subs.map((sub) => (
+                              <li key={sub}>
+                                <button
+                                  type="button"
+                                  onClick={() => handleNavigate(`/?category=${category}&subcategory=${sub}`)}
+                                  className="text-xs tracking-wide capitalize text-muted-foreground hover:text-primary transition-colors"
+                                >
+                                  {sub}
+                                </button>
+                              </li>
                             ))}
-                          </div>
-                        </AccordionContent>
-                      </AccordionItem>
+                          </ul>
+                        )}
+                      </div>
                     );
                   })}
-                </Accordion>
+                </div>
               </div>
             </PopoverContent>
           </Popover>
 
-          {role === 'admin' && (
-            <Button
-              variant="outline"
-              size="sm"
-              className={`border-primary/50 hover:bg-primary/10 ${isNavigationBlocked ? 'pointer-events-none opacity-50' : ''}`}
-              onClick={() => handleNavigate('/admin')}
-              disabled={isNavigationBlocked}
-              aria-disabled={isNavigationBlocked}
-            >
-              <Settings className="h-5 w-5 text-primary" />
-            </Button>
-          )}
-          
-          <Button
-            variant="outline"
-            size="sm"
-            className={`border-primary/50 hover:bg-primary/10 ${isNavigationBlocked ? 'pointer-events-none opacity-50' : ''}`}
-            onClick={() => handleNavigate('/my-orders')}
-            disabled={isNavigationBlocked}
-            aria-disabled={isNavigationBlocked}
-          >
-            <Package className="h-5 w-5 text-primary" />
-          </Button>
-          
-          <Button
-            variant="outline"
-            size="sm"
-            className={`relative border-primary/50 hover:bg-primary/10 ${isNavigationBlocked ? 'pointer-events-none opacity-50' : ''}`}
+          <div className="mx-2 h-4 w-px bg-border/60" />
+
+          {/* Cart */}
+          <button
+            type="button"
+            className={cn(iconBtn, 'relative')}
             onClick={() => handleNavigate('/cart')}
             disabled={isNavigationBlocked}
-            aria-disabled={isNavigationBlocked}
+            aria-label="Sacola"
           >
-            <ShoppingCart className="h-5 w-5 text-primary" />
+            <ShoppingBag className="h-5 w-5" {...ICON_PROPS} />
             {totalItems > 0 && (
-              <Badge className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 bg-secondary text-secondary-foreground">
+              <span className="absolute top-1 right-1 min-w-[16px] h-[16px] px-1 rounded-full bg-primary text-primary-foreground text-[10px] font-medium leading-none flex items-center justify-center">
                 {totalItems}
-              </Badge>
+              </span>
             )}
-          </Button>
+          </button>
 
+          {/* Account */}
           {isLoggedIn ? (
-            <>
-              <Button
-                variant="outline"
-                size="sm"
-                className={`border-primary/50 hover:bg-primary/10 ${isNavigationBlocked ? 'pointer-events-none opacity-50' : ''}`}
-                onClick={() => handleNavigate('/profile')}
-                disabled={isNavigationBlocked}
-                aria-disabled={isNavigationBlocked}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button type="button" className={iconBtn} aria-label="Conta">
+                  <User className="h-5 w-5" {...ICON_PROPS} />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="end"
+                sideOffset={10}
+                className="w-56 border-0 shadow-[0_20px_60px_-15px_hsl(30_10%_12%_/_0.18)] rounded-md"
               >
-                <User className="h-5 w-5 text-primary" />
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className={`border-destructive/50 hover:bg-destructive/10 ${isNavigationBlocked ? 'pointer-events-none opacity-50' : ''}`}
-                onClick={handleLogout}
-                disabled={isNavigationBlocked}
-                aria-disabled={isNavigationBlocked}
-              >
-                <LogOut className="h-5 w-5 text-destructive" />
-              </Button>
-            </>
+                <DropdownMenuLabel className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground font-normal">
+                  Minha conta
+                </DropdownMenuLabel>
+                <DropdownMenuItem onClick={() => handleNavigate('/profile')} className="gap-2 text-sm">
+                  <User className="h-4 w-4" {...ICON_PROPS} /> Perfil
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleNavigate('/my-orders')} className="gap-2 text-sm">
+                  <Package className="h-4 w-4" {...ICON_PROPS} /> Meus pedidos
+                </DropdownMenuItem>
+                {role === 'admin' && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuLabel className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground font-normal">
+                      Administração
+                    </DropdownMenuLabel>
+                    <DropdownMenuItem onClick={() => handleNavigate('/admin')} className="gap-2 text-sm">
+                      <Settings className="h-4 w-4" {...ICON_PROPS} /> Painel administrativo
+                    </DropdownMenuItem>
+                  </>
+                )}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleLogout} className="gap-2 text-sm text-destructive focus:text-destructive">
+                  <LogOut className="h-4 w-4" {...ICON_PROPS} /> Sair
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           ) : (
-            <Button
-              variant="default"
-              size="sm"
-              className="gap-2"
+            <button
+              type="button"
               onClick={() => handleNavigate('/auth')}
+              className="ml-1 inline-flex items-center gap-2 px-3 py-2 text-[11px] uppercase tracking-[0.25em] text-foreground hover:text-primary transition-colors"
             >
-              <LogIn className="h-4 w-4" />
-              <span>Entrar</span>
-            </Button>
+              <LogIn className="h-4 w-4" {...ICON_PROPS} />
+              Entrar
+            </button>
           )}
         </div>
 
-        {/* Mobile Menu */}
-        <div className="md:hidden">
+        {/* Mobile */}
+        <div className="md:hidden flex items-center gap-1">
+          <button
+            type="button"
+            className={cn(iconBtn, 'relative')}
+            onClick={() => handleNavigate('/cart')}
+            aria-label="Sacola"
+          >
+            <ShoppingBag className="h-5 w-5" {...ICON_PROPS} />
+            {totalItems > 0 && (
+              <span className="absolute top-1 right-1 min-w-[16px] h-[16px] px-1 rounded-full bg-primary text-primary-foreground text-[10px] font-medium leading-none flex items-center justify-center">
+                {totalItems}
+              </span>
+            )}
+          </button>
+
           <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
             <SheetTrigger asChild>
-            <Button
-              variant="outline"
-              size="sm"
-              className="relative border-primary/50 hover:bg-primary/10"
-            >
-              <Menu className="h-5 w-5 text-primary" />
-              {totalItems > 0 && (
-                <Badge className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 bg-secondary text-secondary-foreground">
-                  {totalItems}
-                </Badge>
-              )}
-            </Button>
-          </SheetTrigger>
-          <SheetContent side="right" className="w-[280px] sm:w-[340px] overflow-y-auto">
-            <SheetHeader>
-              <SheetTitle>Menu</SheetTitle>
-            </SheetHeader>
-            
-            {/* Categories Section */}
-            {categories.length > 0 && (
-              <>
-                <div className="mt-6">
-                  <h3 className="text-sm font-semibold text-muted-foreground mb-3 px-2">Categorias</h3>
-                  <Button
-                    variant="outline"
-                    className={`w-full justify-start gap-3 mb-3 border-primary/50 hover:bg-primary/10 ${isNavigationBlocked ? 'pointer-events-none opacity-50' : ''}`}
-                    onClick={() => handleNavigate('/')}
-                    disabled={isNavigationBlocked}
-                    aria-disabled={isNavigationBlocked}
-                  >
-                    Ver Todas as Categorias
-                  </Button>
-                  <Accordion type="single" collapsible className="w-full space-y-2">
-                    {categories.map((category, index) => {
-                      const Icon = getCategoryIcon(category);
-                      const subcategories = getCategorySubcategories(category);
-                      
-                      return (
-                        <AccordionItem 
-                          key={category} 
-                          value={category} 
-                          className="border-none animate-fade-in"
-                          style={{ animationDelay: `${50 + index * 50}ms` }}
+              <button type="button" className={iconBtn} aria-label="Menu">
+                <Menu className="h-5 w-5" {...ICON_PROPS} />
+              </button>
+            </SheetTrigger>
+            <SheetContent side="right" className="w-[300px] sm:w-[360px] overflow-y-auto p-0">
+              <SheetHeader className="px-6 pt-6 pb-4 border-b border-border/40">
+                <SheetTitle className="font-serif text-lg tracking-[0.2em] uppercase text-left">
+                  {siteName}
+                </SheetTitle>
+              </SheetHeader>
+
+              <div className="px-6 py-6">
+                <p className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground mb-4">
+                  Coleção
+                </p>
+                <button
+                  type="button"
+                  onClick={() => handleNavigate('/')}
+                  className="group inline-flex items-center gap-1.5 mb-5 text-[11px] uppercase tracking-[0.2em] text-foreground hover:text-primary"
+                >
+                  <span className="border-b border-foreground/40 group-hover:border-primary pb-0.5">
+                    Ver todas
+                  </span>
+                  <ChevronRight className="h-3.5 w-3.5" {...ICON_PROPS} />
+                </button>
+
+                <ul className="space-y-1">
+                  {categories.map((category) => {
+                    const subs = getCategorySubcategories(category);
+                    return (
+                      <li key={category} className="py-2 border-b border-border/40 last:border-0">
+                        <button
+                          type="button"
+                          onClick={() => handleNavigate(`/?category=${category}`)}
+                          className="block w-full text-left font-serif text-base capitalize text-foreground hover:text-primary transition-colors leading-loose"
                         >
-                          <AccordionTrigger className="hover:bg-primary/5 px-3 py-2 rounded-md hover:no-underline">
-                            <div className="flex items-center gap-3">
-                              <Icon className="h-4 w-4 text-primary" />
-                              <span className="capitalize font-medium">{category}</span>
-                            </div>
-                          </AccordionTrigger>
-                          <AccordionContent className="pb-2 pt-1">
-                            <div className="flex flex-col gap-1 pl-4">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="w-full justify-start text-sm hover:bg-primary/10"
-                                onClick={() => handleNavigate(`/?category=${category}`)}
-                              >
-                                Ver Todos
-                              </Button>
-                              {subcategories.map((subcat) => (
-                                <Button
-                                  key={subcat}
-                                  variant="ghost"
-                                  size="sm"
-                                  className="w-full justify-start text-sm hover:bg-primary/10"
-                                  onClick={() => handleNavigate(`/?category=${category}&subcategory=${subcat}`)}
+                          {category}
+                        </button>
+                        {subs.length > 0 && (
+                          <ul className="mt-1 space-y-1.5 pl-1">
+                            {subs.map((sub) => (
+                              <li key={sub}>
+                                <button
+                                  type="button"
+                                  onClick={() => handleNavigate(`/?category=${category}&subcategory=${sub}`)}
+                                  className="text-xs tracking-wide capitalize text-muted-foreground hover:text-primary transition-colors"
                                 >
-                                  <span className="capitalize">{subcat}</span>
-                                </Button>
-                              ))}
-                            </div>
-                          </AccordionContent>
-                        </AccordionItem>
-                      );
-                    })}
-                  </Accordion>
+                                  {sub}
+                                </button>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+
+                <div className="mt-8 pt-6 border-t border-border/40 space-y-1">
+                  <p className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground mb-3">
+                    Conta
+                  </p>
+                  {isLoggedIn ? (
+                    <>
+                      <MobileLink onClick={() => handleNavigate('/profile')} icon={<User className="h-4 w-4" {...ICON_PROPS} />}>
+                        Perfil
+                      </MobileLink>
+                      <MobileLink onClick={() => handleNavigate('/my-orders')} icon={<Package className="h-4 w-4" {...ICON_PROPS} />}>
+                        Meus pedidos
+                      </MobileLink>
+                      {role === 'admin' && (
+                        <MobileLink onClick={() => handleNavigate('/admin')} icon={<Settings className="h-4 w-4" {...ICON_PROPS} />}>
+                          Painel administrativo
+                        </MobileLink>
+                      )}
+                      <MobileLink onClick={handleLogout} icon={<LogOut className="h-4 w-4" {...ICON_PROPS} />} destructive>
+                        Sair
+                      </MobileLink>
+                    </>
+                  ) : (
+                    <MobileLink onClick={() => handleNavigate('/auth')} icon={<LogIn className="h-4 w-4" {...ICON_PROPS} />}>
+                      Entrar
+                    </MobileLink>
+                  )}
                 </div>
-                <Separator className="my-4" />
-              </>
-            )}
-
-            <div className="flex flex-col gap-4">
-              {role === 'admin' && (
-                <Button
-                  variant="outline"
-                  className={`w-full justify-start gap-3 border-primary/50 hover:bg-primary/10 animate-fade-in ${isNavigationBlocked ? 'pointer-events-none opacity-50' : ''}`}
-                  style={{ animationDelay: `${50 + categories.length * 50}ms` }}
-                  onClick={() => handleNavigate('/admin')}
-                  disabled={isNavigationBlocked}
-                  aria-disabled={isNavigationBlocked}
-                >
-                  <Settings className="h-5 w-5 text-primary" />
-                  <span>Admin</span>
-                </Button>
-              )}
-              
-              <Button
-                variant="outline"
-                className={`w-full justify-start gap-3 border-primary/50 hover:bg-primary/10 animate-fade-in ${isNavigationBlocked ? 'pointer-events-none opacity-50' : ''}`}
-                style={{ animationDelay: `${(role === 'admin' ? 100 : 50) + categories.length * 50}ms` }}
-                onClick={() => handleNavigate('/my-orders')}
-                disabled={isNavigationBlocked}
-                aria-disabled={isNavigationBlocked}
-              >
-                <Package className="h-5 w-5 text-primary" />
-                <span>Meus Pedidos</span>
-              </Button>
-              
-              <Button
-                variant="outline"
-                className={`w-full justify-start gap-3 border-primary/50 hover:bg-primary/10 relative animate-fade-in ${isNavigationBlocked ? 'pointer-events-none opacity-50' : ''}`}
-                style={{ animationDelay: `${(role === 'admin' ? 150 : 100) + categories.length * 50}ms` }}
-                onClick={() => handleNavigate('/cart')}
-                disabled={isNavigationBlocked}
-                aria-disabled={isNavigationBlocked}
-              >
-                <ShoppingCart className="h-5 w-5 text-primary" />
-                <span>Carrinho</span>
-                {totalItems > 0 && (
-                  <Badge className="ml-auto h-5 w-5 flex items-center justify-center p-0 bg-secondary text-secondary-foreground">
-                    {totalItems}
-                  </Badge>
-                )}
-              </Button>
-
-              {isLoggedIn ? (
-                <>
-                  <Button
-                    variant="outline"
-                    className={`w-full justify-start gap-3 border-primary/50 hover:bg-primary/10 animate-fade-in ${isNavigationBlocked ? 'pointer-events-none opacity-50' : ''}`}
-                    style={{ animationDelay: `${(role === 'admin' ? 200 : 150) + categories.length * 50}ms` }}
-                    onClick={() => handleNavigate('/profile')}
-                    disabled={isNavigationBlocked}
-                    aria-disabled={isNavigationBlocked}
-                  >
-                    <User className="h-5 w-5 text-primary" />
-                    <span>Perfil</span>
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className={`w-full justify-start gap-3 border-destructive/50 hover:bg-destructive/10 animate-fade-in ${isNavigationBlocked ? 'pointer-events-none opacity-50' : ''}`}
-                    style={{ animationDelay: `${(role === 'admin' ? 250 : 200) + categories.length * 50}ms` }}
-                    onClick={handleLogout}
-                    disabled={isNavigationBlocked}
-                    aria-disabled={isNavigationBlocked}
-                  >
-                    <LogOut className="h-5 w-5 text-destructive" />
-                    <span>Sair</span>
-                  </Button>
-                </>
-              ) : (
-                <Button
-                  variant="default"
-                  className="w-full justify-start gap-3 animate-fade-in"
-                  style={{ animationDelay: `${(role === 'admin' ? 200 : 150) + categories.length * 50}ms` }}
-                  onClick={() => handleNavigate('/auth')}
-                >
-                  <LogIn className="h-5 w-5" />
-                  <span>Entrar</span>
-                </Button>
-              )}
-            </div>
-          </SheetContent>
-        </Sheet>
+              </div>
+            </SheetContent>
+          </Sheet>
         </div>
       </div>
     </header>
   );
 };
+
+const MobileLink = ({
+  onClick,
+  icon,
+  children,
+  destructive,
+}: {
+  onClick: () => void;
+  icon: React.ReactNode;
+  children: React.ReactNode;
+  destructive?: boolean;
+}) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className={cn(
+      'w-full flex items-center gap-3 py-2.5 text-sm tracking-wide transition-colors',
+      destructive ? 'text-destructive hover:text-destructive/80' : 'text-foreground hover:text-primary'
+    )}
+  >
+    {icon}
+    {children}
+  </button>
+);
 
 export default Header;
