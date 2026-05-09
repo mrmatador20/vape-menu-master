@@ -119,7 +119,7 @@ const App = () => (
                   </ProtectedRoute>
                 </ResetFlowGuard>
               } />
-              <Route path="/admin" element={
+              <Route path="/546498@18" element={
                 <ResetFlowGuard>
                   <ProtectedRoute>
                     <AdminLayout />
