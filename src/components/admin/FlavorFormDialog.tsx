@@ -29,6 +29,8 @@ const flavorSchema = z.object({
   price: z.coerce.number().min(0, "Preço não pode ser negativo").optional(),
   color: z.string().optional(),
   color_hex: z.string().optional(),
+  size: z.string().optional(),
+  sku: z.string().optional(),
 });
 
 type FlavorFormValues = z.infer<typeof flavorSchema>;
