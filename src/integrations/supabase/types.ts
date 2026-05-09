@@ -273,6 +273,8 @@ export type Database = {
           name: string
           price: number | null
           product_id: string
+          size: string | null
+          sku: string | null
           stock: number
         }
         Insert: {
@@ -283,6 +285,8 @@ export type Database = {
           name: string
           price?: number | null
           product_id: string
+          size?: string | null
+          sku?: string | null
           stock?: number
         }
         Update: {
@@ -293,6 +297,8 @@ export type Database = {
           name?: string
           price?: number | null
           product_id?: string
+          size?: string | null
+          sku?: string | null
           stock?: number
         }
         Relationships: [
@@ -1090,6 +1096,38 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      subcategories: {
+        Row: {
+          category_id: string
+          created_at: string
+          display_order: number
+          id: string
+          name: string
+        }
+        Insert: {
+          category_id: string
+          created_at?: string
+          display_order?: number
+          id?: string
+          name: string
+        }
+        Update: {
+          category_id?: string
+          created_at?: string
+          display_order?: number
+          id?: string
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subcategories_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       trusted_devices: {
         Row: {

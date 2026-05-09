@@ -29,6 +29,8 @@ const flavorSchema = z.object({
   price: z.coerce.number().min(0, "Preço não pode ser negativo").optional(),
   color: z.string().optional(),
   color_hex: z.string().optional(),
+  size: z.string().optional(),
+  sku: z.string().optional(),
 });
 
 type FlavorFormValues = z.infer<typeof flavorSchema>;
@@ -57,6 +59,8 @@ export function FlavorFormDialog({
       price: undefined,
       color: "",
       color_hex: "#000000",
+      size: "",
+      sku: "",
     },
   });
 
@@ -68,6 +72,8 @@ export function FlavorFormDialog({
         price: flavor.price || undefined,
         color: flavor.color || "",
         color_hex: flavor.color_hex || "#000000",
+        size: flavor.size || "",
+        sku: flavor.sku || "",
       });
     } else {
       form.reset({
@@ -76,6 +82,8 @@ export function FlavorFormDialog({
         price: undefined,
         color: "",
         color_hex: "#000000",
+        size: "",
+        sku: "",
       });
     }
   }, [flavor, form]);
@@ -88,6 +96,8 @@ export function FlavorFormDialog({
         price: values.price || null,
         color: values.color?.trim() || null,
         color_hex: values.color?.trim() ? (values.color_hex || null) : null,
+        size: values.size?.trim() || null,
+        sku: values.sku?.trim() || null,
       };
 
       if (flavor) {
@@ -188,8 +198,37 @@ export function FlavorFormDialog({
               />
             </div>
             <p className="text-xs text-muted-foreground -mt-2">
-              Crie uma variante para cada combinação de tamanho + cor (ex.: "Tamanho M" / "Preto", "Tamanho M" / "Azul").
+              Crie uma variante para cada combinação de tamanho + cor.
             </p>
+
+            <div className="grid grid-cols-2 gap-3">
+              <FormField
+                control={form.control}
+                name="size"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Tamanho (opcional)</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Ex: P, M, G, 38..." {...field} value={field.value || ""} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="sku"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>SKU (opcional)</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Ex: FXV-PT-M-01" {...field} value={field.value || ""} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
             <FormField
               control={form.control}
