@@ -86,9 +86,6 @@ const Index = () => {
       {/* Hero — minimal, editorial */}
       <section className="py-24 md:py-32 px-4">
         <div className="container max-w-4xl text-center space-y-8">
-          <p className="text-[11px] uppercase tracking-[0.4em] text-muted-foreground animate-in fade-in duration-700">
-            Maison
-          </p>
           <h1 className="font-serif text-5xl md:text-7xl font-normal tracking-[0.15em] uppercase text-foreground animate-in fade-in slide-in-from-bottom-4 duration-1000">
             {siteIdentity?.site_hero_title ?? 'Fox Velour'}
           </h1>
