@@ -54,19 +54,34 @@ const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isCategoriesOpen, setIsCategoriesOpen] = useState(false);
   const [isInResetFlow, setIsInResetFlow] = useState(false);
+  const [activeCategoryView, setActiveCategoryView] = useState<string | null>(null);
+  const [mobileCategoryView, setMobileCategoryView] = useState<string | null>(null);
 
-  const categories = useMemo(
-    () => Array.from(new Set(products?.map(p => p.category) || [])).sort(),
+  // Only products that should appear in the storefront
+  const availableProducts = useMemo(
+    () => (products || []).filter(p => p.visible_in_all !== false && (p.stock ?? 0) > 0),
     [products]
   );
 
+  const categories = useMemo(
+    () => Array.from(new Set(availableProducts.map(p => p.category))).sort(),
+    [availableProducts]
+  );
+
   const getCategorySubcategories = (category: string) => {
-    if (!products) return [];
-    const subs = products
+    const subs = availableProducts
       .filter(p => p.category === category && p.subcategory)
       .map(p => p.subcategory as string);
     return Array.from(new Set(subs)).sort();
   };
+
+  // Reset second-level views when menus close
+  useEffect(() => {
+    if (!isCategoriesOpen) setActiveCategoryView(null);
+  }, [isCategoriesOpen]);
+  useEffect(() => {
+    if (!isMenuOpen) setMobileCategoryView(null);
+  }, [isMenuOpen]);
 
   useEffect(() => {
     const checkResetFlow = () => {
