@@ -6,7 +6,7 @@ import Header from "@/components/Header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Loader2, Package, Calendar, MapPin, CreditCard, ShoppingBag, RefreshCw, AlertCircle, QrCode } from "lucide-react";
+import { Loader2, Package, Calendar, MapPin, CreditCard, ShoppingBag, RefreshCw, AlertCircle, QrCode, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { OrderStatusTimeline } from "@/components/OrderStatusTimeline";
 import { useCart } from "@/context/CartContext";
@@ -14,12 +14,43 @@ import { toast } from "sonner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { PostDeliveryReviewDialog } from "@/components/PostDeliveryReviewDialog";
 import { AsaasPaymentDialog } from "@/components/AsaasPaymentDialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { useQueryClient } from "@tanstack/react-query";
 
 export default function MyOrders() {
   const navigate = useNavigate();
   const [userId, setUserId] = useState<string | null>(null);
   const [payingOrder, setPayingOrder] = useState<any | null>(null);
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
+  const queryClient = useQueryClient();
   const { addToCart } = useCart();
+
+  const handleCancelOrder = async (orderId: string) => {
+    setCancellingId(orderId);
+    try {
+      const { data, error } = await supabase.functions.invoke('cancel-asaas-payment', {
+        body: { orderId },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast.success('Pedido cancelado com sucesso');
+      queryClient.invalidateQueries({ queryKey: ['my-orders'] });
+    } catch (e: any) {
+      toast.error(e?.message || 'Erro ao cancelar pedido');
+    } finally {
+      setCancellingId(null);
+    }
+  };
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -383,6 +414,41 @@ export default function MyOrders() {
                           <p className="text-xs text-muted-foreground text-center">
                             Seu pedido será reservado por 30 minutos até a confirmação do pagamento
                           </p>
+
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                disabled={cancellingId === order.id}
+                                className="text-muted-foreground hover:text-foreground border border-border/50 hover:border-border"
+                              >
+                                {cancellingId === order.id ? (
+                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                ) : (
+                                  <X className="mr-2 h-4 w-4" />
+                                )}
+                                Cancelar Pedido
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Cancelar pedido?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Deseja realmente cancelar este pedido? A cobrança no Asaas também será anulada.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Voltar</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => handleCancelOrder(order.id)}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  Sim, cancelar
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
                         </div>
                       )}
                     </div>
