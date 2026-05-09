@@ -80,7 +80,7 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     intervalMs: 30000, // Sincronizar a cada 30 segundos
   });
 
-  const addToCart = async (product: Product, flavor?: string) => {
+  const addToCart = async (product: Product, flavor?: string, color?: string) => {
     // ✅ CORREÇÃO 2: Validar estoque antes de adicionar ao carrinho
     
     // Buscar dados atualizados do produto
@@ -95,19 +95,30 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
       return;
     }
 
-    // Se tem sabor, busca o preço e estoque da variante
+    // Se tem sabor, busca o preço e estoque da variante (combinando nome + cor se houver)
     let variantPrice = Number(currentProduct.price);
     let stockToCheck = currentProduct.stock;
 
+    // Identificador composto para o carrinho (preserva combinação tamanho + cor)
+    const compositeFlavor = flavor
+      ? (color ? `${flavor} • ${color}` : flavor)
+      : undefined;
+
     if (flavor) {
-      const { data: flavors, error: flavorError } = await supabase
+      let flavorQuery = supabase
         .from('flavors')
         .select('*')
         .eq('product_id', product.id)
         .eq('name', flavor);
+
+      if (color) {
+        flavorQuery = flavorQuery.eq('color', color);
+      }
+
+      const { data: flavors, error: flavorError } = await flavorQuery;
       
       if (flavorError) {
-        toast.error('Erro ao verificar sabor');
+        toast.error('Erro ao verificar variante');
         return;
       }
 
@@ -115,12 +126,11 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
         const selectedFlavor = flavors[0];
         stockToCheck = selectedFlavor.stock;
         
-        // Se a variação tem preço próprio, usa ele (mas ainda aplica desconto do produto base)
         if (selectedFlavor.price) {
           variantPrice = Number(selectedFlavor.price);
         }
       } else {
-        toast.error(`Sabor "${flavor}" não encontrado`);
+        toast.error(`Variante "${compositeFlavor}" não encontrada`);
         return;
       }
     }
