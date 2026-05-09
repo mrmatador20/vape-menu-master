@@ -18,6 +18,7 @@ import { AsaasPaymentDialog } from "@/components/AsaasPaymentDialog";
 export default function MyOrders() {
   const navigate = useNavigate();
   const [userId, setUserId] = useState<string | null>(null);
+  const [payingOrder, setPayingOrder] = useState<any | null>(null);
   const { addToCart } = useCart();
 
   useEffect(() => {
