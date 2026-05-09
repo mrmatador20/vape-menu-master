@@ -154,7 +154,7 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
 
     setItems(currentItems => {
       const existingItem = currentItems.find(
-        item => item.id === product.id && item.flavor === flavor
+        item => item.id === product.id && item.flavor === compositeFlavor
       );
       
       if (existingItem) {
@@ -169,7 +169,7 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
 
         toast.success('Quantidade atualizada no carrinho!');
         return currentItems.map(item =>
-          item.id === product.id && item.flavor === flavor
+          item.id === product.id && item.flavor === compositeFlavor
             ? { ...item, quantity: newQuantity, price: finalPrice }
             : item
         );
@@ -177,11 +177,11 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
       
       // Novo item - verificar estoque mínimo de 1
       if (stockToCheck < 1) {
-        toast.error(`${product.name}${flavor ? ` (${flavor})` : ''} está esgotado`);
+        toast.error(`${product.name}${compositeFlavor ? ` (${compositeFlavor})` : ''} está esgotado`);
         return currentItems;
       }
 
-      const cartItemId = `${product.id}-${flavor || 'no-flavor'}`;
+      const cartItemId = `${product.id}-${compositeFlavor || 'no-flavor'}`;
       toast.success('Produto adicionado ao carrinho!');
       
       // Criar produto com preço final (já com desconto aplicado)
@@ -193,7 +193,7 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
         discount_type: undefined,
       };
       
-      return [...currentItems, { ...productWithCorrectData, quantity: 1, flavor, cartItemId }];
+      return [...currentItems, { ...productWithCorrectData, quantity: 1, flavor: compositeFlavor, cartItemId }];
     });
   };
 
