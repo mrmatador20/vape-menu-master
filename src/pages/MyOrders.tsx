@@ -340,36 +340,51 @@ export default function MyOrders() {
                     )}
 
                     {/* Total e Ações */}
-                    <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-                      <div className="flex items-center gap-2">
-                        <span className="text-lg font-semibold">Total do Pedido:</span>
-                        <span className="text-2xl font-bold text-primary">
-                          R$ {Number(order.total_amount).toFixed(2)}
-                        </span>
-                      </div>
-                      
-                      {/* Ações para pedidos entregues ou cancelados */}
-                      <div className="flex flex-wrap gap-2 w-full md:w-auto">
-                        {/* Botão Avaliar - disponível apenas para pedidos entregues */}
-                        {order.status === 'delivered' && order.order_items && (
-                          <PostDeliveryReviewDialog 
-                            orderId={order.id}
-                            orderItems={order.order_items}
-                          />
-                        )}
+                    <div className="flex flex-col gap-3">
+                      <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+                        <div className="flex items-center gap-2">
+                          <span className="text-lg font-semibold">Total do Pedido:</span>
+                          <span className="text-2xl font-bold text-primary">
+                            R$ {Number(order.total_amount).toFixed(2)}
+                          </span>
+                        </div>
                         
-                        {/* Botão Reordenar - disponível para pedidos entregues ou cancelados */}
-                        {(order.status === 'delivered' || order.status === 'cancelled') && (
-                          <Button
-                            variant="outline"
-                            onClick={() => handleReorder(order)}
-                            className="w-full md:w-auto"
-                          >
-                            <RefreshCw className="mr-2 h-4 w-4" />
-                            Pedir Novamente
-                          </Button>
-                        )}
+                        <div className="flex flex-wrap gap-2 w-full md:w-auto">
+                          {order.status === 'delivered' && order.order_items && (
+                            <PostDeliveryReviewDialog 
+                              orderId={order.id}
+                              orderItems={order.order_items}
+                            />
+                          )}
+                          
+                          {(order.status === 'delivered' || order.status === 'cancelled') && (
+                            <Button
+                              variant="outline"
+                              onClick={() => handleReorder(order)}
+                              className="w-full md:w-auto"
+                            >
+                              <RefreshCw className="mr-2 h-4 w-4" />
+                              Pedir Novamente
+                            </Button>
+                          )}
+                        </div>
                       </div>
+
+                      {/* Botão Finalizar Pagamento - apenas para Aguardando Pagamento */}
+                      {order.status === 'pending_payment' && (
+                        <div className="flex flex-col items-center gap-2 pt-2">
+                          <Button
+                            onClick={() => setPayingOrder(order)}
+                            className="w-full md:w-auto bg-[hsl(0_0%_8%)] hover:bg-[hsl(0_0%_14%)] text-primary font-semibold tracking-wider px-8 py-6 text-base shadow-lg border border-primary/30"
+                          >
+                            <QrCode className="mr-2 h-5 w-5" />
+                            Finalizar Pagamento
+                          </Button>
+                          <p className="text-xs text-muted-foreground text-center">
+                            Seu pedido será reservado por 30 minutos até a confirmação do pagamento
+                          </p>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </CardContent>
@@ -378,6 +393,23 @@ export default function MyOrders() {
           </div>
         </div>
       </div>
+
+      {payingOrder && (
+        <AsaasPaymentDialog
+          open={!!payingOrder}
+          onOpenChange={(open) => !open && setPayingOrder(null)}
+          orderId={payingOrder.id}
+          amount={Number(payingOrder.total_amount)}
+          description={`Pedido #${payingOrder.id.slice(0, 8)}`}
+          paymentMethod={payingOrder.payment_method as 'pix' | 'credit' | 'debit'}
+          payerName={payingOrder.customer_name || undefined}
+          payerPhone={payingOrder.customer_phone || undefined}
+          onPaymentConfirmed={() => {
+            setPayingOrder(null);
+            toast.success('Pagamento confirmado!');
+          }}
+        />
+      )}
     </div>
   );
 }
