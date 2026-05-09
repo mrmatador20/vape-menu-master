@@ -45,9 +45,10 @@ const Index = () => {
   };
 
   const filteredProducts = useMemo(() => {
+    const visible = (products || []).filter(p => p.visible_in_all !== false);
     let filtered = activeCategory === 'all'
-      ? (products || []).filter(p => p.visible_in_all !== false)
-      : products?.filter(p => p.category === activeCategory) || [];
+      ? visible
+      : visible.filter(p => p.category === activeCategory);
 
     if (activeSubcategory !== 'all') {
       filtered = filtered.filter(p => p.subcategory === activeSubcategory);
