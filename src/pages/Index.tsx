@@ -36,8 +36,16 @@ const Index = () => {
 
   const productCategories = useMemo(() => {
     if (!products) return [];
-    return Array.from(new Set(products.map(p => p.category))).sort();
+    const available = products.filter(
+      p => p.visible_in_all !== false && (p.stock ?? 0) > 0
+    );
+    return Array.from(new Set(available.map(p => p.category))).sort();
   }, [products]);
+
+  const availableProducts = useMemo(
+    () => (products || []).filter(p => p.visible_in_all !== false && (p.stock ?? 0) > 0),
+    [products]
+  );
 
   const handleCategoryChange = (category: string) => {
     setActiveCategory(category);
@@ -102,7 +110,7 @@ const Index = () => {
           <div className="my-8 hidden md:block">
             <CategoryCarousel
               categories={productCategories}
-              products={products || []}
+              products={availableProducts}
               activeCategory={activeCategory}
               activeSubcategory={activeSubcategory}
               onCategoryChange={handleCategoryChange}
@@ -118,7 +126,7 @@ const Index = () => {
             <>
               <CategorySidebar
                 categories={productCategories}
-                products={products || []}
+                products={availableProducts}
                 activeCategory={activeCategory}
                 activeSubcategory={activeSubcategory}
                 onCategoryChange={handleCategoryChange}
