@@ -266,6 +266,8 @@ export type Database = {
       }
       flavors: {
         Row: {
+          color: string | null
+          color_hex: string | null
           created_at: string
           id: string
           name: string
@@ -274,6 +276,8 @@ export type Database = {
           stock: number
         }
         Insert: {
+          color?: string | null
+          color_hex?: string | null
           created_at?: string
           id?: string
           name: string
@@ -282,6 +286,8 @@ export type Database = {
           stock?: number
         }
         Update: {
+          color?: string | null
+          color_hex?: string | null
           created_at?: string
           id?: string
           name?: string
