@@ -198,8 +198,37 @@ export function FlavorFormDialog({
               />
             </div>
             <p className="text-xs text-muted-foreground -mt-2">
-              Crie uma variante para cada combinação de tamanho + cor (ex.: "Tamanho M" / "Preto", "Tamanho M" / "Azul").
+              Crie uma variante para cada combinação de tamanho + cor.
             </p>
+
+            <div className="grid grid-cols-2 gap-3">
+              <FormField
+                control={form.control}
+                name="size"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Tamanho (opcional)</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Ex: P, M, G, 38..." {...field} value={field.value || ""} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="sku"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>SKU (opcional)</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Ex: FXV-PT-M-01" {...field} value={field.value || ""} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
             <FormField
               control={form.control}
