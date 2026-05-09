@@ -137,7 +137,7 @@ export default function Referrals() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button onClick={() => navigate('/admin/referrals/metrics')} variant="outline">
+          <Button onClick={() => navigate('/546498@18/referrals/metrics')} variant="outline">
             <BarChart3 className="h-4 w-4 mr-2" />
             Ver Métricas
           </Button>
