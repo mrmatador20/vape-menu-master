@@ -23,6 +23,7 @@ import NotFound from "./pages/NotFound";
 import AdminLayout from "./pages/admin/AdminLayout";
 import AdminDashboard from "./pages/admin/Dashboard";
 import AdminProducts from "./pages/admin/Products";
+import AdminCategories from "./pages/admin/Categories";
 import AdminOrders from "./pages/admin/Orders";
 import AdminStats from "./pages/admin/Stats";
 import AdminDiscounts from "./pages/admin/Discounts";
@@ -129,6 +130,7 @@ const App = () => (
                 <Route index element={<AdminDashboard />} />
                 <Route path="security" element={<AdminSecurityDashboard />} />
                 <Route path="products" element={<AdminProducts />} />
+                <Route path="categories" element={<AdminCategories />} />
                 <Route path="orders" element={<AdminOrders />} />
                 <Route path="pix-payments" element={<AdminPixPayments />} />
                 <Route path="reviews" element={<AdminReviews />} />
