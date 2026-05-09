@@ -414,6 +414,41 @@ export default function MyOrders() {
                           <p className="text-xs text-muted-foreground text-center">
                             Seu pedido será reservado por 30 minutos até a confirmação do pagamento
                           </p>
+
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                disabled={cancellingId === order.id}
+                                className="text-muted-foreground hover:text-foreground border border-border/50 hover:border-border"
+                              >
+                                {cancellingId === order.id ? (
+                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                ) : (
+                                  <X className="mr-2 h-4 w-4" />
+                                )}
+                                Cancelar Pedido
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Cancelar pedido?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Deseja realmente cancelar este pedido? A cobrança no Asaas também será anulada.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Voltar</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => handleCancelOrder(order.id)}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  Sim, cancelar
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
                         </div>
                       )}
                     </div>
