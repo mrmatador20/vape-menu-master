@@ -2,61 +2,90 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
+/* Fox Velour Premium Design System
+   Paleta: Branco gelo, Branco puro, Preto suave, Dourado queimado.
+   Bordas 8px, design plano, tipografia Inter.
+   All colors MUST be HSL.
 */
 
 @layer base {
   :root {
-    --background: 40 30% 97%;
-    --foreground: 30 15% 15%;
+    /* Surfaces */
+    --background: 36 30% 97%;        /* branco gelo */
+    --foreground: 30 8% 14%;         /* preto suave */
 
-    --card: 0 0% 100%;
-    --card-foreground: 30 15% 15%;
+    --card: 0 0% 100%;               /* branco puro */
+    --card-foreground: 30 8% 14%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 30 15% 15%;
+    --popover-foreground: 30 8% 14%;
 
-    --primary: 38 55% 52%;
-    --primary-foreground: 40 30% 97%;
+    /* Dourado queimado (CTAs / destaques) */
+    --primary: 35 65% 45%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 38 25% 92%;
-    --secondary-foreground: 30 15% 15%;
+    --secondary: 36 18% 94%;
+    --secondary-foreground: 30 8% 14%;
 
-    --muted: 38 20% 94%;
-    --muted-foreground: 30 10% 40%;
+    --muted: 36 14% 95%;
+    --muted-foreground: 30 6% 42%;
 
-    --accent: 38 65% 58%;
-    --accent-foreground: 40 30% 97%;
+    --accent: 35 70% 92%;
+    --accent-foreground: 30 8% 14%;
 
-    --destructive: 0 75% 50%;
-    --destructive-foreground: 40 30% 97%;
+    --destructive: 0 70% 50%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 38 25% 88%;
-    --input: 38 25% 88%;
-    --ring: 38 55% 52%;
+    --border: 30 10% 90%;
+    --input: 30 10% 90%;
+    --ring: 35 65% 45%;
 
-    --radius: 0.75rem;
+    --radius: 0.5rem;                /* 8px */
 
-    --gradient-primary: linear-gradient(135deg, hsl(38 55% 52%), hsl(38 65% 58%));
-    --gradient-card: linear-gradient(180deg, hsl(0 0% 100%), hsl(40 25% 96%));
-    --gradient-hero: linear-gradient(135deg, hsl(40 30% 97%) 0%, hsl(38 35% 93%) 50%, hsl(38 45% 85%) 100%);
+    --gradient-primary: linear-gradient(135deg, hsl(35 65% 45%), hsl(38 75% 55%));
+    --gradient-card: linear-gradient(180deg, hsl(0 0% 100%), hsl(36 22% 98%));
+    --gradient-hero: linear-gradient(135deg, hsl(36 30% 98%) 0%, hsl(36 22% 95%) 50%, hsl(35 28% 92%) 100%);
 
-    --shadow-glow: 0 0 30px hsl(38 55% 52% / 0.25);
-    --shadow-card: 0 8px 24px hsl(30 15% 15% / 0.08);
+    /* Sombras suaves, design plano */
+    --shadow-glow: 0 0 0 1px hsl(35 65% 45% / 0.12);
+    --shadow-card: 0 1px 2px hsl(30 10% 12% / 0.04), 0 1px 3px hsl(30 10% 12% / 0.04);
 
-    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-smooth: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+
+    /* Sidebar tokens */
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 30 8% 14%;
+    --sidebar-primary: 35 65% 45%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 36 18% 94%;
+    --sidebar-accent-foreground: 30 8% 14%;
+    --sidebar-border: 30 10% 90%;
+    --sidebar-ring: 35 65% 45%;
   }
 
   .dark {
     --background: 30 8% 8%;
-    --foreground: 40 30% 94%;
+    --foreground: 36 30% 94%;
+    --card: 30 8% 11%;
+    --card-foreground: 36 30% 94%;
+    --primary: 35 65% 52%;
+    --primary-foreground: 30 8% 8%;
+    --border: 30 8% 18%;
+    --input: 30 8% 18%;
+    --muted: 30 8% 13%;
+    --muted-foreground: 36 12% 62%;
   }
 }
 
 @layer base {
   * {
     @apply border-border;
+  }
+
+  html, body {
+    font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   body {
