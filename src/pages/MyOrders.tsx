@@ -31,7 +31,26 @@ export default function MyOrders() {
   const navigate = useNavigate();
   const [userId, setUserId] = useState<string | null>(null);
   const [payingOrder, setPayingOrder] = useState<any | null>(null);
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
+  const queryClient = useQueryClient();
   const { addToCart } = useCart();
+
+  const handleCancelOrder = async (orderId: string) => {
+    setCancellingId(orderId);
+    try {
+      const { data, error } = await supabase.functions.invoke('cancel-asaas-payment', {
+        body: { orderId },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast.success('Pedido cancelado com sucesso');
+      queryClient.invalidateQueries({ queryKey: ['my-orders'] });
+    } catch (e: any) {
+      toast.error(e?.message || 'Erro ao cancelar pedido');
+    } finally {
+      setCancellingId(null);
+    }
+  };
 
   useEffect(() => {
     const checkAuth = async () => {
