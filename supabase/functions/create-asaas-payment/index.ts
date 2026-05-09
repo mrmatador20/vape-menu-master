@@ -142,6 +142,11 @@ serve(async (req) => {
       }
     }
 
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    );
+
     const headers = {
       'Content-Type': 'application/json',
       'access_token': apiKey,
@@ -203,12 +208,34 @@ serve(async (req) => {
           status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
+      let fallbackPostalCode = cardHolderPostalCode ? String(cardHolderPostalCode).replace(/\D/g, '') : '';
+      let fallbackAddressNumber = cardHolderAddressNumber ? String(cardHolderAddressNumber).trim() : '';
+
+      if (!fallbackPostalCode || fallbackPostalCode.length !== 8 || !fallbackAddressNumber) {
+        const { data: orderAddress } = await supabase
+          .from('orders')
+          .select('cep, address_number')
+          .eq('id', orderId)
+          .maybeSingle();
+
+        fallbackPostalCode = fallbackPostalCode.length === 8
+          ? fallbackPostalCode
+          : String(orderAddress?.cep || '').replace(/\D/g, '');
+        fallbackAddressNumber = fallbackAddressNumber || String(orderAddress?.address_number || '').trim();
+      }
+
+      if (fallbackPostalCode.length !== 8) {
+        return new Response(JSON.stringify({ error: 'CEP do titular do cartão é obrigatório e deve ter 8 dígitos.' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
       paymentBody.creditCardHolderInfo = {
         name: String(cardHolderName).substring(0, 100),
         email: cardHolderEmail || customerEmail,
         cpfCnpj: (cardHolderCpf ? String(cardHolderCpf).replace(/\D/g, '') : cpfNumbers),
-        postalCode: cardHolderPostalCode ? String(cardHolderPostalCode).replace(/\D/g, '') : '00000000',
-        addressNumber: cardHolderAddressNumber || 'S/N',
+        postalCode: fallbackPostalCode,
+        addressNumber: fallbackAddressNumber || 'S/N',
         phone: phoneClean,
         mobilePhone: phoneClean,
       };
@@ -251,11 +278,6 @@ serve(async (req) => {
     }
 
     // 4. Atualizar pedido (status final virá via webhook)
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    );
-
     // Para cartão, se já confirmado pelo Asaas, marcamos. Senão webhook decide.
     let orderStatus = 'pending_payment';
     if (isCard && (payment.status === 'CONFIRMED' || payment.status === 'RECEIVED')) {
