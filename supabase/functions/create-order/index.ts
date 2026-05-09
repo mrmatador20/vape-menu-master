@@ -261,7 +261,7 @@ serve(async (req) => {
     // Fetch all flavors for products that have them
     const { data: flavors, error: flavorsError } = await supabaseClient
       .from('flavors')
-      .select('id, product_id, name, stock')
+      .select('id, product_id, name, stock, color')
       .in('product_id', productIds);
 
     if (flavorsError) {
