@@ -126,7 +126,7 @@ const Index = () => {
             <>
               <CategorySidebar
                 categories={productCategories}
-                products={products || []}
+                products={availableProducts}
                 activeCategory={activeCategory}
                 activeSubcategory={activeSubcategory}
                 onCategoryChange={handleCategoryChange}
