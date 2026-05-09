@@ -90,6 +90,7 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
   });
 
   useEffect(() => {
+    if (!open) return;
     if (product) {
       form.reset({
         name: product.name,
@@ -111,7 +112,7 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
     } else {
       form.reset(defaults);
     }
-  }, [product, form]);
+  }, [product, open, form]);
 
   const onSubmit = async (values: ProductFormValues) => {
     const productData = {
