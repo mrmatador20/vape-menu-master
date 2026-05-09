@@ -110,7 +110,7 @@ const Index = () => {
           <div className="my-8 hidden md:block">
             <CategoryCarousel
               categories={productCategories}
-              products={products || []}
+              products={availableProducts}
               activeCategory={activeCategory}
               activeSubcategory={activeSubcategory}
               onCategoryChange={handleCategoryChange}
