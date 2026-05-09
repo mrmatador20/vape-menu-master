@@ -142,7 +142,7 @@ export default function AdminProducts() {
           <p className="text-muted-foreground">Gestão completa do catálogo Fox Velour.</p>
         </div>
         <div className="flex gap-2">
-          <Button asChild variant="outline"><Link to="/admin/categories"><Tags className="h-4 w-4 mr-2" />Categorias</Link></Button>
+          <Button asChild variant="outline"><Link to="/546498@18/categories"><Tags className="h-4 w-4 mr-2" />Categorias</Link></Button>
           <Button onClick={() => { setEditProduct(null); setIsFormOpen(true); }}>
             <Plus className="mr-2 h-4 w-4" /> Novo produto
           </Button>

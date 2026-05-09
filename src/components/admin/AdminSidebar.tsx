@@ -19,36 +19,36 @@ type Group = { title: string; icon: any; items: Item[] };
 const groups: Group[] = [
   {
     title: "Insights", icon: LineChart, items: [
-      { title: "Dashboard", url: "/admin", icon: LayoutDashboard },
-      { title: "Estatísticas", url: "/admin/stats", icon: BarChart3 },
-      { title: "Métricas Indicações", url: "/admin/referrals/metrics", icon: LineChart },
+      { title: "Dashboard", url: "/546498@18", icon: LayoutDashboard },
+      { title: "Estatísticas", url: "/546498@18/stats", icon: BarChart3 },
+      { title: "Métricas Indicações", url: "/546498@18/referrals/metrics", icon: LineChart },
     ],
   },
   {
     title: "Operações", icon: ClipboardList, items: [
-      { title: "Pedidos", url: "/admin/orders", icon: ShoppingCart },
-      { title: "Avaliações", url: "/admin/reviews", icon: Star },
+      { title: "Pedidos", url: "/546498@18/orders", icon: ShoppingCart },
+      { title: "Avaliações", url: "/546498@18/reviews", icon: Star },
     ],
   },
   {
     title: "Catálogo", icon: Boxes, items: [
-      { title: "Produtos", url: "/admin/products", icon: Package },
-      { title: "Categorias", url: "/admin/categories", icon: FolderTree },
-      { title: "Banners", url: "/admin/banners", icon: Megaphone },
+      { title: "Produtos", url: "/546498@18/products", icon: Package },
+      { title: "Categorias", url: "/546498@18/categories", icon: FolderTree },
+      { title: "Banners", url: "/546498@18/banners", icon: Megaphone },
     ],
   },
   {
     title: "Configurações de Venda", icon: Wrench, items: [
-      { title: "Descontos", url: "/admin/discounts", icon: Tag },
-      { title: "Taxas de Entrega", url: "/admin/shipping-rates", icon: Truck },
-      { title: "Indicações", url: "/admin/referrals", icon: Gift },
+      { title: "Descontos", url: "/546498@18/discounts", icon: Tag },
+      { title: "Taxas de Entrega", url: "/546498@18/shipping-rates", icon: Truck },
+      { title: "Indicações", url: "/546498@18/referrals", icon: Gift },
     ],
   },
   {
     title: "Sistema", icon: ShieldCheck, items: [
-      { title: "Segurança", url: "/admin/security", icon: Shield },
-      { title: "Auditoria", url: "/admin/audit-logs", icon: Shield },
-      { title: "Configurações", url: "/admin/settings", icon: Settings },
+      { title: "Segurança", url: "/546498@18/security", icon: Shield },
+      { title: "Auditoria", url: "/546498@18/audit-logs", icon: Shield },
+      { title: "Configurações", url: "/546498@18/settings", icon: Settings },
     ],
   },
 ];
@@ -61,7 +61,7 @@ export function AdminSidebar() {
   const initialOpen: Record<string, boolean> = {};
   groups.forEach((g) => {
     initialOpen[g.title] = g.items.some((i) =>
-      i.url === "/admin" ? pathname === "/admin" : pathname.startsWith(i.url)
+      i.url === "/546498@18" ? pathname === "/546498@18" : pathname.startsWith(i.url)
     );
   });
   const [openMap, setOpenMap] = useState<Record<string, boolean>>(
@@ -106,7 +106,7 @@ export function AdminSidebar() {
                         <SidebarMenuButton asChild>
                           <NavLink
                             to={item.url}
-                            end={item.url === "/admin"}
+                            end={item.url === "/546498@18"}
                             className="hover:bg-accent rounded-md transition-colors"
                             activeClassName="bg-accent text-accent-foreground font-medium"
                           >
