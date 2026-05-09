@@ -182,7 +182,7 @@ export const BannerCarousel = () => {
   const message = [title, desc].filter(Boolean).join(' — ');
 
   return (
-    <div className="relative w-full bg-[hsl(0_0%_8%)] text-[hsl(40_60%_82%)] border-b border-white/5">
+    <div className="relative w-full bg-card border-b border-border/60">
       <div className="container max-w-7xl mx-auto h-8 md:h-9 px-4 flex items-center justify-center gap-3">
         {banners.length > 1 && (
           <button
@@ -190,7 +190,7 @@ export const BannerCarousel = () => {
             onClick={prevBanner}
             disabled={isTransitioning}
             aria-label="Anterior"
-            className="shrink-0 opacity-60 hover:opacity-100 transition-opacity disabled:opacity-30"
+            className="shrink-0 text-primary/70 hover:text-primary transition-opacity disabled:opacity-30"
           >
             <ChevronLeft className="h-3.5 w-3.5" strokeWidth={1.5} />
           </button>
@@ -198,7 +198,8 @@ export const BannerCarousel = () => {
 
         <p
           key={currentBanner.id}
-          className={`flex-1 text-center text-[10.5px] md:text-[11px] uppercase tracking-[0.28em] font-light truncate ${transitionClass}`}
+          className={`flex-1 text-center text-[10.5px] md:text-[11px] uppercase tracking-[0.32em] font-medium truncate text-primary ${transitionClass}`}
+          style={{ textShadow: '0 0 1px hsl(var(--primary) / 0.15)' }}
         >
           {message}
         </p>
@@ -209,7 +210,7 @@ export const BannerCarousel = () => {
             onClick={nextBanner}
             disabled={isTransitioning}
             aria-label="Próximo"
-            className="shrink-0 opacity-60 hover:opacity-100 transition-opacity disabled:opacity-30"
+            className="shrink-0 text-primary/70 hover:text-primary transition-opacity disabled:opacity-30"
           >
             <ChevronRight className="h-3.5 w-3.5" strokeWidth={1.5} />
           </button>

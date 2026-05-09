@@ -105,7 +105,7 @@ const ProductCard = ({ product, onQuickView }: ProductCardProps) => {
               R$ {product.price.toFixed(2)}
             </span>
           )}
-          <span className="text-sm font-medium text-foreground tracking-tight">
+          <span className="text-sm font-medium text-primary tracking-tight">
             R$ {finalPrice.toFixed(2)}
           </span>
         </div>
