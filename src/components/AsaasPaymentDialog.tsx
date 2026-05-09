@@ -153,6 +153,10 @@ export const AsaasPaymentDialog = ({
         body.cardCcv = cardData.ccv;
         body.cardHolderCpf = cardData.cpf.replace(/\D/g, '');
         body.installmentCount = installments;
+        const cepDigits = (address?.cep || '').replace(/\D/g, '');
+        if (cepDigits.length === 8) body.cardHolderPostalCode = cepDigits;
+        if (address?.numero) body.cardHolderAddressNumber = String(address.numero).substring(0, 10);
+        if (payerPhone) body.cardHolderPhone = String(payerPhone).replace(/\D/g, '');
       }
       const { data, error } = await supabase.functions.invoke('create-asaas-payment', { body });
       if (isCard) setCard({ holderName: '', number: '', expiry: '', ccv: '', cpf: '' });
