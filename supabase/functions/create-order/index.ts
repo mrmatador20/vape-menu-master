@@ -305,7 +305,12 @@ serve(async (req) => {
 
       // If item has a flavor, check flavor stock instead
       if (item.flavor && productFlavors.length > 0) {
-        const selectedFlavor = productFlavors.find((f: Flavor) => f.name === item.flavor);
+        // Cart sends composite "name • color" or just "name". Match against either.
+        const selectedFlavor = productFlavors.find((f: any) => {
+          if (f.name === item.flavor) return true;
+          const composite = f.color ? `${f.name} • ${f.color}` : f.name;
+          return composite === item.flavor;
+        });
         
         if (!selectedFlavor) {
           return new Response(
