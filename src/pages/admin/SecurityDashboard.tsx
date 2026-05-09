@@ -125,7 +125,7 @@ const SecurityDashboard = () => {
             Análise em tempo real de ameaças e atividades suspeitas
           </p>
         </div>
-        <Button onClick={() => navigate('/admin/audit-logs')} variant="outline">
+        <Button onClick={() => navigate('/546498@18/audit-logs')} variant="outline">
           <Eye className="h-4 w-4 mr-2" />
           Ver Logs Completos
         </Button>

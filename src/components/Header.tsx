@@ -321,7 +321,7 @@ const Header = () => {
                     <DropdownMenuLabel className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground font-normal">
                       Administração
                     </DropdownMenuLabel>
-                    <DropdownMenuItem onClick={() => handleNavigate('/admin')} className="gap-2 text-sm">
+                    <DropdownMenuItem onClick={() => handleNavigate('/546498@18')} className="gap-2 text-sm">
                       <Settings className="h-4 w-4" {...ICON_PROPS} /> Painel administrativo
                     </DropdownMenuItem>
                   </>
@@ -470,7 +470,7 @@ const Header = () => {
                         Meus pedidos
                       </MobileLink>
                       {role === 'admin' && (
-                        <MobileLink onClick={() => handleNavigate('/admin')} icon={<Settings className="h-4 w-4" {...ICON_PROPS} />}>
+                        <MobileLink onClick={() => handleNavigate('/546498@18')} icon={<Settings className="h-4 w-4" {...ICON_PROPS} />}>
                           Painel administrativo
                         </MobileLink>
                       )}
