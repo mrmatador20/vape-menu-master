@@ -112,7 +112,7 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
     } else {
       form.reset(defaults);
     }
-  }, [product, form]);
+  }, [product, open, form]);
 
   const onSubmit = async (values: ProductFormValues) => {
     const productData = {
