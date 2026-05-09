@@ -6,6 +6,7 @@ import {
   User,
   Menu,
   ChevronRight,
+  ChevronLeft,
   LogIn,
   X,
 } from 'lucide-react';
