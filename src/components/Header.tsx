@@ -165,45 +165,59 @@ const Header = () => {
             <PopoverContent
               align="start"
               sideOffset={12}
-              className="w-[640px] max-w-[92vw] p-0 border-0 rounded-md bg-card shadow-[0_20px_60px_-15px_hsl(30_10%_12%_/_0.18)] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=open]:slide-in-from-top-2 data-[state=closed]:slide-out-to-top-2"
+              className="p-0 border-0 rounded-md bg-card shadow-[0_20px_60px_-15px_hsl(30_10%_12%_/_0.18)] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=open]:slide-in-from-top-2 data-[state=closed]:slide-out-to-top-2"
+              style={{
+                width: categories.length > 8 ? 'min(960px, 94vw)' : `min(${Math.max(560, Math.min(categories.length, 4) * 220)}px, 94vw)`,
+              }}
             >
-              <div className="p-8">
-                <div className="flex items-baseline justify-between mb-6">
-                  <p className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground">
-                    Coleção
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => handleNavigate('/')}
-                    className="group inline-flex items-center gap-1.5 text-[11px] uppercase tracking-[0.2em] text-foreground hover:text-primary transition-colors"
-                  >
-                    <span className="border-b border-foreground/40 group-hover:border-primary pb-0.5">
-                      Ver todas
-                    </span>
-                    <ChevronRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" {...ICON_PROPS} />
-                  </button>
-                </div>
+              <div className="px-10 pt-8 pb-4 flex items-baseline justify-between">
+                <p className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground">
+                  Coleção
+                </p>
+                <button
+                  type="button"
+                  onClick={() => handleNavigate('/')}
+                  className="group inline-flex items-center gap-1.5 text-[11px] uppercase tracking-[0.2em] text-foreground hover:text-primary transition-colors"
+                >
+                  <span className="border-b border-foreground/40 group-hover:border-primary pb-0.5">
+                    Ver todas
+                  </span>
+                  <ChevronRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" {...ICON_PROPS} />
+                </button>
+              </div>
 
-                <div className="grid grid-cols-2 gap-x-10 gap-y-1">
+              {categories.length > 8 ? (
+                <SidebarMegaMenu
+                  categories={categories}
+                  getSubs={getCategorySubcategories}
+                  onNavigate={handleNavigate}
+                />
+              ) : (
+                <div
+                  className="px-10 pb-10 grid gap-x-10 gap-y-8"
+                  style={{
+                    gridTemplateColumns: `repeat(${Math.min(categories.length || 1, 4)}, minmax(0, 1fr))`,
+                  }}
+                >
                   {categories.map((category) => {
                     const subs = getCategorySubcategories(category);
                     return (
-                      <div key={category} className="py-3 border-b border-border/40 last:border-0">
+                      <div key={category} className="min-w-0">
                         <button
                           type="button"
                           onClick={() => handleNavigate(`/?category=${category}`)}
-                          className="block w-full text-left font-serif text-base capitalize text-foreground hover:text-primary transition-colors leading-loose"
+                          className="block w-full text-left text-sm font-semibold tracking-wide capitalize text-foreground hover:text-primary transition-colors pb-3 border-b border-border/40"
                         >
                           {category}
                         </button>
                         {subs.length > 0 && (
-                          <ul className="mt-1.5 space-y-1.5">
+                          <ul className="mt-3 space-y-2.5">
                             {subs.map((sub) => (
                               <li key={sub}>
                                 <button
                                   type="button"
                                   onClick={() => handleNavigate(`/?category=${category}&subcategory=${sub}`)}
-                                  className="text-xs tracking-wide capitalize text-muted-foreground hover:text-primary transition-colors"
+                                  className="text-xs font-light tracking-wide capitalize text-muted-foreground hover:text-primary transition-colors"
                                 >
                                   {sub}
                                 </button>
@@ -215,7 +229,7 @@ const Header = () => {
                     );
                   })}
                 </div>
-              </div>
+              )}
             </PopoverContent>
           </Popover>
 
