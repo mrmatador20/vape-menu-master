@@ -167,76 +167,52 @@ export const BannerCarousel = () => {
     );
   }
 
-  // Banner com cor/imagem de fundo
+  // Announcement bar (texto) — luxo, fino e elegante
+  const stripEmoji = (s?: string | null) =>
+    (s || '')
+      .replace(
+        /[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{1F1E6}-\u{1F1FF}\u{2700}-\u{27BF}\u{FE0F}\u{200D}]/gu,
+        ''
+      )
+      .replace(/\s+/g, ' ')
+      .trim();
+
+  const title = stripEmoji(currentBanner.title);
+  const desc = stripEmoji(currentBanner.description);
+  const message = [title, desc].filter(Boolean).join(' — ');
+
   return (
-    <div className="relative w-full overflow-hidden">
-      <div 
-        key={currentBanner.id}
-        className={`relative w-full py-4 px-4 ${transitionClass}`}
-        style={{
-          backgroundColor: currentBanner.background_color,
-          color: currentBanner.text_color,
-          backgroundImage: currentBanner.background_image_url 
-            ? `url(${currentBanner.background_image_url})` 
-            : 'none',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-        }}
-      >
-        <div className="container max-w-7xl mx-auto flex items-center justify-between gap-4">
-          {banners.length > 1 && (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={prevBanner}
-              disabled={isTransitioning}
-              className="shrink-0 hover:bg-white/20"
-              style={{ color: currentBanner.text_color }}
-            >
-              <ChevronLeft className="h-5 w-5" />
-            </Button>
-          )}
+    <div className="relative w-full bg-[hsl(0_0%_8%)] text-[hsl(40_60%_82%)] border-b border-white/5">
+      <div className="container max-w-7xl mx-auto h-8 md:h-9 px-4 flex items-center justify-center gap-3">
+        {banners.length > 1 && (
+          <button
+            type="button"
+            onClick={prevBanner}
+            disabled={isTransitioning}
+            aria-label="Anterior"
+            className="shrink-0 opacity-60 hover:opacity-100 transition-opacity disabled:opacity-30"
+          >
+            <ChevronLeft className="h-3.5 w-3.5" strokeWidth={1.5} />
+          </button>
+        )}
 
-          <div className="flex-1 text-center space-y-1">
-            <h2 className="text-xl md:text-2xl font-bold drop-shadow-lg">
-              {currentBanner.title}
-            </h2>
-            {currentBanner.description && (
-              <p className="text-sm md:text-base opacity-90 drop-shadow-lg">
-                {currentBanner.description}
-              </p>
-            )}
-          </div>
-
-          {banners.length > 1 && (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={nextBanner}
-              disabled={isTransitioning}
-              className="shrink-0 hover:bg-white/20"
-              style={{ color: currentBanner.text_color }}
-            >
-              <ChevronRight className="h-5 w-5" />
-            </Button>
-          )}
-        </div>
+        <p
+          key={currentBanner.id}
+          className={`flex-1 text-center text-[10.5px] md:text-[11px] uppercase tracking-[0.28em] font-light truncate ${transitionClass}`}
+        >
+          {message}
+        </p>
 
         {banners.length > 1 && (
-          <div className="flex justify-center gap-2 mt-3">
-            {banners.map((_, index) => (
-              <button
-                key={index}
-                onClick={() => goToBanner(index)}
-                className="w-2 h-2 rounded-full transition-all duration-300"
-                style={{
-                  backgroundColor: currentBanner.text_color,
-                  opacity: index === currentIndex ? 1 : 0.4,
-                }}
-                aria-label={`Ir para banner ${index + 1}`}
-              />
-            ))}
-          </div>
+          <button
+            type="button"
+            onClick={nextBanner}
+            disabled={isTransitioning}
+            aria-label="Próximo"
+            className="shrink-0 opacity-60 hover:opacity-100 transition-opacity disabled:opacity-30"
+          >
+            <ChevronRight className="h-3.5 w-3.5" strokeWidth={1.5} />
+          </button>
         )}
       </div>
     </div>
