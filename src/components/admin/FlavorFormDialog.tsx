@@ -59,6 +59,8 @@ export function FlavorFormDialog({
       price: undefined,
       color: "",
       color_hex: "#000000",
+      size: "",
+      sku: "",
     },
   });
 
@@ -70,6 +72,8 @@ export function FlavorFormDialog({
         price: flavor.price || undefined,
         color: flavor.color || "",
         color_hex: flavor.color_hex || "#000000",
+        size: flavor.size || "",
+        sku: flavor.sku || "",
       });
     } else {
       form.reset({
@@ -78,6 +82,8 @@ export function FlavorFormDialog({
         price: undefined,
         color: "",
         color_hex: "#000000",
+        size: "",
+        sku: "",
       });
     }
   }, [flavor, form]);
@@ -90,6 +96,8 @@ export function FlavorFormDialog({
         price: values.price || null,
         color: values.color?.trim() || null,
         color_hex: values.color?.trim() ? (values.color_hex || null) : null,
+        size: values.size?.trim() || null,
+        sku: values.sku?.trim() || null,
       };
 
       if (flavor) {
