@@ -3,13 +3,13 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetFooter,
+} from "@/components/ui/sheet";
 import {
   Form,
   FormControl,
@@ -154,18 +154,18 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
   const variantsDisabled = !product;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[92vh] overflow-y-auto p-0">
-        <DialogHeader className="p-6 pb-4 border-b">
-          <DialogTitle className="text-2xl">{product ? "Editar produto" : "Novo produto"}</DialogTitle>
-          <DialogDescription>
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent side="right" className="w-full sm:max-w-3xl p-0 flex flex-col gap-0">
+        <SheetHeader className="p-6 pb-4 border-b text-left">
+          <SheetTitle className="text-2xl">{product ? "Editar produto" : "Novo produto"}</SheetTitle>
+          <SheetDescription>
             {product ? "Atualize as informações, imagens e variantes do produto." : "Preencha as informações para adicionar um novo produto ao catálogo."}
-          </DialogDescription>
-        </DialogHeader>
+          </SheetDescription>
+        </SheetHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)}>
-            <Tabs defaultValue="info" className="w-full">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="flex-1 flex flex-col overflow-hidden">
+            <Tabs defaultValue="info" className="flex-1 flex flex-col overflow-hidden">
               <div className="px-6 pt-4 border-b">
                 <TabsList className="bg-transparent p-0 h-auto gap-1 flex-wrap justify-start">
                   <TabsTrigger value="info" className="data-[state=active]:bg-accent gap-2"><Info className="h-4 w-4" />Básico</TabsTrigger>
@@ -180,8 +180,7 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
                 </TabsList>
               </div>
 
-              <div className="p-6 space-y-6 min-h-[420px]">
-                {/* Informações básicas */}
+              <div className="p-6 space-y-6 flex-1 overflow-y-auto">
                 <TabsContent value="info" className="space-y-4 mt-0">
                   <FormField control={form.control} name="name" render={({ field }) => (
                     <FormItem>
@@ -216,7 +215,6 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
                   </div>
                 </TabsContent>
 
-                {/* Categorização */}
                 <TabsContent value="cat" className="space-y-4 mt-0">
                   <FormField control={form.control} name="category" render={({ field }) => (
                     <FormItem>
@@ -243,7 +241,6 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
                   )} />
                 </TabsContent>
 
-                {/* Imagens */}
                 <TabsContent value="img" className="space-y-4 mt-0">
                   <FormField control={form.control} name="images" render={({ field }) => (
                     <FormItem>
@@ -257,7 +254,6 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
                   )} />
                 </TabsContent>
 
-                {/* Estoque */}
                 <TabsContent value="stock" className="space-y-4 mt-0">
                   <div className="grid grid-cols-2 gap-4">
                     <FormField control={form.control} name="stock" render={({ field }) => (
@@ -290,7 +286,6 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
                   )} />
                 </TabsContent>
 
-                {/* Variantes */}
                 <TabsContent value="variants" className="mt-0">
                   {product ? (
                     <VariantsTable productId={product.id} productName={product.name} />
@@ -302,7 +297,6 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
                   )}
                 </TabsContent>
 
-                {/* Desconto */}
                 <TabsContent value="discount" className="space-y-4 mt-0">
                   <div className="grid grid-cols-2 gap-4">
                     <FormField control={form.control} name="discount_type" render={({ field }) => (
@@ -339,13 +333,13 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
               </div>
             </Tabs>
 
-            <DialogFooter className="p-6 border-t bg-muted/20">
+            <SheetFooter className="p-6 border-t bg-muted/20 flex-row sm:justify-end gap-2">
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
               <Button type="submit">{product ? 'Salvar alterações' : 'Criar produto'}</Button>
-            </DialogFooter>
+            </SheetFooter>
           </form>
         </Form>
-      </DialogContent>
-    </Dialog>
+      </SheetContent>
+    </Sheet>
   );
 }

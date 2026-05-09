@@ -33,7 +33,6 @@ import AdminSettings from "./pages/admin/Settings";
 import AdminBanners from "./pages/admin/Banners";
 import AdminAuditLogs from "./pages/admin/AuditLogs";
 import AdminSecurityDashboard from "./pages/admin/SecurityDashboard";
-import AdminPixPayments from "./pages/admin/PixPayments";
 import AdminReferrals from "./pages/admin/Referrals";
 import AdminReferralMetrics from "./pages/admin/ReferralMetrics";
 import TrustedDevices from "./pages/TrustedDevices";
@@ -132,7 +131,6 @@ const App = () => (
                 <Route path="products" element={<AdminProducts />} />
                 <Route path="categories" element={<AdminCategories />} />
                 <Route path="orders" element={<AdminOrders />} />
-                <Route path="pix-payments" element={<AdminPixPayments />} />
                 <Route path="reviews" element={<AdminReviews />} />
                 <Route path="stats" element={<AdminStats />} />
                 <Route path="discounts" element={<AdminDiscounts />} />

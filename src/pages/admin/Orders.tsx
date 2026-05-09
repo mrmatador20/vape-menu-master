@@ -4,17 +4,20 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle,
+} from "@/components/ui/sheet";
 import {
   Loader2, Trash2, Copy, Eye, Truck, CheckCircle2, Clock, Package,
   XCircle, DollarSign, ShoppingBag, CalendarDays, Search, Printer,
-  MessageCircle, ArrowUpDown, ChevronLeft, ChevronRight, MapPin
+  MessageCircle, ArrowUpDown, ChevronLeft, ChevronRight, MapPin, Banknote, CircleDollarSign, Hourglass,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Navigate } from "react-router-dom";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
 
@@ -27,14 +30,39 @@ const STATUS_LABELS: Record<string, string> = {
   cancelled: "Cancelado",
 };
 
-const STATUS_STYLES: Record<string, { cls: string; icon: any }> = {
-  pending: { cls: "bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-500/15 dark:text-amber-300", icon: Clock },
-  pending_payment: { cls: "bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-500/15 dark:text-amber-300", icon: Clock },
-  confirmed: { cls: "bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-500/15 dark:text-emerald-300", icon: CheckCircle2 },
-  shipped: { cls: "bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-500/15 dark:text-blue-300", icon: Truck },
-  delivered: { cls: "bg-primary/15 text-primary border-primary/30", icon: Package },
-  cancelled: { cls: "bg-red-100 text-red-800 border-red-200 dark:bg-red-500/15 dark:text-red-300", icon: XCircle },
+// Logístico (operacional)
+const LOGISTIC_LABELS: Record<string, string> = {
+  pending: "Em separação",
+  pending_payment: "Aguardando",
+  confirmed: "Em separação",
+  shipped: "Enviado",
+  delivered: "Entregue",
+  cancelled: "Cancelado",
 };
+
+const LOGISTIC_STYLES: Record<string, { cls: string; icon: any }> = {
+  pending: { cls: "bg-amber-50 text-amber-800 border-amber-200", icon: Clock },
+  pending_payment: { cls: "bg-amber-50 text-amber-800 border-amber-200", icon: Hourglass },
+  confirmed: { cls: "bg-sky-50 text-sky-800 border-sky-200", icon: Package },
+  shipped: { cls: "bg-blue-50 text-blue-800 border-blue-200", icon: Truck },
+  delivered: { cls: "bg-emerald-50 text-emerald-800 border-emerald-200", icon: CheckCircle2 },
+  cancelled: { cls: "bg-red-50 text-red-800 border-red-200", icon: XCircle },
+};
+
+// Financeiro (derivado de status + payment_method)
+function financialStatus(o: any): { key: string; label: string; cls: string; icon: any } {
+  if (o.status === 'cancelled') return { key: 'cancelled', label: 'Cancelado', cls: 'bg-red-50 text-red-800 border-red-200', icon: XCircle };
+  if (['confirmed', 'shipped', 'delivered'].includes(o.status)) {
+    return { key: 'paid', label: 'Pago', cls: 'bg-emerald-50 text-emerald-800 border-emerald-200', icon: CheckCircle2 };
+  }
+  if (o.expires_at && new Date(o.expires_at) < new Date()) {
+    return { key: 'expired', label: 'Expirado', cls: 'bg-zinc-100 text-zinc-700 border-zinc-200', icon: Hourglass };
+  }
+  if (o.payment_method === 'dinheiro') {
+    return { key: 'on_delivery', label: 'Pagar na entrega', cls: 'bg-violet-50 text-violet-800 border-violet-200', icon: Banknote };
+  }
+  return { key: 'pending', label: 'Aguardando', cls: 'bg-amber-50 text-amber-800 border-amber-200', icon: Hourglass };
+}
 
 const PAGE_SIZE = 10;
 
@@ -50,6 +78,7 @@ export default function AdminOrders() {
   const [dateFilter, setDateFilter] = useState<string>("");
   const [sortDesc, setSortDesc] = useState(true);
   const [page, setPage] = useState(1);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
 
   const { data: orders, isLoading } = useQuery({
     queryKey: ['admin-orders'],
@@ -77,7 +106,7 @@ export default function AdminOrders() {
 
   const copyAddress = (o: any) => {
     navigator.clipboard.writeText(formatAddress(o));
-    toast({ title: "Endereço copiado!", description: "Pronto para colar." });
+    toast({ title: "Endereço copiado!" });
   };
 
   const handleStatusChange = async (orderId: string, newStatus: string) => {
@@ -101,15 +130,24 @@ export default function AdminOrders() {
     queryClient.invalidateQueries({ queryKey: ['products'] });
   };
 
-  const handleDelete = async (orderId: string) => {
-    if (!confirm("Tem certeza que deseja excluir este pedido? Esta ação não pode ser desfeita.")) return;
-    const { error } = await supabase.from('orders').delete().eq('id', orderId);
+  const bulkUpdateStatus = async (newStatus: string) => {
+    if (selected.size === 0) return;
+    const ids = Array.from(selected);
+    const { error } = await supabase.from('orders').update({ status: newStatus }).in('id', ids);
     if (error) {
-      toast({ title: "Erro ao excluir pedido", description: error.message, variant: "destructive" });
-    } else {
-      toast({ title: "Pedido excluído" });
-      queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
+      toast({ title: "Erro na ação em massa", description: error.message, variant: "destructive" });
+      return;
     }
+    toast({ title: `${ids.length} pedido(s) atualizados`, description: STATUS_LABELS[newStatus] });
+    setSelected(new Set());
+    queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
+  };
+
+  const handleDelete = async (orderId: string) => {
+    if (!confirm("Tem certeza que deseja excluir este pedido?")) return;
+    const { error } = await supabase.from('orders').delete().eq('id', orderId);
+    if (error) toast({ title: "Erro", description: error.message, variant: "destructive" });
+    else { toast({ title: "Pedido excluído" }); queryClient.invalidateQueries({ queryKey: ['admin-orders'] }); }
   };
 
   const openWhatsApp = (phone?: string, orderId?: string) => {
@@ -125,7 +163,7 @@ export default function AdminOrders() {
     const items = o.order_items?.map((i: any) => `<li>${i.quantity}x ${i.products?.name || 'Produto'}${i.flavor ? ` (${i.flavor})` : ''} - R$ ${Number(i.price).toFixed(2)}</li>`).join('') || '';
     w.document.write(`
       <html><head><title>Pedido #${o.id.slice(0, 8)}</title>
-      <style>body{font-family:system-ui;padding:32px;color:#222}h1{border-bottom:2px solid #b8862b;padding-bottom:8px}strong{color:#444}</style>
+      <style>body{font-family:Inter,system-ui;padding:32px;color:#222}h1{border-bottom:2px solid #b8862b;padding-bottom:8px}strong{color:#444}</style>
       </head><body>
       <h1>Fox Velour - Pedido #${o.id.slice(0, 8)}</h1>
       <p><strong>Data:</strong> ${new Date(o.created_at).toLocaleString('pt-BR')}</p>
@@ -140,61 +178,85 @@ export default function AdminOrders() {
     w.print();
   };
 
+  const printLabels = (selectedIds: string[]) => {
+    const list = (orders || []).filter(o => selectedIds.includes(o.id));
+    if (!list.length) return;
+    const w = window.open('', '_blank');
+    if (!w) return;
+    const labels = list.map((o: any) => `
+      <div style="border:1px solid #222;padding:16px;margin-bottom:12px;page-break-inside:avoid">
+        <div style="display:flex;justify-content:space-between;border-bottom:1px solid #ccc;padding-bottom:8px;margin-bottom:8px">
+          <strong>FOX VELOUR</strong><span>#${o.id.slice(0, 8)}</span>
+        </div>
+        <p><strong>Para:</strong> ${o.customer_name || '—'}</p>
+        <p>${formatAddress(o)}</p>
+        <p><strong>Tel:</strong> ${o.customer_phone || '—'}</p>
+      </div>`).join('');
+    w.document.write(`<html><head><title>Etiquetas</title><style>body{font-family:Inter,system-ui;padding:24px}</style></head><body>${labels}</body></html>`);
+    w.document.close();
+    w.print();
+  };
+
   // KPIs
   const kpis = useMemo(() => {
     const list = orders || [];
     const today = new Date(); today.setHours(0, 0, 0, 0);
-    const todayCount = list.filter(o => new Date(o.created_at!) >= today).length;
     return {
       total: list.length,
       pending: list.filter(o => o.status === 'pending' || o.status === 'pending_payment').length,
       paid: list.filter(o => o.status === 'confirmed').length,
       shipped: list.filter(o => o.status === 'shipped').length,
       revenue: list.filter(o => ['confirmed', 'shipped', 'delivered'].includes(o.status)).reduce((s, o) => s + Number(o.total_amount || 0), 0),
-      today: todayCount,
+      today: list.filter(o => new Date(o.created_at!) >= today).length,
     };
   }, [orders]);
 
-  // Filtering
   const filtered = useMemo(() => {
     let list = orders || [];
     const q = search.trim().toLowerCase();
-    if (q) {
-      list = list.filter(o =>
-        o.id.toLowerCase().includes(q) ||
-        (o.customer_name || '').toLowerCase().includes(q) ||
-        (o.customer_phone || '').toLowerCase().includes(q)
-      );
-    }
+    if (q) list = list.filter(o => o.id.toLowerCase().includes(q) || (o.customer_name || '').toLowerCase().includes(q) || (o.customer_phone || '').toLowerCase().includes(q));
     if (statusFilter !== 'all') list = list.filter(o => o.status === statusFilter);
     if (paymentFilter !== 'all') list = list.filter(o => o.payment_method === paymentFilter);
     if (dateFilter) list = list.filter(o => o.created_at?.startsWith(dateFilter));
-    list = [...list].sort((a, b) => {
+    return [...list].sort((a, b) => {
       const da = new Date(a.created_at!).getTime();
       const db = new Date(b.created_at!).getTime();
       return sortDesc ? db - da : da - db;
     });
-    return list;
   }, [orders, search, statusFilter, paymentFilter, dateFilter, sortDesc]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const pageData = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
-  if (roleLoading) {
-    return <div className="flex items-center justify-center min-h-screen"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
-  }
-  if (role !== 'admin') return <Navigate to="/" replace />;
-  if (isLoading) {
-    return <div className="flex items-center justify-center min-h-[400px]"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
-  }
+  const togglePageAll = () => {
+    const ids = pageData.map(o => o.id);
+    const allSel = ids.every(id => selected.has(id));
+    const next = new Set(selected);
+    if (allSel) ids.forEach(id => next.delete(id));
+    else ids.forEach(id => next.add(id));
+    setSelected(next);
+  };
 
-  const StatusBadge = ({ status }: { status: string }) => {
-    const s = STATUS_STYLES[status] || STATUS_STYLES.pending;
+  if (roleLoading) return <div className="flex items-center justify-center min-h-screen"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
+  if (role !== 'admin') return <Navigate to="/" replace />;
+  if (isLoading) return <div className="flex items-center justify-center min-h-[400px]"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
+
+  const LogisticBadge = ({ status }: { status: string }) => {
+    const s = LOGISTIC_STYLES[status] || LOGISTIC_STYLES.pending;
     const Icon = s.icon;
     return (
-      <span className={cn("inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-xs font-medium", s.cls)}>
-        <Icon className="h-3 w-3" />
-        {STATUS_LABELS[status] || status}
+      <span className={cn("inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md border text-[11px] font-medium", s.cls)}>
+        <Icon className="h-3 w-3" />{LOGISTIC_LABELS[status] || status}
+      </span>
+    );
+  };
+
+  const FinancialBadge = ({ order }: { order: any }) => {
+    const s = financialStatus(order);
+    const Icon = s.icon;
+    return (
+      <span className={cn("inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md border text-[11px] font-medium", s.cls)}>
+        <Icon className="h-3 w-3" />{s.label}
       </span>
     );
   };
@@ -202,36 +264,33 @@ export default function AdminOrders() {
   const paymentMethods = Array.from(new Set((orders || []).map(o => o.payment_method).filter(Boolean)));
 
   const kpiCards = [
-    { label: "Total de Pedidos", value: kpis.total, icon: ShoppingBag, accent: "from-primary/20 to-primary/5", iconCls: "text-primary" },
-    { label: "Pendentes", value: kpis.pending, icon: Clock, accent: "from-amber-500/20 to-amber-500/5", iconCls: "text-amber-600" },
-    { label: "Pagos", value: kpis.paid, icon: CheckCircle2, accent: "from-emerald-500/20 to-emerald-500/5", iconCls: "text-emerald-600" },
-    { label: "Enviados", value: kpis.shipped, icon: Truck, accent: "from-blue-500/20 to-blue-500/5", iconCls: "text-blue-600" },
-    { label: "Receita Total", value: `R$ ${kpis.revenue.toFixed(2)}`, icon: DollarSign, accent: "from-primary/20 to-accent/5", iconCls: "text-primary" },
-    { label: "Pedidos Hoje", value: kpis.today, icon: CalendarDays, accent: "from-foreground/10 to-foreground/5", iconCls: "text-foreground" },
+    { label: "Total de Pedidos", value: kpis.total, icon: ShoppingBag },
+    { label: "Pendentes", value: kpis.pending, icon: Clock },
+    { label: "Pagos", value: kpis.paid, icon: CheckCircle2 },
+    { label: "Enviados", value: kpis.shipped, icon: Truck },
+    { label: "Receita Total", value: `R$ ${kpis.revenue.toFixed(2)}`, icon: DollarSign },
+    { label: "Pedidos Hoje", value: kpis.today, icon: CalendarDays },
   ];
+
+  const allPageSelected = pageData.length > 0 && pageData.every(o => selected.has(o.id));
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex flex-col gap-1">
-        <h1 className="text-3xl font-bold tracking-tight">Gestão de Pedidos</h1>
-        <p className="text-muted-foreground text-sm">Visualize, filtre e gerencie todos os pedidos da loja</p>
+        <h1 className="text-3xl font-bold tracking-tight">Mesa de Operações</h1>
+        <p className="text-muted-foreground text-sm">Gerencie pedidos, pagamentos e logística em um só lugar.</p>
       </div>
 
-      {/* KPI Cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
         {kpiCards.map((k) => (
-          <Card key={k.label} className={cn(
-            "relative overflow-hidden border-border/60 shadow-sm hover:shadow-md transition-all",
-            "bg-gradient-to-br", k.accent
-          )}>
+          <Card key={k.label} className="border-border/60 shadow-card-custom">
             <CardContent className="p-4">
               <div className="flex items-start justify-between">
                 <div className="min-w-0">
                   <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium">{k.label}</p>
                   <p className="text-xl md:text-2xl font-bold mt-1 truncate">{k.value}</p>
                 </div>
-                <div className={cn("p-2 rounded-lg bg-background/60 backdrop-blur", k.iconCls)}>
+                <div className="p-2 rounded-md bg-primary/10 text-primary">
                   <k.icon className="h-4 w-4" />
                 </div>
               </div>
@@ -240,26 +299,19 @@ export default function AdminOrders() {
         ))}
       </div>
 
-      {/* Filters */}
-      <Card className="border-border/60 shadow-sm">
+      <Card className="border-border/60 shadow-card-custom">
         <CardContent className="p-4">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
             <div className="relative lg:col-span-2">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Buscar por cliente, telefone ou nº do pedido..."
-                value={search}
-                onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-                className="pl-9"
-              />
+              <Input placeholder="Buscar por cliente, telefone ou nº do pedido..." value={search}
+                onChange={(e) => { setSearch(e.target.value); setPage(1); }} className="pl-9" />
             </div>
             <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1); }}>
               <SelectTrigger><SelectValue placeholder="Status" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todos os status</SelectItem>
-                {Object.entries(STATUS_LABELS).map(([k, v]) => (
-                  <SelectItem key={k} value={k}>{v}</SelectItem>
-                ))}
+                {Object.entries(STATUS_LABELS).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
               </SelectContent>
             </Select>
             <Select value={paymentFilter} onValueChange={(v) => { setPaymentFilter(v); setPage(1); }}>
@@ -281,96 +333,127 @@ export default function AdminOrders() {
         </CardContent>
       </Card>
 
-      {/* Table */}
-      <Card className="border-border/60 shadow-sm overflow-hidden">
+      {/* Bulk action bar */}
+      {selected.size > 0 && (
+        <div className="flex items-center justify-between gap-3 p-3 rounded-md border border-primary/30 bg-primary/5">
+          <div className="text-sm font-medium">
+            {selected.size} pedido(s) selecionado(s)
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Select onValueChange={(v) => bulkUpdateStatus(v)}>
+              <SelectTrigger className="h-8 w-[180px] text-xs"><SelectValue placeholder="Alterar status..." /></SelectTrigger>
+              <SelectContent>
+                {Object.entries(STATUS_LABELS).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <Button size="sm" variant="outline" onClick={() => printLabels(Array.from(selected))}>
+              <Printer className="h-3 w-3 mr-2" /> Imprimir etiquetas
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => setSelected(new Set())}>Limpar</Button>
+          </div>
+        </div>
+      )}
+
+      <Card className="border-border/60 shadow-card-custom overflow-hidden">
         <div className="overflow-x-auto">
           <Table>
             <TableHeader className="bg-muted/40 sticky top-0 z-10">
               <TableRow className="hover:bg-transparent border-border/60">
+                <TableHead className="w-[40px]">
+                  <Checkbox checked={allPageSelected} onCheckedChange={togglePageAll} />
+                </TableHead>
                 <TableHead className="font-semibold">Pedido</TableHead>
                 <TableHead className="font-semibold">Data</TableHead>
                 <TableHead className="font-semibold">Cliente</TableHead>
                 <TableHead className="font-semibold">Endereço</TableHead>
                 <TableHead className="font-semibold text-center">Itens</TableHead>
                 <TableHead className="font-semibold">Total</TableHead>
-                <TableHead className="font-semibold">Pagto</TableHead>
-                <TableHead className="font-semibold">Status</TableHead>
+                <TableHead className="font-semibold">Financeiro</TableHead>
+                <TableHead className="font-semibold">Logística</TableHead>
                 <TableHead className="font-semibold text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {pageData.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center py-12 text-muted-foreground">
+                  <TableCell colSpan={10} className="text-center py-12 text-muted-foreground">
                     Nenhum pedido encontrado com os filtros atuais.
                   </TableCell>
                 </TableRow>
               )}
-              {pageData.map((order: any) => (
-                <TableRow key={order.id} className="hover:bg-muted/30 transition-colors border-border/60">
-                  <TableCell className="font-mono text-xs font-medium">#{order.id.slice(0, 8)}</TableCell>
-                  <TableCell className="text-xs whitespace-nowrap">
-                    <div>{new Date(order.created_at!).toLocaleDateString('pt-BR')}</div>
-                    <div className="text-muted-foreground">{new Date(order.created_at!).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="font-medium text-sm">{order.customer_name || <span className="text-muted-foreground italic">—</span>}</div>
-                    <div className="text-xs text-muted-foreground">{order.customer_phone || '—'}</div>
-                  </TableCell>
-                  <TableCell className="max-w-[220px]">
-                    <div className="flex items-center gap-1">
-                      <MapPin className="h-3 w-3 shrink-0 text-muted-foreground" />
-                      <span className="text-xs truncate">{order.address_city}/{order.address_state}</span>
-                    </div>
-                    <div className="text-[11px] text-muted-foreground truncate">{order.address_street}, {order.address_number}</div>
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <Badge variant="secondary" className="font-normal">
-                      {order.order_items?.reduce((s: number, i: any) => s + i.quantity, 0) || 0}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="font-semibold text-sm whitespace-nowrap">R$ {Number(order.total_amount).toFixed(2)}</TableCell>
-                  <TableCell className="text-xs capitalize">{order.payment_method}</TableCell>
-                  <TableCell><StatusBadge status={order.status} /></TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-0.5 justify-end">
-                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setDetailOrder(order)} title="Ver detalhes">
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => copyAddress(order)} title="Copiar endereço">
-                        <Copy className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => printOrder(order)} title="Imprimir">
-                        <Printer className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-emerald-600 hover:text-emerald-700" onClick={() => openWhatsApp(order.customer_phone, order.id)} title="WhatsApp">
-                        <MessageCircle className="h-4 w-4" />
-                      </Button>
-                      <Select value={order.status} onValueChange={(v) => handleStatusChange(order.id, v)}>
-                        <SelectTrigger className="w-[130px] h-8 text-xs"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          {Object.entries(STATUS_LABELS).map(([k, v]) => (
-                            <SelectItem key={k} value={k}>{v}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => handleDelete(order.id)} title="Excluir">
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
+              {pageData.map((order: any) => {
+                const isSel = selected.has(order.id);
+                return (
+                  <TableRow key={order.id} className={cn("hover:bg-muted/30 transition-colors border-border/60", isSel && "bg-primary/5")}>
+                    <TableCell>
+                      <Checkbox checked={isSel} onCheckedChange={(c) => {
+                        const next = new Set(selected);
+                        if (c) next.add(order.id); else next.delete(order.id);
+                        setSelected(next);
+                      }} />
+                    </TableCell>
+                    <TableCell className="font-mono text-xs font-medium">#{order.id.slice(0, 8)}</TableCell>
+                    <TableCell className="text-xs whitespace-nowrap">
+                      <div>{new Date(order.created_at!).toLocaleDateString('pt-BR')}</div>
+                      <div className="text-muted-foreground">{new Date(order.created_at!).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="font-medium text-sm">{order.customer_name || <span className="text-muted-foreground italic">—</span>}</div>
+                      <div className="text-xs text-muted-foreground">{order.customer_phone || '—'}</div>
+                    </TableCell>
+                    <TableCell className="max-w-[200px]">
+                      <div className="flex items-center gap-1">
+                        <MapPin className="h-3 w-3 shrink-0 text-muted-foreground" />
+                        <span className="text-xs truncate">{order.address_city}/{order.address_state}</span>
+                      </div>
+                      <div className="text-[11px] text-muted-foreground truncate">{order.address_street}, {order.address_number}</div>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <Badge variant="secondary" className="font-normal">
+                        {order.order_items?.reduce((s: number, i: any) => s + i.quantity, 0) || 0}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="font-semibold text-sm whitespace-nowrap">R$ {Number(order.total_amount).toFixed(2)}</TableCell>
+                    <TableCell>
+                      <FinancialBadge order={order} />
+                      <div className="text-[10px] text-muted-foreground capitalize mt-0.5">{order.payment_method}</div>
+                    </TableCell>
+                    <TableCell><LogisticBadge status={order.status} /></TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-0.5 justify-end">
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setDetailOrder(order)} title="Ver detalhes">
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => copyAddress(order)} title="Copiar endereço">
+                          <Copy className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => printOrder(order)} title="Imprimir">
+                          <Printer className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-emerald-600 hover:text-emerald-700" onClick={() => openWhatsApp(order.customer_phone, order.id)} title="WhatsApp">
+                          <MessageCircle className="h-4 w-4" />
+                        </Button>
+                        <Select value={order.status} onValueChange={(v) => handleStatusChange(order.id, v)}>
+                          <SelectTrigger className="w-[130px] h-8 text-xs"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            {Object.entries(STATUS_LABELS).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => handleDelete(order.id)} title="Excluir">
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         </div>
 
-        {/* Pagination */}
         {totalPages > 1 && (
           <div className="flex items-center justify-between p-4 border-t border-border/60">
-            <span className="text-xs text-muted-foreground">
-              Página {page} de {totalPages}
-            </span>
+            <span className="text-xs text-muted-foreground">Página {page} de {totalPages}</span>
             <div className="flex gap-1">
               <Button variant="outline" size="sm" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}>
                 <ChevronLeft className="h-4 w-4" />
@@ -383,30 +466,55 @@ export default function AdminOrders() {
         )}
       </Card>
 
-      {/* Detail Modal */}
-      <Dialog open={!!detailOrder} onOpenChange={(o) => !o && setDetailOrder(null)}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <div className="flex items-start justify-between gap-3">
+      {/* Slide-over detail */}
+      <Sheet open={!!detailOrder} onOpenChange={(o) => !o && setDetailOrder(null)}>
+        <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto">
+          <SheetHeader className="text-left">
+            <div className="flex items-start justify-between gap-3 pr-6">
               <div>
-                <DialogTitle className="text-2xl font-bold">Pedido #{detailOrder?.id.slice(0, 8)}</DialogTitle>
-                <DialogDescription>
+                <SheetTitle className="text-2xl font-bold">Pedido #{detailOrder?.id.slice(0, 8)}</SheetTitle>
+                <SheetDescription>
                   {detailOrder && new Date(detailOrder.created_at).toLocaleString('pt-BR')}
-                </DialogDescription>
+                </SheetDescription>
               </div>
-              {detailOrder && <StatusBadge status={detailOrder.status} />}
+              {detailOrder && <div className="flex flex-col gap-1 items-end"><FinancialBadge order={detailOrder} /><LogisticBadge status={detailOrder.status} /></div>}
             </div>
-          </DialogHeader>
+          </SheetHeader>
+
           {detailOrder && (
-            <div className="space-y-5 text-sm">
+            <div className="space-y-5 text-sm mt-6">
+              {/* Timeline */}
+              <div className="rounded-md border border-border/60 p-4">
+                <p className="text-xs uppercase tracking-wide text-muted-foreground mb-3 font-medium">Linha do tempo</p>
+                <ol className="space-y-3">
+                  {[
+                    { key: 'created', label: 'Pedido criado', date: detailOrder.created_at, done: true },
+                    { key: 'paid', label: 'Pagamento confirmado', date: null, done: ['confirmed', 'shipped', 'delivered'].includes(detailOrder.status) },
+                    { key: 'shipped', label: 'Enviado', date: null, done: ['shipped', 'delivered'].includes(detailOrder.status) },
+                    { key: 'delivered', label: 'Entregue', date: null, done: detailOrder.status === 'delivered' },
+                  ].map((step, idx) => (
+                    <li key={step.key} className="flex items-start gap-3">
+                      <div className={cn("h-5 w-5 rounded-full flex items-center justify-center mt-0.5",
+                        step.done ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground border border-border")}>
+                        {step.done ? <CheckCircle2 className="h-3 w-3" /> : <span className="text-[10px]">{idx + 1}</span>}
+                      </div>
+                      <div className="flex-1">
+                        <p className={cn("text-sm font-medium", !step.done && "text-muted-foreground")}>{step.label}</p>
+                        {step.date && <p className="text-xs text-muted-foreground">{new Date(step.date).toLocaleString('pt-BR')}</p>}
+                      </div>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+
               {/* Customer */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div className="p-3 rounded-lg bg-muted/40 border border-border/60">
+                <div className="p-3 rounded-md bg-muted/40 border border-border/60">
                   <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Cliente</p>
                   <p className="font-medium">{detailOrder.customer_name || '—'}</p>
                   <p className="text-xs text-muted-foreground">{detailOrder.customer_phone || '—'}</p>
                 </div>
-                <div className="p-3 rounded-lg bg-muted/40 border border-border/60">
+                <div className="p-3 rounded-md bg-muted/40 border border-border/60">
                   <div className="flex items-center justify-between">
                     <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Endereço</p>
                     <Button size="sm" variant="ghost" className="h-6 px-2" onClick={() => copyAddress(detailOrder)}>
@@ -417,20 +525,51 @@ export default function AdminOrders() {
                 </div>
               </div>
 
-              {/* Items with images */}
+              {/* Pagamento */}
+              <div className="rounded-md border border-border/60 p-4 space-y-2">
+                <p className="text-xs uppercase tracking-wide text-muted-foreground font-medium flex items-center gap-2">
+                  <CircleDollarSign className="h-3.5 w-3.5" /> Pagamento
+                </p>
+                <div className="grid grid-cols-2 gap-3 text-xs">
+                  <div>
+                    <p className="text-muted-foreground">Método</p>
+                    <p className="font-medium capitalize">{detailOrder.payment_method}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Status financeiro</p>
+                    <FinancialBadge order={detailOrder} />
+                  </div>
+                  {detailOrder.expires_at && (
+                    <div>
+                      <p className="text-muted-foreground">Expira em</p>
+                      <p className="font-medium">{new Date(detailOrder.expires_at).toLocaleString('pt-BR')}</p>
+                    </div>
+                  )}
+                  {detailOrder.change_amount != null && (
+                    <div>
+                      <p className="text-muted-foreground">Troco para</p>
+                      <p className="font-medium">R$ {Number(detailOrder.change_amount).toFixed(2)}</p>
+                    </div>
+                  )}
+                  <div className="col-span-2">
+                    <p className="text-muted-foreground">ID da transação</p>
+                    <code className="text-[11px] bg-muted px-1.5 py-0.5 rounded">{detailOrder.id}</code>
+                  </div>
+                </div>
+              </div>
+
+              {/* Items */}
               <div>
                 <p className="text-xs text-muted-foreground uppercase tracking-wide mb-2 font-medium">Itens do pedido</p>
                 <div className="space-y-2">
                   {detailOrder.order_items?.map((item: any) => {
                     const img = item.products?.image || item.products?.images?.[0];
                     return (
-                      <div key={item.id} className="flex items-center gap-3 p-3 rounded-lg border border-border/60 bg-card">
+                      <div key={item.id} className="flex items-center gap-3 p-3 rounded-md border border-border/60 bg-card">
                         {img ? (
                           <img src={img} alt={item.products?.name} className="h-14 w-14 rounded-md object-cover border border-border/60" />
                         ) : (
-                          <div className="h-14 w-14 rounded-md bg-muted flex items-center justify-center">
-                            <Package className="h-5 w-5 text-muted-foreground" />
-                          </div>
+                          <div className="h-14 w-14 rounded-md bg-muted flex items-center justify-center"><Package className="h-5 w-5 text-muted-foreground" /></div>
                         )}
                         <div className="flex-1 min-w-0">
                           <p className="font-medium truncate">{item.products?.name || 'Produto'}</p>
@@ -444,12 +583,8 @@ export default function AdminOrders() {
                 </div>
               </div>
 
-              {/* Summary */}
-              <div className="grid grid-cols-2 gap-3 p-4 rounded-lg bg-gradient-to-br from-primary/10 to-accent/5 border border-primary/20">
-                <div>
-                  <p className="text-xs text-muted-foreground">Pagamento</p>
-                  <p className="font-medium capitalize">{detailOrder.payment_method}</p>
-                </div>
+              {/* Total */}
+              <div className="grid grid-cols-2 gap-3 p-4 rounded-md border border-primary/30 bg-primary/5">
                 <div>
                   <p className="text-xs text-muted-foreground">Frete</p>
                   <p className="font-medium">R$ {Number(detailOrder.shipping_cost || 0).toFixed(2)}</p>
@@ -470,8 +605,8 @@ export default function AdminOrders() {
               </div>
             </div>
           )}
-        </DialogContent>
-      </Dialog>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
