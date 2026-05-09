@@ -27,6 +27,8 @@ const flavorSchema = z.object({
   name: z.string().min(1, "Nome é obrigatório"),
   stock: z.coerce.number().min(0, "Estoque não pode ser negativo"),
   price: z.coerce.number().min(0, "Preço não pode ser negativo").optional(),
+  color: z.string().optional(),
+  color_hex: z.string().optional(),
 });
 
 type FlavorFormValues = z.infer<typeof flavorSchema>;
@@ -53,6 +55,8 @@ export function FlavorFormDialog({
       name: "",
       stock: 0,
       price: undefined,
+      color: "",
+      color_hex: "#000000",
     },
   });
 
@@ -62,26 +66,34 @@ export function FlavorFormDialog({
         name: flavor.name,
         stock: flavor.stock,
         price: flavor.price || undefined,
+        color: flavor.color || "",
+        color_hex: flavor.color_hex || "#000000",
       });
     } else {
       form.reset({
         name: "",
         stock: 0,
         price: undefined,
+        color: "",
+        color_hex: "#000000",
       });
     }
   }, [flavor, form]);
 
   const onSubmit = async (values: FlavorFormValues) => {
     try {
+      const payload = {
+        name: values.name,
+        stock: values.stock,
+        price: values.price || null,
+        color: values.color?.trim() || null,
+        color_hex: values.color?.trim() ? (values.color_hex || null) : null,
+      };
+
       if (flavor) {
         const { error } = await supabase
           .from("flavors")
-          .update({
-            name: values.name,
-            stock: values.stock,
-            price: values.price || null,
-          })
+          .update(payload)
           .eq("id", flavor.id);
 
         if (error) throw error;
@@ -93,12 +105,7 @@ export function FlavorFormDialog({
       } else {
         const { error } = await supabase
           .from("flavors")
-          .insert({
-            product_id: productId,
-            name: values.name,
-            stock: values.stock,
-            price: values.price || null,
-          });
+          .insert({ product_id: productId, ...payload });
 
         if (error) throw error;
 
@@ -135,10 +142,10 @@ export function FlavorFormDialog({
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Nome da Variante</FormLabel>
+                  <FormLabel>Nome / Tamanho da Variante</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder="Ex: Seda em Livreto (35 folhas)"
+                      placeholder="Ex: Tamanho M"
                       {...field}
                     />
                   </FormControl>
@@ -146,6 +153,43 @@ export function FlavorFormDialog({
                 </FormItem>
               )}
             />
+
+            <div className="grid grid-cols-[1fr_auto] gap-2 items-end">
+              <FormField
+                control={form.control}
+                name="color"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Cor (opcional)</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Ex: Preto, Azul Marinho" {...field} value={field.value || ""} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="color_hex"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Hex</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="color"
+                        className="h-10 w-14 p-1 cursor-pointer"
+                        {...field}
+                        value={field.value || "#000000"}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            <p className="text-xs text-muted-foreground -mt-2">
+              Crie uma variante para cada combinação de tamanho + cor (ex.: "Tamanho M" / "Preto", "Tamanho M" / "Azul").
+            </p>
 
             <FormField
               control={form.control}

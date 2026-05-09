@@ -7,6 +7,8 @@ export interface Flavor {
   name: string;
   stock: number;
   price?: number;
+  color?: string | null;
+  color_hex?: string | null;
   created_at: string;
 }
 

@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Product } from '@/context/CartContext';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { ShoppingCart, ChevronDown, ChevronUp } from 'lucide-react';
-import { useFlavors } from '@/hooks/useFlavors';
+import { ShoppingCart, ChevronDown, ChevronUp, Check } from 'lucide-react';
+import { useFlavors, Flavor } from '@/hooks/useFlavors';
 import {
   Select,
   SelectContent,
@@ -18,14 +18,16 @@ import {
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
 import ProductReviews from './ProductReviews';
+import { cn } from '@/lib/utils';
 
 interface ProductCardProps {
   product: Product;
-  onAddToCart: (product: Product, flavor?: string) => void;
+  onAddToCart: (product: Product, flavor?: string, color?: string) => void;
 }
 
 const ProductCard = ({ product, onAddToCart }: ProductCardProps) => {
   const [selectedFlavor, setSelectedFlavor] = useState<string | undefined>();
+  const [selectedColor, setSelectedColor] = useState<string | undefined>();
   const [isDescriptionOpen, setIsDescriptionOpen] = useState(false);
   const [showReviews, setShowReviews] = useState(false);
   const [currentPrice, setCurrentPrice] = useState(product.price);
@@ -35,38 +37,62 @@ const ProductCard = ({ product, onAddToCart }: ProductCardProps) => {
   const [activeImage, setActiveImage] = useState(0);
   const { data: flavors } = useFlavors(product.id);
 
-  // Atualiza o preço quando as variantes ou flavor selecionado mudam
+  // Tamanhos únicos (com soma de estoque entre cores)
+  const sizes = useMemo(() => {
+    if (!flavors) return [] as { name: string; totalStock: number }[];
+    const map = new Map<string, number>();
+    flavors.forEach(f => {
+      map.set(f.name, (map.get(f.name) || 0) + f.stock);
+    });
+    return Array.from(map.entries()).map(([name, totalStock]) => ({ name, totalStock }));
+  }, [flavors]);
+
+  // Cores disponíveis para o tamanho selecionado
+  const colorsForSize = useMemo<Flavor[]>(() => {
+    if (!flavors || !selectedFlavor) return [];
+    return flavors.filter(f => f.name === selectedFlavor && f.color);
+  }, [flavors, selectedFlavor]);
+
+  const hasColors = colorsForSize.length > 0;
+
+  // Atualiza o preço quando as variantes/cor selecionada mudam
   useEffect(() => {
     if (flavors && flavors.length > 0) {
       if (selectedFlavor) {
-        const flavor = flavors.find(f => f.name === selectedFlavor);
-        if (flavor && flavor.price) {
-          // Variação tem preço próprio - usa ele diretamente
-          setCurrentPrice(Number(flavor.price));
+        // Procura variante exata (tamanho + cor) ou só tamanho
+        const exact = flavors.find(f =>
+          f.name === selectedFlavor &&
+          (hasColors ? f.color === selectedColor : true)
+        );
+        const fallback = flavors.find(f => f.name === selectedFlavor);
+        const variant = exact || fallback;
+        if (variant?.price) {
+          setCurrentPrice(Number(variant.price));
         } else {
-          // Variação sem preço - usa preço do produto base
           setCurrentPrice(product.price);
         }
       } else {
-        // Define primeira variante como padrão
         const firstFlavor = flavors[0];
         setSelectedFlavor(firstFlavor.name);
-        if (firstFlavor.price) {
-          setCurrentPrice(Number(firstFlavor.price));
-        } else {
-          setCurrentPrice(product.price);
-        }
+        if (firstFlavor.price) setCurrentPrice(Number(firstFlavor.price));
+        else setCurrentPrice(product.price);
       }
     } else {
       setCurrentPrice(product.price);
     }
-  }, [flavors, selectedFlavor, product.price]);
-  
-  // Verifica se a variação selecionada tem preço próprio
-  const selectedFlavorData = flavors?.find(f => f.name === selectedFlavor);
+  }, [flavors, selectedFlavor, selectedColor, hasColors, product.price]);
+
+  // Quando muda o tamanho, seleciona automaticamente a primeira cor disponível
+  useEffect(() => {
+    if (hasColors) {
+      const inStock = colorsForSize.find(f => f.stock > 0);
+      setSelectedColor(inStock?.color || colorsForSize[0].color || undefined);
+    } else {
+      setSelectedColor(undefined);
+    }
+  }, [selectedFlavor, hasColors, colorsForSize]);
   
   // Calculate only product individual discount (not global coupons)
-  // ✅ Aplica desconto do produto base tanto para produto quanto para variações
   const discountValue = product.discount_value || 0;
   const discountType = product.discount_type || 'percent';
   
@@ -77,13 +103,19 @@ const ProductCard = ({ product, onAddToCart }: ProductCardProps) => {
   const hasDiscount = finalPrice < currentPrice;
   const totalDiscountPercent = discountValue;
   
-  // Determine if product is out of stock based on whether it has flavors
   const isOutOfStock = flavors && flavors.length > 0
-    ? flavors.every(flavor => flavor.stock === 0) // All flavors out of stock
-    : product.stock === 0; // Product stock (no flavors)
+    ? flavors.every(flavor => flavor.stock === 0)
+    : product.stock === 0;
   
-  // Check if selected flavor is out of stock
-  const isSelectedFlavorOutOfStock = selectedFlavorData ? selectedFlavorData.stock === 0 : false;
+  const selectedSizeOutOfStock = selectedFlavor
+    ? (sizes.find(s => s.name === selectedFlavor)?.totalStock || 0) === 0
+    : false;
+  const selectedColorVariant = hasColors
+    ? colorsForSize.find(f => f.color === selectedColor)
+    : undefined;
+  const isSelectedVariantOutOfStock = hasColors
+    ? (selectedColorVariant ? selectedColorVariant.stock === 0 : true)
+    : selectedSizeOutOfStock;
 
   const handleAddToCart = () => {
     if (isOutOfStock) {
@@ -91,14 +123,18 @@ const ProductCard = ({ product, onAddToCart }: ProductCardProps) => {
       return;
     }
     if (flavors && flavors.length > 0 && !selectedFlavor) {
-      toast.error('Por favor, selecione um sabor');
+      toast.error('Por favor, selecione um tamanho');
       return;
     }
-    if (isSelectedFlavorOutOfStock) {
-      toast.error('Sabor esgotado');
+    if (hasColors && !selectedColor) {
+      toast.error('Por favor, selecione uma cor');
       return;
     }
-    onAddToCart(product, selectedFlavor);
+    if (isSelectedVariantOutOfStock) {
+      toast.error('Variante esgotada');
+      return;
+    }
+    onAddToCart(product, selectedFlavor, hasColors ? selectedColor : undefined);
   };
 
   return (
@@ -155,13 +191,9 @@ const ProductCard = ({ product, onAddToCart }: ProductCardProps) => {
                 <CollapsibleTrigger asChild>
                   <Button variant="ghost" size="sm" className="h-auto p-0 mt-1 text-primary hover:text-primary/80">
                     {isDescriptionOpen ? (
-                      <>
-                        Ver menos <ChevronUp className="h-3 w-3 ml-1" />
-                      </>
+                      <>Ver menos <ChevronUp className="h-3 w-3 ml-1" /></>
                     ) : (
-                      <>
-                        Ver mais <ChevronDown className="h-3 w-3 ml-1" />
-                      </>
+                      <>Ver mais <ChevronDown className="h-3 w-3 ml-1" /></>
                     )}
                   </Button>
                 </CollapsibleTrigger>
@@ -170,8 +202,8 @@ const ProductCard = ({ product, onAddToCart }: ProductCardProps) => {
           )}
         </div>
         
-        <div className="min-h-[80px]">
-          {flavors && flavors.length > 0 && !isOutOfStock && (
+        <div className="space-y-3 min-h-[80px]">
+          {sizes.length > 0 && !isOutOfStock && (
             <div className="space-y-2">
               <label className="text-sm font-medium">Escolha:</label>
               <Select value={selectedFlavor} onValueChange={setSelectedFlavor}>
@@ -179,17 +211,60 @@ const ProductCard = ({ product, onAddToCart }: ProductCardProps) => {
                   <SelectValue placeholder="Selecione um item" />
                 </SelectTrigger>
                 <SelectContent>
-                  {flavors.map((flavor) => (
-                    <SelectItem 
-                      key={flavor.id} 
-                      value={flavor.name}
-                      disabled={flavor.stock === 0}
+                  {sizes.map((size) => (
+                    <SelectItem
+                      key={size.name}
+                      value={size.name}
+                      disabled={size.totalStock === 0}
                     >
-                      {flavor.name} {flavor.stock === 0 ? '(Esgotado)' : ''}
+                      {size.name} {size.totalStock === 0 ? '(Esgotado)' : ''}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+          )}
+
+          {hasColors && !isOutOfStock && (
+            <div className="space-y-2">
+              <label className="text-sm font-medium">
+                Cor: <span className="text-muted-foreground font-normal">{selectedColor}</span>
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {colorsForSize.map((variant) => {
+                  const isSelected = variant.color === selectedColor;
+                  const out = variant.stock === 0;
+                  return (
+                    <button
+                      key={variant.id}
+                      type="button"
+                      title={`${variant.color}${out ? ' (Esgotado)' : ''}`}
+                      disabled={out}
+                      onClick={() => setSelectedColor(variant.color || undefined)}
+                      className={cn(
+                        'relative h-9 w-9 rounded-full border-2 transition-all',
+                        isSelected
+                          ? 'border-primary ring-2 ring-primary/40 scale-110'
+                          : 'border-border hover:border-primary/60',
+                        out && 'opacity-40 cursor-not-allowed'
+                      )}
+                      style={{ backgroundColor: variant.color_hex || '#ccc' }}
+                    >
+                      {isSelected && (
+                        <Check
+                          className="absolute inset-0 m-auto h-4 w-4 drop-shadow"
+                          style={{
+                            color: variant.color_hex && /^#(fff|ffffff|f{6})$/i.test(variant.color_hex) ? '#000' : '#fff',
+                          }}
+                        />
+                      )}
+                      {out && (
+                        <span className="absolute inset-0 m-auto block h-px w-[140%] rotate-45 bg-destructive" />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           )}
         </div>
@@ -208,7 +283,7 @@ const ProductCard = ({ product, onAddToCart }: ProductCardProps) => {
           <Button
             onClick={handleAddToCart}
             size="sm"
-            disabled={isOutOfStock}
+            disabled={isOutOfStock || isSelectedVariantOutOfStock}
             className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-glow disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <ShoppingCart className="h-4 w-4 mr-2" />
