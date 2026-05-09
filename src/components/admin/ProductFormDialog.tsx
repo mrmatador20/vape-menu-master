@@ -90,6 +90,7 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
   });
 
   useEffect(() => {
+    if (!open) return;
     if (product) {
       form.reset({
         name: product.name,
