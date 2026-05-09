@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -8,17 +8,8 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import {
   Form,
   FormControl,
@@ -37,15 +28,17 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { Product } from "@/context/CartContext";
-import { useFlavors, Flavor } from "@/hooks/useFlavors";
-import { FlavorFormDialog } from "./FlavorFormDialog";
-import { Trash2, Edit, Plus, Upload, Link, Loader2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ProductImagesField } from "./ProductImagesField";
+import { CategoryCombobox } from "./CategoryCombobox";
+import { SubcategoryCombobox } from "./SubcategoryCombobox";
+import { VariantsTable } from "./VariantsTable";
+import { Info, FolderTree, Image as ImageIcon, Package, Layers, BadgePercent, Lock } from "lucide-react";
 
 const productSchema = z.object({
   name: z.string().min(1, "Nome é obrigatório"),
@@ -57,6 +50,7 @@ const productSchema = z.object({
   display_order: z.string().min(0, "Posição é obrigatória"),
   discount_type: z.enum(['percent', 'fixed']).optional(),
   discount_value: z.string().optional(),
+  visible_in_all: z.boolean().optional(),
   image: z.string().url("URL inválida").optional().or(z.literal("")),
   images: z.array(z.string().url()).max(12, "Máximo de 12 imagens").optional(),
   description: z.string().optional(),
@@ -70,92 +64,29 @@ interface ProductFormDialogProps {
   product?: Product | null;
 }
 
+const defaults: ProductFormValues = {
+  name: "",
+  category: "",
+  subcategory: "",
+  price: "",
+  stock: "0",
+  min_stock: "10",
+  display_order: "0",
+  discount_type: "percent",
+  discount_value: "0",
+  visible_in_all: true,
+  image: "",
+  images: [],
+  description: "",
+};
+
 export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDialogProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [isFlavorDialogOpen, setIsFlavorDialogOpen] = useState(false);
-  const [editingFlavor, setEditingFlavor] = useState<Flavor | null>(null);
-  const [deleteFlavorId, setDeleteFlavorId] = useState<string | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const { data: flavors } = useFlavors(product?.id || "");
-
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    // Validate file type
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
-    if (!allowedTypes.includes(file.type)) {
-      toast({
-        title: "Tipo de arquivo inválido",
-        description: "Use imagens JPG, PNG, WebP ou GIF",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      toast({
-        title: "Arquivo muito grande",
-        description: "O tamanho máximo é 5MB",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsUploading(true);
-    try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-      const filePath = `products/${fileName}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('product-images')
-        .upload(filePath, file);
-
-      if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('product-images')
-        .getPublicUrl(filePath);
-
-      form.setValue('image', publicUrl);
-      toast({
-        title: "Imagem enviada",
-        description: "A imagem foi carregada com sucesso.",
-      });
-    } catch (error: any) {
-      toast({
-        title: "Erro ao enviar imagem",
-        description: error.message,
-        variant: "destructive",
-      });
-    } finally {
-      setIsUploading(false);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
-    }
-  };
 
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productSchema),
-    defaultValues: {
-      name: "",
-      category: "",
-      subcategory: "",
-      price: "",
-      stock: "0",
-      min_stock: "10",
-      display_order: "0",
-      discount_type: "percent",
-      discount_value: "0",
-      image: "",
-      images: [],
-      description: "",
-    },
+    defaultValues: defaults,
   });
 
   useEffect(() => {
@@ -170,6 +101,7 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
         display_order: ((product as any).display_order || 0).toString(),
         discount_type: ((product as any).discount_type || 'percent') as 'percent' | 'fixed',
         discount_value: ((product as any).discount_value || 0).toString(),
+        visible_in_all: (product as any).visible_in_all !== false,
         image: product.image || "",
         images: (product as any).images && (product as any).images.length
           ? (product as any).images
@@ -177,49 +109,9 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
         description: product.description || "",
       });
     } else {
-      form.reset({
-        name: "",
-        category: "",
-        subcategory: "",
-        price: "",
-        stock: "0",
-        min_stock: "10",
-        display_order: "0",
-        discount_type: "percent",
-        discount_value: "0",
-        image: "",
-        images: [],
-        description: "",
-      });
+      form.reset(defaults);
     }
   }, [product, form]);
-
-  const handleDeleteFlavor = async () => {
-    if (!deleteFlavorId) return;
-
-    try {
-      const { error } = await supabase
-        .from("flavors")
-        .delete()
-        .eq("id", deleteFlavorId);
-
-      if (error) throw error;
-
-      toast({
-        title: "Variante excluída",
-        description: "A variante foi removida com sucesso.",
-      });
-
-      queryClient.invalidateQueries({ queryKey: ["flavors", product?.id] });
-    } catch (error: any) {
-      toast({
-        title: "Erro ao excluir",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-    setDeleteFlavorId(null);
-  };
 
   const onSubmit = async (values: ProductFormValues) => {
     const productData = {
@@ -232,367 +124,228 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
       display_order: parseInt(values.display_order),
       discount_type: values.discount_type || 'percent',
       discount_value: parseFloat(values.discount_value || "0"),
+      visible_in_all: values.visible_in_all ?? true,
       image: (values.images && values.images[0]) || values.image || null,
       images: values.images ?? [],
       description: values.description || null,
     };
 
     if (product) {
-      const { error } = await supabase
-        .from('products')
-        .update(productData)
-        .eq('id', product.id);
-
+      const { error } = await supabase.from('products').update(productData).eq('id', product.id);
       if (error) {
-        toast({
-          title: "Erro ao atualizar",
-          description: error.message,
-          variant: "destructive",
-        });
+        toast({ title: "Erro ao atualizar", description: error.message, variant: "destructive" });
         return;
       }
-
-      toast({
-        title: "Produto atualizado",
-        description: "O produto foi atualizado com sucesso.",
-      });
+      toast({ title: "Produto atualizado", description: "Alterações salvas com sucesso." });
     } else {
-      const { error } = await supabase
-        .from('products')
-        .insert([productData]);
-
+      const { error } = await supabase.from('products').insert([productData]);
       if (error) {
-        toast({
-          title: "Erro ao criar",
-          description: error.message,
-          variant: "destructive",
-        });
+        toast({ title: "Erro ao criar", description: error.message, variant: "destructive" });
         return;
       }
-
-      toast({
-        title: "Produto criado",
-        description: "O produto foi adicionado com sucesso.",
-      });
+      toast({ title: "Produto criado", description: "Adicionado ao catálogo." });
     }
 
     queryClient.invalidateQueries({ queryKey: ['products'] });
     onOpenChange(false);
-    form.reset();
+    form.reset(defaults);
   };
+
+  const variantsDisabled = !product;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>{product ? "Editar Produto" : "Adicionar Produto"}</DialogTitle>
+      <DialogContent className="max-w-4xl max-h-[92vh] overflow-y-auto p-0">
+        <DialogHeader className="p-6 pb-4 border-b">
+          <DialogTitle className="text-2xl">{product ? "Editar produto" : "Novo produto"}</DialogTitle>
           <DialogDescription>
-            {product ? "Edite as informações do produto" : "Adicione um novo produto ao catálogo"}
+            {product ? "Atualize as informações, imagens e variantes do produto." : "Preencha as informações para adicionar um novo produto ao catálogo."}
           </DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Nome</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Nome do produto" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="category"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Categoria</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Ex: v250, v400, seda" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="subcategory"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Subcategoria (Opcional)</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Ex: dichavador, seda, etc." {...field} />
-                  </FormControl>
-                  <p className="text-xs text-muted-foreground">
-                    Subcategorias aparecem dentro da categoria principal
-                  </p>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="price"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Preço</FormLabel>
-                    <FormControl>
-                      <Input type="number" step="0.01" placeholder="0.00" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="stock"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Estoque</FormLabel>
-                    <FormControl>
-                      <Input type="number" placeholder="0" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <div className="grid grid-cols-3 gap-4">
-              <FormField
-                control={form.control}
-                name="min_stock"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Nível Mínimo de Estoque</FormLabel>
-                    <FormControl>
-                      <Input type="number" placeholder="10" {...field} />
-                    </FormControl>
-                    <p className="text-xs text-muted-foreground">
-                      Sistema alertará quando atingir este nível
-                    </p>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="display_order"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Posição de Exibição</FormLabel>
-                    <FormControl>
-                      <Input type="number" placeholder="0" {...field} />
-                    </FormControl>
-                    <p className="text-xs text-muted-foreground">
-                      Ordem em que aparece na lista
-                    </p>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="discount_type"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Tipo de Desconto</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione o tipo" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="percent">Percentual (%)</SelectItem>
-                        <SelectItem value="fixed">Valor Fixo (R$)</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <FormField
-              control={form.control}
-              name="discount_value"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>
-                    {form.watch('discount_type') === 'percent' ? 'Desconto (%)' : 'Desconto (R$)'}
-                  </FormLabel>
-                  <FormControl>
-                    <Input 
-                      type="number" 
-                      step={form.watch('discount_type') === 'percent' ? '1' : '0.01'}
-                      min="0" 
-                      max={form.watch('discount_type') === 'percent' ? '100' : undefined}
-                      placeholder={form.watch('discount_type') === 'percent' ? '0-100' : '0.00'}
-                      {...field} 
-                    />
-                  </FormControl>
-                  <p className="text-xs text-muted-foreground">
-                    {form.watch('discount_type') === 'percent' 
-                      ? 'Desconto percentual individual (0-100%)' 
-                      : 'Valor fixo de desconto em reais'}
-                  </p>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-
-            <FormField
-              control={form.control}
-              name="images"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Fotos do Produto (até 12)</FormLabel>
-                  <ProductImagesField
-                    value={field.value ?? []}
-                    onChange={(next) => {
-                      field.onChange(next);
-                      form.setValue('image', next[0] ?? '');
-                    }}
-                  />
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Descrição</FormLabel>
-                  <FormControl>
-                    <Textarea placeholder="Descrição do produto" rows={4} {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {product && (
-              <div className="space-y-4 mt-6 pt-6 border-t">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-lg font-semibold">Variantes do Produto</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Configure diferentes formatos com preços específicos (Ex: Livreto, Unidade)
-                    </p>
-                  </div>
-                  <Button
-                    type="button"
-                    size="sm"
-                    onClick={() => {
-                      setEditingFlavor(null);
-                      setIsFlavorDialogOpen(true);
-                    }}
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Adicionar Variante
-                  </Button>
-                </div>
-
-                {flavors && flavors.length > 0 ? (
-                  <div className="space-y-2">
-                    {flavors.map((flavor) => (
-                      <div
-                        key={flavor.id}
-                        className="flex items-center justify-between p-3 border rounded-lg"
-                      >
-                        <div>
-                          <p className="font-medium">{flavor.name}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {flavor.price ? `R$ ${Number(flavor.price).toFixed(2)}` : "Usa preço base"} • Estoque: {flavor.stock}
-                          </p>
-                        </div>
-                        <div className="flex gap-2">
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              setEditingFlavor(flavor);
-                              setIsFlavorDialogOpen(true);
-                            }}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setDeleteFlavorId(flavor.id)}
-                          >
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-sm text-muted-foreground">
-                    Nenhuma variante cadastrada. Adicione variantes para permitir que os clientes escolham entre diferentes formatos.
-                  </p>
-                )}
+          <form onSubmit={form.handleSubmit(onSubmit)}>
+            <Tabs defaultValue="info" className="w-full">
+              <div className="px-6 pt-4 border-b">
+                <TabsList className="bg-transparent p-0 h-auto gap-1 flex-wrap justify-start">
+                  <TabsTrigger value="info" className="data-[state=active]:bg-accent gap-2"><Info className="h-4 w-4" />Básico</TabsTrigger>
+                  <TabsTrigger value="cat" className="data-[state=active]:bg-accent gap-2"><FolderTree className="h-4 w-4" />Categorização</TabsTrigger>
+                  <TabsTrigger value="img" className="data-[state=active]:bg-accent gap-2"><ImageIcon className="h-4 w-4" />Imagens</TabsTrigger>
+                  <TabsTrigger value="stock" className="data-[state=active]:bg-accent gap-2"><Package className="h-4 w-4" />Estoque</TabsTrigger>
+                  <TabsTrigger value="variants" className="data-[state=active]:bg-accent gap-2" disabled={variantsDisabled}>
+                    {variantsDisabled ? <Lock className="h-4 w-4" /> : <Layers className="h-4 w-4" />}
+                    Variantes
+                  </TabsTrigger>
+                  <TabsTrigger value="discount" className="data-[state=active]:bg-accent gap-2"><BadgePercent className="h-4 w-4" />Desconto</TabsTrigger>
+                </TabsList>
               </div>
-            )}
 
-            <div className="flex justify-end gap-2">
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-                Cancelar
-              </Button>
-              <Button type="submit">
-                {product ? "Atualizar" : "Criar"}
-              </Button>
-            </div>
+              <div className="p-6 space-y-6 min-h-[420px]">
+                {/* Informações básicas */}
+                <TabsContent value="info" className="space-y-4 mt-0">
+                  <FormField control={form.control} name="name" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Nome do produto</FormLabel>
+                      <FormControl><Input placeholder="Ex: Legging Premium Fox Velour" {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                  <FormField control={form.control} name="description" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Descrição</FormLabel>
+                      <FormControl><Textarea rows={5} placeholder="Descreva os detalhes, materiais e diferenciais do produto..." {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField control={form.control} name="price" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Preço base (R$)</FormLabel>
+                        <FormControl><Input type="number" step="0.01" placeholder="0,00" {...field} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="display_order" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Posição na vitrine</FormLabel>
+                        <FormControl><Input type="number" placeholder="0" {...field} /></FormControl>
+                        <p className="text-xs text-muted-foreground">Menor número aparece primeiro.</p>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                  </div>
+                </TabsContent>
+
+                {/* Categorização */}
+                <TabsContent value="cat" className="space-y-4 mt-0">
+                  <FormField control={form.control} name="category" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Categoria</FormLabel>
+                      <FormControl>
+                        <CategoryCombobox value={field.value} onChange={(name) => {
+                          field.onChange(name);
+                          form.setValue('subcategory', '');
+                        }} />
+                      </FormControl>
+                      <p className="text-xs text-muted-foreground">Pesquise ou crie uma categoria sem sair desta tela.</p>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                  <FormField control={form.control} name="subcategory" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Subcategoria</FormLabel>
+                      <FormControl>
+                        <SubcategoryCombobox categoryName={form.watch('category')} value={field.value || ''} onChange={field.onChange} />
+                      </FormControl>
+                      <p className="text-xs text-muted-foreground">Filtra automaticamente pelas subcategorias da categoria selecionada.</p>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                </TabsContent>
+
+                {/* Imagens */}
+                <TabsContent value="img" className="space-y-4 mt-0">
+                  <FormField control={form.control} name="images" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Fotos do produto (até 12)</FormLabel>
+                      <ProductImagesField value={field.value ?? []} onChange={(next) => {
+                        field.onChange(next);
+                        form.setValue('image', next[0] ?? '');
+                      }} />
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                </TabsContent>
+
+                {/* Estoque */}
+                <TabsContent value="stock" className="space-y-4 mt-0">
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField control={form.control} name="stock" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Estoque base</FormLabel>
+                        <FormControl><Input type="number" placeholder="0" {...field} /></FormControl>
+                        <p className="text-xs text-muted-foreground">Usado quando o produto não tem variantes.</p>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="min_stock" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Alerta de estoque mínimo</FormLabel>
+                        <FormControl><Input type="number" placeholder="10" {...field} /></FormControl>
+                        <p className="text-xs text-muted-foreground">Sistema avisa ao atingir este nível.</p>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                  </div>
+                  <FormField control={form.control} name="visible_in_all" render={({ field }) => (
+                    <FormItem className="flex items-center justify-between rounded-lg border p-4">
+                      <div className="space-y-0.5">
+                        <FormLabel className="text-base">Visível em "Todos"</FormLabel>
+                        <p className="text-xs text-muted-foreground">Quando desativado, o produto só aparece dentro da sua categoria.</p>
+                      </div>
+                      <FormControl>
+                        <Switch checked={field.value} onCheckedChange={field.onChange} />
+                      </FormControl>
+                    </FormItem>
+                  )} />
+                </TabsContent>
+
+                {/* Variantes */}
+                <TabsContent value="variants" className="mt-0">
+                  {product ? (
+                    <VariantsTable productId={product.id} productName={product.name} />
+                  ) : (
+                    <div className="text-center py-12 text-muted-foreground">
+                      <Lock className="h-10 w-10 mx-auto mb-2 opacity-30" />
+                      <p>Salve o produto primeiro para gerenciar variantes.</p>
+                    </div>
+                  )}
+                </TabsContent>
+
+                {/* Desconto */}
+                <TabsContent value="discount" className="space-y-4 mt-0">
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField control={form.control} name="discount_type" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Tipo de desconto</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="percent">Percentual (%)</SelectItem>
+                            <SelectItem value="fixed">Valor Fixo (R$)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="discount_value" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{form.watch('discount_type') === 'percent' ? 'Desconto (%)' : 'Desconto (R$)'}</FormLabel>
+                        <FormControl>
+                          <Input type="number"
+                            step={form.watch('discount_type') === 'percent' ? '1' : '0.01'}
+                            min="0"
+                            max={form.watch('discount_type') === 'percent' ? '100' : undefined}
+                            placeholder={form.watch('discount_type') === 'percent' ? '0-100' : '0,00'}
+                            {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                  </div>
+                </TabsContent>
+              </div>
+            </Tabs>
+
+            <DialogFooter className="p-6 border-t bg-muted/20">
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
+              <Button type="submit">{product ? 'Salvar alterações' : 'Criar produto'}</Button>
+            </DialogFooter>
           </form>
         </Form>
       </DialogContent>
-
-      {product && (
-        <>
-          <FlavorFormDialog
-            open={isFlavorDialogOpen}
-            onOpenChange={setIsFlavorDialogOpen}
-            productId={product.id}
-            flavor={editingFlavor}
-          />
-
-          <AlertDialog open={!!deleteFlavorId} onOpenChange={() => setDeleteFlavorId(null)}>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Tem certeza que deseja excluir esta variante? Esta ação não pode ser desfeita.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                <AlertDialogAction onClick={handleDeleteFlavor} className="bg-destructive hover:bg-destructive/90">
-                  Excluir
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        </>
-      )}
     </Dialog>
   );
 }
