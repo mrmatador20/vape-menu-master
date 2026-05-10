@@ -178,7 +178,7 @@ export default function QuickViewSheet({
                     i === activeImage ? 'border-primary' : 'border-transparent opacity-60 hover:opacity-100'
                   )}
                 >
-                  <img src={url} alt="" className="w-full h-full object-cover" />
+                  <img src={optimizedImage(url, { width: 160, quality: 70 })} loading="lazy" decoding="async" alt="" className="w-full h-full object-cover" />
                 </button>
               ))}
             </div>
