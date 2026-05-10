@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Product } from '@/context/CartContext';
 import { Card } from '@/components/ui/card';
 import { Eye } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, optimizedImage, imageSrcSet } from '@/lib/utils';
 
 interface ProductCardProps {
   product: Product;
