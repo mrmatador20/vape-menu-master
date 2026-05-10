@@ -18,7 +18,7 @@ import {
 import { ShoppingCart, Check, ChevronDown, ChevronUp } from 'lucide-react';
 import { useFlavors, Flavor } from '@/hooks/useFlavors';
 import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
+import { cn, optimizedImage, imageSrcSet } from '@/lib/utils';
 import {
   Collapsible,
   CollapsibleContent,
