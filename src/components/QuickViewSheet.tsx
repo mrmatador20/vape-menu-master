@@ -157,8 +157,11 @@ export default function QuickViewSheet({
               </div>
             )}
             <img
-              src={gallery[activeImage] || product.image}
+              src={optimizedImage(gallery[activeImage] || product.image, { width: 1024, quality: 80 })}
+              srcSet={imageSrcSet(gallery[activeImage] || product.image, [480, 768, 1024, 1280])}
+              sizes="(min-width: 1024px) 50vw, 100vw"
               alt={product.name}
+              decoding="async"
               className="w-full h-full object-cover"
             />
           </div>
