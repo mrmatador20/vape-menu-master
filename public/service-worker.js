@@ -5,9 +5,40 @@ self.addEventListener('install', (event) => {
   self.skipWaiting();
 });
 
+const IMAGE_CACHE = 'fox-images-v1';
+
 self.addEventListener('activate', (event) => {
   console.log('[Service Worker] Activating...');
-  event.waitUntil(self.clients.claim());
+  event.waitUntil(
+    caches.keys().then((keys) =>
+      Promise.all(keys.filter((k) => k !== IMAGE_CACHE && k.startsWith('fox-images-')).map((k) => caches.delete(k)))
+    ).then(() => self.clients.claim())
+  );
+});
+
+// Cache-first agressivo para imagens transformadas do Supabase Storage
+self.addEventListener('fetch', (event) => {
+  const req = event.request;
+  if (req.method !== 'GET') return;
+  const url = new URL(req.url);
+  const isStorageImage =
+    url.pathname.includes('/storage/v1/render/image/public/') ||
+    url.pathname.includes('/storage/v1/object/public/');
+  if (!isStorageImage) return;
+
+  event.respondWith(
+    caches.open(IMAGE_CACHE).then(async (cache) => {
+      const cached = await cache.match(req);
+      if (cached) return cached;
+      try {
+        const res = await fetch(req);
+        if (res && res.status === 200) cache.put(req, res.clone());
+        return res;
+      } catch {
+        return cached || Response.error();
+      }
+    })
+  );
 });
 
 self.addEventListener('push', (event) => {
