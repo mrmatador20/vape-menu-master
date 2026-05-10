@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Product } from '@/context/CartContext';
 import { Card } from '@/components/ui/card';
 import { Eye } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, optimizedImage, imageSrcSet } from '@/lib/utils';
 
 interface ProductCardProps {
   product: Product;
@@ -49,9 +49,12 @@ const ProductCard = ({ product, onQuickView }: ProductCardProps) => {
         )}
 
         <img
-          src={primary}
+          src={optimizedImage(primary, { width: 600 })}
+          srcSet={imageSrcSet(primary)}
+          sizes="(min-width: 1280px) 25vw, (min-width: 1024px) 33vw, 50vw"
           alt={product.name}
           loading="lazy"
+          decoding="async"
           className={cn(
             'absolute inset-0 w-full h-full object-cover transition-opacity duration-700',
             hovered && secondary ? 'opacity-0' : 'opacity-100'
@@ -59,10 +62,13 @@ const ProductCard = ({ product, onQuickView }: ProductCardProps) => {
         />
         {secondary && (
           <img
-            src={secondary}
+            src={optimizedImage(secondary, { width: 600 })}
+            srcSet={imageSrcSet(secondary)}
+            sizes="(min-width: 1280px) 25vw, (min-width: 1024px) 33vw, 50vw"
             alt=""
             aria-hidden="true"
             loading="lazy"
+            decoding="async"
             className={cn(
               'absolute inset-0 w-full h-full object-cover transition-opacity duration-700',
               hovered ? 'opacity-100' : 'opacity-0'

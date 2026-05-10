@@ -18,7 +18,7 @@ import {
 import { ShoppingCart, Check, ChevronDown, ChevronUp } from 'lucide-react';
 import { useFlavors, Flavor } from '@/hooks/useFlavors';
 import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
+import { cn, optimizedImage, imageSrcSet } from '@/lib/utils';
 import {
   Collapsible,
   CollapsibleContent,
@@ -157,8 +157,11 @@ export default function QuickViewSheet({
               </div>
             )}
             <img
-              src={gallery[activeImage] || product.image}
+              src={optimizedImage(gallery[activeImage] || product.image, { width: 1024, quality: 80 })}
+              srcSet={imageSrcSet(gallery[activeImage] || product.image, [480, 768, 1024, 1280])}
+              sizes="(min-width: 1024px) 50vw, 100vw"
               alt={product.name}
+              decoding="async"
               className="w-full h-full object-cover"
             />
           </div>
@@ -175,7 +178,7 @@ export default function QuickViewSheet({
                     i === activeImage ? 'border-primary' : 'border-transparent opacity-60 hover:opacity-100'
                   )}
                 >
-                  <img src={url} alt="" className="w-full h-full object-cover" />
+                  <img src={optimizedImage(url, { width: 160, quality: 70 })} loading="lazy" decoding="async" alt="" className="w-full h-full object-cover" />
                 </button>
               ))}
             </div>
