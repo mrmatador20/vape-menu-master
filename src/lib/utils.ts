@@ -10,6 +10,7 @@ export function cn(...inputs: ClassValue[]) {
  * de transformação de imagens (resize + qualidade), reduzindo drasticamente
  * o peso das imagens servidas em listagens/cards.
  *
+ * O Supabase serve automaticamente WebP/AVIF baseado no header Accept do navegador.
  * Se a URL não for do Supabase Storage, retorna como está.
  */
 export function optimizedImage(
@@ -18,7 +19,7 @@ export function optimizedImage(
 ): string {
   if (!url) return '';
   try {
-    const { width = 600, quality = 70, resize = 'cover' } = opts;
+    const { width = 600, quality = 65, resize = 'cover' } = opts;
     if (url.includes('/storage/v1/object/public/')) {
       const transformed = url.replace(
         '/storage/v1/object/public/',
@@ -38,11 +39,20 @@ export function optimizedImage(
  */
 export function imageSrcSet(
   url: string | undefined | null,
-  widths: number[] = [320, 480, 768, 1024],
-  quality = 70
+  widths: number[] = [240, 360, 480, 720],
+  quality = 65
 ): string {
   if (!url || !url.includes('/storage/v1/object/public/')) return '';
   return widths
     .map((w) => `${optimizedImage(url, { width: w, quality })} ${w}w`)
     .join(', ');
+}
+
+/**
+ * Gera URL de placeholder ultra-leve (~1-3kb) para blur-up enquanto a
+ * imagem real carrega. Usa width muito pequeno + qualidade baixa.
+ */
+export function placeholderImage(url: string | undefined | null): string {
+  if (!url) return '';
+  return optimizedImage(url, { width: 24, quality: 30 });
 }

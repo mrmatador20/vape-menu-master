@@ -2,15 +2,18 @@ import { useState } from 'react';
 import { Product } from '@/context/CartContext';
 import { Card } from '@/components/ui/card';
 import { Eye } from 'lucide-react';
-import { cn, optimizedImage, imageSrcSet } from '@/lib/utils';
+import { cn, optimizedImage, imageSrcSet, placeholderImage } from '@/lib/utils';
 
 interface ProductCardProps {
   product: Product;
   onQuickView: (product: Product) => void;
+  /** Se true, carrega com prioridade (acima da dobra). */
+  priority?: boolean;
 }
 
-const ProductCard = ({ product, onQuickView }: ProductCardProps) => {
+const ProductCard = ({ product, onQuickView, priority = false }: ProductCardProps) => {
   const [hovered, setHovered] = useState(false);
+  const [loaded, setLoaded] = useState(false);
   const gallery = (product.images && product.images.length > 0)
     ? product.images
     : (product.image ? [product.image] : []);
@@ -25,6 +28,8 @@ const ProductCard = ({ product, onQuickView }: ProductCardProps) => {
   const hasDiscount = finalPrice < product.price;
   const isOutOfStock = product.stock === 0;
 
+  const placeholder = placeholderImage(primary);
+
   return (
     <Card
       onClick={() => onQuickView(product)}
@@ -35,7 +40,10 @@ const ProductCard = ({ product, onQuickView }: ProductCardProps) => {
         isOutOfStock && 'opacity-70'
       )}
     >
-      <div className="aspect-[4/5] overflow-hidden bg-muted relative rounded-md">
+      <div
+        className="overflow-hidden bg-muted relative rounded-md"
+        style={{ aspectRatio: '4 / 5', contain: 'layout paint' }}
+      >
         {isOutOfStock && (
           <div className="absolute inset-0 bg-background/60 flex items-center justify-center z-10">
             <span className="text-foreground text-xs tracking-[0.3em] uppercase font-light">Esgotado</span>
@@ -48,38 +56,53 @@ const ProductCard = ({ product, onQuickView }: ProductCardProps) => {
           </span>
         )}
 
+        {/* Placeholder blur (LQIP) */}
+        {placeholder && !loaded && (
+          <img
+            src={placeholder}
+            alt=""
+            aria-hidden="true"
+            className="absolute inset-0 w-full h-full object-cover scale-110 blur-lg"
+          />
+        )}
+
         <img
-          src={optimizedImage(primary, { width: 600 })}
-          srcSet={imageSrcSet(primary)}
+          src={optimizedImage(primary, { width: 480, quality: 65 })}
+          srcSet={imageSrcSet(primary, [240, 360, 480, 720])}
           sizes="(min-width: 1280px) 25vw, (min-width: 1024px) 33vw, 50vw"
           alt={product.name}
-          loading="lazy"
+          loading={priority ? 'eager' : 'lazy'}
+          // @ts-expect-error fetchpriority is valid HTML attribute
+          fetchpriority={priority ? 'high' : 'low'}
           decoding="async"
+          width={480}
+          height={600}
+          onLoad={() => setLoaded(true)}
           className={cn(
-            'absolute inset-0 w-full h-full object-cover transition-opacity duration-700',
-            hovered && secondary ? 'opacity-0' : 'opacity-100'
+            'absolute inset-0 w-full h-full object-cover transition-opacity duration-500',
+            loaded ? 'opacity-100' : 'opacity-0',
+            hovered && secondary ? 'opacity-0' : ''
           )}
         />
-        {secondary && (
+        {secondary && hovered && (
           <img
-            src={optimizedImage(secondary, { width: 600 })}
-            srcSet={imageSrcSet(secondary)}
+            src={optimizedImage(secondary, { width: 480, quality: 65 })}
+            srcSet={imageSrcSet(secondary, [240, 360, 480, 720])}
             sizes="(min-width: 1280px) 25vw, (min-width: 1024px) 33vw, 50vw"
             alt=""
             aria-hidden="true"
             loading="lazy"
             decoding="async"
-            className={cn(
-              'absolute inset-0 w-full h-full object-cover transition-opacity duration-700',
-              hovered ? 'opacity-100' : 'opacity-0'
-            )}
+            width={480}
+            height={600}
+            className="absolute inset-0 w-full h-full object-cover opacity-100 transition-opacity duration-500"
           />
         )}
 
         {!isOutOfStock && (
           <div
             className={cn(
-              'absolute inset-x-3 bottom-3 z-10 transition-all duration-300',
+              'absolute inset-x-3 bottom-3 z-10 transition-all duration-300 hidden md:block',
               hovered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'
             )}
           >
@@ -89,7 +112,7 @@ const ProductCard = ({ product, onQuickView }: ProductCardProps) => {
                 e.stopPropagation();
                 onQuickView(product);
               }}
-              className="w-full bg-background/95 backdrop-blur text-foreground text-[11px] tracking-[0.2em] uppercase py-2.5 rounded-sm hover:bg-foreground hover:text-background transition-colors flex items-center justify-center gap-2"
+              className="w-full bg-background/95 text-foreground text-[11px] tracking-[0.2em] uppercase py-2.5 rounded-sm hover:bg-foreground hover:text-background transition-colors flex items-center justify-center gap-2"
             >
               <Eye className="h-3.5 w-3.5" />
               Visualização rápida
