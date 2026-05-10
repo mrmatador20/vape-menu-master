@@ -132,11 +132,12 @@ const Index = () => {
 
               <div className="transition-all duration-500">
                 <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-6 gap-y-12 md:gap-x-10 md:gap-y-16">
-                  {filteredProducts.map((product) => (
+                  {filteredProducts.map((product, idx) => (
                     <ProductCard
                       key={product.id}
                       product={product}
                       onQuickView={setQuickViewProduct}
+                      priority={idx < 4}
                     />
                   ))}
                 </div>
