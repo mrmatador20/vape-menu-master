@@ -57,7 +57,13 @@ export default function QuickViewSheet({
     if (!flavors) return [] as { name: string; totalStock: number }[];
     const map = new Map<string, number>();
     flavors.forEach(f => map.set(f.name, (map.get(f.name) || 0) + f.stock));
-    return Array.from(map.entries()).map(([name, totalStock]) => ({ name, totalStock }));
+    return Array.from(map.entries())
+      .map(([name, totalStock]) => ({ name, totalStock }))
+      .sort((a, b) => {
+        if (a.totalStock > 0 && b.totalStock === 0) return -1;
+        if (a.totalStock === 0 && b.totalStock > 0) return 1;
+        return 0;
+      });
   }, [flavors]);
 
   const colorsForSize = useMemo<Flavor[]>(() => {
@@ -86,7 +92,8 @@ export default function QuickViewSheet({
     setActiveImage(0);
     setShowReviews(false);
     if (flavors && flavors.length > 0) {
-      setSelectedFlavor(flavors[0].name);
+      const inStock = flavors.find(f => f.stock > 0);
+      setSelectedFlavor((inStock || flavors[0]).name);
     } else {
       setSelectedFlavor(undefined);
     }
