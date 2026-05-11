@@ -131,22 +131,86 @@ const Index = () => {
               />
 
               <div className="transition-all duration-500">
-                <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-6 gap-y-12 md:gap-x-10 md:gap-y-16">
-                  {filteredProducts.map((product, idx) => (
-                    <ProductCard
-                      key={product.id}
-                      product={product}
-                      onQuickView={setQuickViewProduct}
-                      priority={idx < 4}
-                    />
-                  ))}
-                </div>
-                {filteredProducts.length === 0 && (
-                  <div className="text-center py-24">
-                    <p className="text-muted-foreground text-sm tracking-wide">
-                      Nenhum produto encontrado.
-                    </p>
+                {activeCategory === 'all' && !searchQuery.trim() ? (
+                  <div className="space-y-20 md:space-y-28">
+                    {productCategories.map((category, catIdx) => {
+                      const items = filteredProducts.filter(p => p.category === category);
+                      if (items.length === 0) return null;
+                      const visibleItems = items.slice(0, 4);
+                      const hasMore = items.length > 4;
+                      return (
+                        <section key={category}>
+                          <header className="mb-8 md:mb-10">
+                            <div className="flex items-end justify-between gap-4">
+                              <div>
+                                <h2 className="font-serif text-2xl md:text-3xl font-normal text-foreground capitalize tracking-wide">
+                                  {category}
+                                </h2>
+                                <div className="mt-3 h-px w-16 bg-primary/70" />
+                              </div>
+                              {hasMore && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleCategoryChange(category)}
+                                  className="hidden md:inline-flex items-center text-[11px] uppercase tracking-[0.25em] text-muted-foreground hover:text-primary border-b border-transparent hover:border-primary pb-1 transition-colors"
+                                >
+                                  Ver todos
+                                </button>
+                              )}
+                            </div>
+                          </header>
+                          <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-6 gap-y-12 md:gap-x-10 md:gap-y-16">
+                            {visibleItems.map((product, idx) => (
+                              <ProductCard
+                                key={product.id}
+                                product={product}
+                                onQuickView={setQuickViewProduct}
+                                priority={catIdx === 0 && idx < 4}
+                              />
+                            ))}
+                          </div>
+                          {hasMore && (
+                            <div className="mt-10 flex justify-center">
+                              <button
+                                type="button"
+                                onClick={() => handleCategoryChange(category)}
+                                className="text-[11px] uppercase tracking-[0.3em] text-foreground border border-primary/60 hover:bg-primary hover:text-primary-foreground px-8 py-3 rounded-sm transition-colors"
+                              >
+                                Ver todos os <span className="capitalize">{category}</span>
+                              </button>
+                            </div>
+                          )}
+                        </section>
+                      );
+                    })}
+                    {filteredProducts.length === 0 && (
+                      <div className="text-center py-24">
+                        <p className="text-muted-foreground text-sm tracking-wide">
+                          Nenhum produto encontrado.
+                        </p>
+                      </div>
+                    )}
                   </div>
+                ) : (
+                  <>
+                    <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-6 gap-y-12 md:gap-x-10 md:gap-y-16">
+                      {filteredProducts.map((product, idx) => (
+                        <ProductCard
+                          key={product.id}
+                          product={product}
+                          onQuickView={setQuickViewProduct}
+                          priority={idx < 4}
+                        />
+                      ))}
+                    </div>
+                    {filteredProducts.length === 0 && (
+                      <div className="text-center py-24">
+                        <p className="text-muted-foreground text-sm tracking-wide">
+                          Nenhum produto encontrado.
+                        </p>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             </>
