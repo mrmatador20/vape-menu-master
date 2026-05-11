@@ -874,6 +874,7 @@ export type Database = {
           comment: string | null
           created_at: string
           id: string
+          image_url: string | null
           product_id: string
           rating: number
           user_id: string
@@ -882,6 +883,7 @@ export type Database = {
           comment?: string | null
           created_at?: string
           id?: string
+          image_url?: string | null
           product_id: string
           rating: number
           user_id: string
@@ -890,6 +892,7 @@ export type Database = {
           comment?: string | null
           created_at?: string
           id?: string
+          image_url?: string | null
           product_id?: string
           rating?: number
           user_id?: string
@@ -1338,6 +1341,7 @@ export type Database = {
           comment: string | null
           created_at: string | null
           id: string | null
+          image_url: string | null
           product_id: string | null
           rating: number | null
         }
@@ -1346,6 +1350,7 @@ export type Database = {
           comment?: string | null
           created_at?: string | null
           id?: string | null
+          image_url?: string | null
           product_id?: string | null
           rating?: number | null
         }
@@ -1354,6 +1359,7 @@ export type Database = {
           comment?: string | null
           created_at?: string | null
           id?: string | null
+          image_url?: string | null
           product_id?: string | null
           rating?: number | null
         }
@@ -1400,6 +1406,10 @@ export type Database = {
         Returns: boolean
       }
       update_user_tier: { Args: { p_user_id: string }; Returns: undefined }
+      user_purchased_product: {
+        Args: { _product_id: string; _user_id: string }
+        Returns: boolean
+      }
       validate_discount_code: {
         Args: { code_input: string }
         Returns: {
