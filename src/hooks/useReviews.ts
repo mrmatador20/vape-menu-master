@@ -9,6 +9,7 @@ export interface PublicReview {
   anonymous_user: string; // Truncado: "fb29eebc..." em vez de UUID completo
   rating: number;
   comment: string | null;
+  image_url: string | null;
   created_at: string;
 }
 
@@ -48,10 +49,12 @@ export const useAddReview = () => {
       productId,
       rating,
       comment,
+      imageUrl,
     }: {
       productId: string;
       rating: number;
       comment: string;
+      imageUrl?: string;
     }) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Usuário não autenticado');
@@ -63,6 +66,7 @@ export const useAddReview = () => {
           user_id: user.id,
           rating,
           comment,
+          image_url: imageUrl ?? null,
         })
         .select()
         .single();
