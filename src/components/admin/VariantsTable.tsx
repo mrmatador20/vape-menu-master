@@ -149,9 +149,9 @@ export function VariantsTable({ productId, productName }: Props) {
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-1">
-                      <Button size="icon" variant="ghost" onClick={() => handleDuplicate(f)} title="Duplicar"><Copy className="h-4 w-4" /></Button>
-                      <Button size="icon" variant="ghost" onClick={() => { setEditing(f); setOpen(true); }} title="Editar"><Pencil className="h-4 w-4" /></Button>
-                      <Button size="icon" variant="ghost" className="text-destructive" onClick={() => setDeleteId(f.id)} title="Excluir"><Trash2 className="h-4 w-4" /></Button>
+                      <Button type="button" size="icon" variant="ghost" onClick={() => handleDuplicate(f)} title="Duplicar"><Copy className="h-4 w-4" /></Button>
+                      <Button type="button" size="icon" variant="ghost" onClick={() => { setEditing(f); setOpen(true); }} title="Editar"><Pencil className="h-4 w-4" /></Button>
+                      <Button type="button" size="icon" variant="ghost" className="text-destructive" onClick={() => setDeleteId(f.id)} title="Excluir"><Trash2 className="h-4 w-4" /></Button>
                     </div>
                   </TableCell>
                 </TableRow>
