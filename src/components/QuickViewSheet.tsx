@@ -45,6 +45,7 @@ export default function QuickViewSheet({
   const [selectedColor, setSelectedColor] = useState<string | undefined>();
   const [activeImage, setActiveImage] = useState(0);
   const [showReviews, setShowReviews] = useState(false);
+  const [descExpanded, setDescExpanded] = useState(false);
 
   useTrackProductView(open ? product?.id : null, open);
 
@@ -94,6 +95,7 @@ export default function QuickViewSheet({
     if (!open) return;
     setActiveImage(0);
     setShowReviews(false);
+    setDescExpanded(false);
     if (flavors && flavors.length > 0) {
       const inStock = flavors.find(f => f.stock > 0);
       setSelectedFlavor((inStock || flavors[0]).name);
@@ -212,9 +214,27 @@ export default function QuickViewSheet({
           </div>
 
           {product.description && (
-            <p className="text-sm text-muted-foreground whitespace-pre-line leading-relaxed">
-              {product.description}
-            </p>
+            <div className="space-y-2">
+              <div
+                className={cn(
+                  'relative text-sm text-muted-foreground whitespace-pre-line leading-relaxed transition-all',
+                  !descExpanded && 'max-h-[5.5rem] overflow-hidden'
+                )}
+              >
+                {product.description}
+                {!descExpanded && (
+                  <div className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-background to-transparent" />
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => setDescExpanded(v => !v)}
+                className="inline-flex items-center gap-1 text-xs uppercase tracking-[0.15em] text-foreground/80 hover:text-foreground transition-colors"
+              >
+                {descExpanded ? 'Mostrar menos' : 'Ler descrição completa'}
+                {descExpanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+              </button>
+            </div>
           )}
 
           {sizes.length > 0 && !isOutOfStock && (
