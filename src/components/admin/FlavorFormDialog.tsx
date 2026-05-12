@@ -35,7 +35,7 @@ const emptyColor = (): ColorRow => ({
   color_hex: "#000000",
   stock: 0,
   sku: "",
-  image_url: null,
+  image_urls: [],
 });
 
 export function FlavorFormDialog({
@@ -66,7 +66,12 @@ export function FlavorFormDialog({
           color_hex: flavor.color_hex || "#000000",
           stock: flavor.stock ?? 0,
           sku: flavor.sku || "",
-          image_url: flavor.image_url || null,
+          image_urls:
+            (flavor.image_urls && flavor.image_urls.length > 0)
+              ? flavor.image_urls
+              : flavor.image_url
+                ? [flavor.image_url]
+                : [],
         },
       ]);
     } else {
@@ -106,7 +111,8 @@ export function FlavorFormDialog({
             color_hex: c.color.trim() ? c.color_hex || null : null,
             stock: Number(c.stock) || 0,
             sku: c.sku.trim() || null,
-            image_url: c.image_url || null,
+            image_url: c.image_urls[0] || null,
+            image_urls: c.image_urls,
           })
           .eq("id", flavor.id);
         if (error) throw error;
@@ -121,7 +127,8 @@ export function FlavorFormDialog({
           color_hex: c.color.trim() ? c.color_hex || null : null,
           stock: Number(c.stock) || 0,
           sku: c.sku.trim() || null,
-          image_url: c.image_url || null,
+          image_url: c.image_urls[0] || null,
+          image_urls: c.image_urls,
         }));
         const { error } = await supabase.from("flavors").insert(rows);
         if (error) throw error;
