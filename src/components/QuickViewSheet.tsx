@@ -215,23 +215,6 @@ export default function QuickViewSheet({
             ) : null;
           })()}
 
-          {gallery.length > 1 && (
-            <div className="flex gap-2 overflow-x-auto">
-              {gallery.map((url, i) => (
-                <button
-                  key={url + i}
-                  type="button"
-                  onClick={() => setActiveImage(i)}
-                  className={cn(
-                    'flex-shrink-0 h-16 w-16 rounded border overflow-hidden transition-all',
-                    i === activeImage ? 'border-primary' : 'border-transparent opacity-60 hover:opacity-100'
-                  )}
-                >
-                  <img src={optimizedImage(url, { width: 160, quality: 70 })} loading="lazy" decoding="async" alt="" className="w-full h-full object-cover" />
-                </button>
-              ))}
-            </div>
-          )}
 
           <div className="flex items-baseline gap-3">
             {hasDiscount && (
