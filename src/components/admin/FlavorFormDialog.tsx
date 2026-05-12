@@ -12,7 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { Flavor } from "@/hooks/useFlavors";
-import { VariantImageField } from "./VariantImageField";
+import { VariantImagesField } from "./VariantImagesField";
 import { Plus, Trash2 } from "lucide-react";
 
 interface ColorRow {
@@ -20,7 +20,7 @@ interface ColorRow {
   color_hex: string;
   stock: number;
   sku: string;
-  image_url: string | null;
+  image_urls: string[];
 }
 
 interface FlavorFormDialogProps {
@@ -35,7 +35,7 @@ const emptyColor = (): ColorRow => ({
   color_hex: "#000000",
   stock: 0,
   sku: "",
-  image_url: null,
+  image_urls: [],
 });
 
 export function FlavorFormDialog({
@@ -66,7 +66,12 @@ export function FlavorFormDialog({
           color_hex: flavor.color_hex || "#000000",
           stock: flavor.stock ?? 0,
           sku: flavor.sku || "",
-          image_url: flavor.image_url || null,
+          image_urls:
+            (flavor.image_urls && flavor.image_urls.length > 0)
+              ? flavor.image_urls
+              : flavor.image_url
+                ? [flavor.image_url]
+                : [],
         },
       ]);
     } else {
@@ -106,7 +111,8 @@ export function FlavorFormDialog({
             color_hex: c.color.trim() ? c.color_hex || null : null,
             stock: Number(c.stock) || 0,
             sku: c.sku.trim() || null,
-            image_url: c.image_url || null,
+            image_url: c.image_urls[0] || null,
+            image_urls: c.image_urls,
           })
           .eq("id", flavor.id);
         if (error) throw error;
@@ -121,7 +127,8 @@ export function FlavorFormDialog({
           color_hex: c.color.trim() ? c.color_hex || null : null,
           stock: Number(c.stock) || 0,
           sku: c.sku.trim() || null,
-          image_url: c.image_url || null,
+          image_url: c.image_urls[0] || null,
+          image_urls: c.image_urls,
         }));
         const { error } = await supabase.from("flavors").insert(rows);
         if (error) throw error;
@@ -250,10 +257,10 @@ export function FlavorFormDialog({
                 </div>
 
                 <div>
-                  <Label className="text-xs">Foto desta cor (opcional)</Label>
-                  <VariantImageField
-                    value={c.image_url}
-                    onChange={(v) => updateColor(i, { image_url: v })}
+                  <Label className="text-xs">Fotos desta cor (até 6)</Label>
+                  <VariantImagesField
+                    values={c.image_urls}
+                    onChange={(v) => updateColor(i, { image_urls: v })}
                   />
                 </div>
               </div>
