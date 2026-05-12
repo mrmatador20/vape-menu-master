@@ -25,6 +25,7 @@ import {
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
 import ProductReviews from './ProductReviews';
+import ImageLightbox from './ImageLightbox';
 import { useTrackProductView } from '@/hooks/useTrackProductView';
 
 interface QuickViewSheetProps {
@@ -46,6 +47,7 @@ export default function QuickViewSheet({
   const [activeImage, setActiveImage] = useState(0);
   const [showReviews, setShowReviews] = useState(false);
   const [descExpanded, setDescExpanded] = useState(false);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
 
   useTrackProductView(open ? product?.id : null, open);
 
@@ -162,33 +164,6 @@ export default function QuickViewSheet({
         </SheetHeader>
 
         <div className="mt-6 space-y-6">
-          <div className="aspect-square overflow-hidden rounded-md bg-muted relative">
-            {isOutOfStock && (
-              <div className="absolute inset-0 bg-background/70 flex items-center justify-center z-10">
-                <span className="text-foreground text-xl font-light tracking-widest">ESGOTADO</span>
-              </div>
-            )}
-            {(() => {
-              const variantImages = (selectedColorVariant?.image_urls && selectedColorVariant.image_urls.length > 0)
-                ? selectedColorVariant.image_urls
-                : selectedColorVariant?.image_url
-                  ? [selectedColorVariant.image_url]
-                  : [];
-              const gallery = variantImages.length > 0 ? variantImages : baseGallery;
-              const heroSrc = gallery[activeImage] || gallery[0] || product.image;
-              return (
-                <img
-                  src={optimizedImage(heroSrc, { width: 1024, quality: 80 })}
-                  srcSet={imageSrcSet(heroSrc, [480, 768, 1024, 1280])}
-                  sizes="(min-width: 1024px) 50vw, 100vw"
-                  alt={product.name}
-                  decoding="async"
-                  className="w-full h-full object-cover transition-opacity"
-                />
-              );
-            })()}
-          </div>
-
           {(() => {
             const variantImages = (selectedColorVariant?.image_urls && selectedColorVariant.image_urls.length > 0)
               ? selectedColorVariant.image_urls
@@ -196,23 +171,58 @@ export default function QuickViewSheet({
                 ? [selectedColorVariant.image_url]
                 : [];
             const gallery = variantImages.length > 0 ? variantImages : baseGallery;
-            return gallery.length > 1 ? (
-              <div className="flex gap-2 overflow-x-auto">
-                {gallery.map((url, i) => (
-                  <button
-                    key={url + i}
-                    type="button"
-                    onClick={() => setActiveImage(i)}
-                    className={cn(
-                      'flex-shrink-0 h-16 w-16 rounded border overflow-hidden transition-all',
-                      i === activeImage ? 'border-primary' : 'border-transparent opacity-60 hover:opacity-100'
-                    )}
-                  >
-                    <img src={optimizedImage(url, { width: 160, quality: 70 })} loading="lazy" decoding="async" alt="" className="w-full h-full object-cover" />
-                  </button>
-                ))}
-              </div>
-            ) : null;
+            const safeIndex = Math.min(activeImage, Math.max(0, gallery.length - 1));
+            const heroSrc = gallery[safeIndex] || gallery[0] || product.image;
+            return (
+              <>
+                <button
+                  type="button"
+                  onClick={() => gallery.length > 0 && setLightboxOpen(true)}
+                  className="aspect-square w-full overflow-hidden rounded-md bg-muted relative cursor-zoom-in"
+                  aria-label="Ampliar imagem"
+                >
+                  {isOutOfStock && (
+                    <div className="absolute inset-0 bg-background/70 flex items-center justify-center z-10">
+                      <span className="text-foreground text-xl font-light tracking-widest">ESGOTADO</span>
+                    </div>
+                  )}
+                  <img
+                    src={optimizedImage(heroSrc, { width: 1024, quality: 80 })}
+                    srcSet={imageSrcSet(heroSrc, [480, 768, 1024, 1280])}
+                    sizes="(min-width: 1024px) 50vw, 100vw"
+                    alt={product.name}
+                    decoding="async"
+                    className="w-full h-full object-cover transition-opacity"
+                  />
+                </button>
+
+                {gallery.length > 1 && (
+                  <div className="flex gap-2 overflow-x-auto">
+                    {gallery.map((url, i) => (
+                      <button
+                        key={url + i}
+                        type="button"
+                        onClick={() => setActiveImage(i)}
+                        className={cn(
+                          'flex-shrink-0 h-16 w-16 rounded border overflow-hidden transition-all',
+                          i === safeIndex ? 'border-primary' : 'border-transparent opacity-60 hover:opacity-100'
+                        )}
+                      >
+                        <img src={optimizedImage(url, { width: 160, quality: 70 })} loading="lazy" decoding="async" alt="" className="w-full h-full object-cover" />
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                <ImageLightbox
+                  images={gallery}
+                  open={lightboxOpen}
+                  initialIndex={safeIndex}
+                  onClose={() => setLightboxOpen(false)}
+                  alt={product.name}
+                />
+              </>
+            );
           })()}
 
 
