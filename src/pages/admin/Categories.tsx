@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type CSSProperties, type ReactNode } from 'react';
 import { Navigate } from 'react-router-dom';
 import { Loader2, Plus, Pencil, Trash2, Tags, Save, X, Search, FolderTree, Package, GripVertical } from 'lucide-react';
 import {
