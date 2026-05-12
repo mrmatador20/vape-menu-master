@@ -86,7 +86,20 @@ export default function AdminCategories() {
     qc.invalidateQueries({ queryKey: ['categories'] });
   };
 
-  const createSub = async () => {
+  const moveCat = async (id: string, direction: -1 | 1) => {
+    const idx = categories.findIndex((c) => c.id === id);
+    const neighbor = categories[idx + direction];
+    if (!neighbor) return;
+    const a = categories[idx];
+    const aOrder = a.display_order ?? idx;
+    const bOrder = neighbor.display_order ?? idx + direction;
+    const [e1, e2] = await Promise.all([
+      supabase.from('categories').update({ display_order: bOrder } as any).eq('id', a.id),
+      supabase.from('categories').update({ display_order: aOrder } as any).eq('id', neighbor.id),
+    ]);
+    if (e1.error || e2.error) return toast.error('Erro ao reordenar');
+    qc.invalidateQueries({ queryKey: ['categories'] });
+  };
     const name = newSub.trim();
     if (!name || !selectedCat) return;
     const { error } = await supabase.from('subcategories' as any).insert({ name, category_id: selectedCat.id } as any);
