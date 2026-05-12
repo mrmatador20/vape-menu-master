@@ -194,6 +194,21 @@ export default function AdminCategories() {
                           <Package className="h-3 w-3" /> {c.product_count} produto{c.product_count === 1 ? '' : 's'}
                         </p>
                       </div>
+                      {(() => {
+                        const idx = categories.findIndex((x) => x.id === c.id);
+                        return (
+                          <>
+                            <Button size="icon" variant="ghost" className="opacity-0 group-hover:opacity-100" disabled={idx <= 0}
+                              onClick={(e) => { e.stopPropagation(); moveCat(c.id, -1); }} title="Mover para cima">
+                              <ArrowUp className="h-4 w-4" />
+                            </Button>
+                            <Button size="icon" variant="ghost" className="opacity-0 group-hover:opacity-100" disabled={idx >= categories.length - 1}
+                              onClick={(e) => { e.stopPropagation(); moveCat(c.id, 1); }} title="Mover para baixo">
+                              <ArrowDown className="h-4 w-4" />
+                            </Button>
+                          </>
+                        );
+                      })()}
                       <Button size="icon" variant="ghost" className="opacity-0 group-hover:opacity-100"
                         onClick={(e) => { e.stopPropagation(); setEditingId(c.id); setEditName(c.name); }}>
                         <Pencil className="h-4 w-4" />
