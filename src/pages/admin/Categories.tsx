@@ -68,6 +68,88 @@ export default function AdminCategories() {
   const filtered = categories.filter((c) => c.name.toLowerCase().includes(search.toLowerCase()));
   const filteredSubs = subs.filter((s) => s.name.toLowerCase().includes(searchSub.toLowerCase()));
 
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIndex = categories.findIndex((c) => c.id === active.id);
+    const newIndex = categories.findIndex((c) => c.id === over.id);
+    if (oldIndex < 0 || newIndex < 0) return;
+    const reordered = arrayMove(categories, oldIndex, newIndex);
+
+    // Optimistic update
+    qc.setQueryData(['categories'], reordered.map((c, i) => ({ ...c, display_order: i })));
+
+    const updates = reordered.map((c, i) =>
+      supabase.from('categories').update({ display_order: i } as any).eq('id', c.id)
+    );
+    const results = await Promise.all(updates);
+    const failed = results.find((r) => r.error);
+    if (failed?.error) {
+      toast.error('Erro ao salvar ordem: ' + failed.error.message);
+      qc.invalidateQueries({ queryKey: ['categories'] });
+      return;
+    }
+    toast.success('Ordem salva');
+    qc.invalidateQueries({ queryKey: ['categories'] });
+  };
+
+  const renderCategoryRow = (
+    c: typeof categories[number],
+    draggable: boolean,
+    listeners?: ReturnType<typeof useSortable>['listeners'],
+  ) => (
+    <div
+      className={cn(
+        'group flex items-center gap-2 rounded-lg border p-3 transition-all cursor-pointer',
+        selectedId === c.id ? 'border-primary bg-accent/50 shadow-sm' : 'hover:bg-accent/30'
+      )}
+      onClick={() => editingId !== c.id && setSelectedId(c.id)}
+    >
+      {draggable && editingId !== c.id && (
+        <button
+          type="button"
+          {...(listeners || {})}
+          onClick={(e) => e.stopPropagation()}
+          className="touch-none cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground p-1 -ml-1"
+          aria-label="Arrastar para reordenar"
+        >
+          <GripVertical className="h-4 w-4" />
+        </button>
+      )}
+      {editingId === c.id ? (
+        <>
+          <Input value={editName} onChange={(e) => setEditName(e.target.value)} autoFocus
+            onKeyDown={(e) => { if (e.key === 'Enter') saveRename(c.id, c.name); if (e.key === 'Escape') setEditingId(null); }}
+            onClick={(e) => e.stopPropagation()} />
+          <Button size="icon" variant="ghost" onClick={(e) => { e.stopPropagation(); saveRename(c.id, c.name); }}><Save className="h-4 w-4" /></Button>
+          <Button size="icon" variant="ghost" onClick={(e) => { e.stopPropagation(); setEditingId(null); }}><X className="h-4 w-4" /></Button>
+        </>
+      ) : (
+        <>
+          <div className="flex-1 min-w-0">
+            <p className="font-medium truncate">{c.name}</p>
+            <p className="text-xs text-muted-foreground flex items-center gap-1">
+              <Package className="h-3 w-3" /> {c.product_count} produto{c.product_count === 1 ? '' : 's'}
+            </p>
+          </div>
+          <Button size="icon" variant="ghost" className="opacity-0 group-hover:opacity-100"
+            onClick={(e) => { e.stopPropagation(); setEditingId(c.id); setEditName(c.name); }}>
+            <Pencil className="h-4 w-4" />
+          </Button>
+          <Button size="icon" variant="ghost" className="opacity-0 group-hover:opacity-100 text-destructive"
+            onClick={(e) => { e.stopPropagation(); setDeleteCat({ id: c.id, name: c.name, count: c.product_count || 0 }); }}>
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </>
+      )}
+    </div>
+  );
+
   const createCat = async () => {
     const name = newCat.trim();
     if (!name) return;
