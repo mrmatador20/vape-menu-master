@@ -37,8 +37,14 @@ export const useMFA = () => {
 
       if (error) throw error;
 
-      // Generate QR code from the URI
-      const qrCodeUrl = await QRCode.toDataURL(data.totp.qr_code);
+      // Custom issuer "Fox Velour" for the authenticator app label
+      const { data: { user } } = await supabase.auth.getUser();
+      const issuer = 'Fox Velour';
+      const account = user?.email || 'conta';
+      const customUri = `otpauth://totp/${encodeURIComponent(issuer)}:${encodeURIComponent(account)}?secret=${data.totp.secret}&issuer=${encodeURIComponent(issuer)}&algorithm=SHA1&digits=6&period=30`;
+
+      // Generate QR code from the custom URI
+      const qrCodeUrl = await QRCode.toDataURL(customUri);
 
       return {
         factorId: data.id,
