@@ -12,6 +12,7 @@ export interface Flavor {
   size?: string | null;
   sku?: string | null;
   image_url?: string | null;
+  image_urls?: string[] | null;
   created_at: string;
 }
 

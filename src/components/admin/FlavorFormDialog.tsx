@@ -12,7 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { Flavor } from "@/hooks/useFlavors";
-import { VariantImageField } from "./VariantImageField";
+import { VariantImagesField } from "./VariantImagesField";
 import { Plus, Trash2 } from "lucide-react";
 
 interface ColorRow {
@@ -20,7 +20,7 @@ interface ColorRow {
   color_hex: string;
   stock: number;
   sku: string;
-  image_url: string | null;
+  image_urls: string[];
 }
 
 interface FlavorFormDialogProps {
