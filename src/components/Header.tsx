@@ -25,6 +25,7 @@ import {
   SheetTrigger,
 } from '@/components/ui/sheet';
 import { useProducts } from '@/hooks/useProducts';
+import { useCategories } from '@/hooks/useCategories';
 import { useSiteIdentity } from '@/hooks/useSiteIdentity';
 import {
   Popover,
