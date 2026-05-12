@@ -45,6 +45,7 @@ export default function QuickViewSheet({
   const [selectedColor, setSelectedColor] = useState<string | undefined>();
   const [activeImage, setActiveImage] = useState(0);
   const [showReviews, setShowReviews] = useState(false);
+  const [descExpanded, setDescExpanded] = useState(false);
 
   useTrackProductView(open ? product?.id : null, open);
 
