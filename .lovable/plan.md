@@ -1,84 +1,57 @@
-# Refatoração Premium do Admin Panel — Fox Velour
+## Painel Admin — Novas funcionalidades
 
-Refatoração ampla e em múltiplas camadas. Antes de codar, alinho o escopo abaixo para evitar retrabalho.
+Vou implementar 4 grandes melhorias no painel admin da Fox Velour. Como é um pacote grande, abaixo está o plano para você aprovar antes de eu começar.
 
-## 1. Navegação e Arquitetura
+---
 
-- **Remover** `/admin/pix-payments` da sidebar e do `App.tsx` (mantém arquivo como legado opcional).
-- **Agrupar sidebar** com submenus colapsáveis usando shadcn `Collapsible`:
-  - "Configurações de Venda" → Descontos, Taxas de Entrega, Indicações.
-  - "Catálogo" → Produtos, Categorias, Banners.
-  - "Operações" → Pedidos, Avaliações.
-  - "Insights" → Dashboard, Estatísticas, Métricas Indicações.
-  - "Sistema" → Segurança, Auditoria, Configurações.
-- **Slide-overs** (shadcn `Sheet` lado direito, `max-w-2xl`/`max-w-4xl`) substituindo `Dialog` em:
-  - `ProductFormDialog` → `ProductFormSheet`
-  - `OrderDetail` (extrair de `Orders.tsx`) → `OrderDetailSheet`
-  - Edição de categoria/subcategoria em `Categories.tsx`
+### 1. Relatórios de Performance
 
-## 2. Catálogo
+Nova página **Admin → Relatórios** (`/admin/reports`) com:
 
-- **Categorias (Tree View)**: refatorar `Categories.tsx` para árvore expandível Categoria → Subcategorias com contagem `(N)` ao lado, drag-handle visual (sem persist no escopo dessa task — apenas exibição). Reusar `useCategories` + `useSubcategories`.
-- **Motor de variantes**: já existe `GenerateVariantsDialog` + `VariantsTable`. Vou:
-  - Permitir matriz visual (linhas=tamanhos, colunas=cores) com inputs inline de estoque/preço.
-  - SKU autogerado mas editável; preço e estoque por célula.
-- **CategoryCombobox/SubcategoryCombobox**: já existem com criação inline. Garantir uso no novo Sheet.
+- **Ticket Médio**: receita total ÷ nº pedidos confirmados/entregues, com comparativo por período (7d / 30d / 90d).
+- **Receita por período**: gráfico de linhas (recharts) com vendas diárias.
+- **Top Produtos Mais Vendidos**: ranking por quantidade vendida (via `order_items`).
+- **Produtos Mais Vistos vs. Mais Vendidos**: tabela comparativa com taxa de conversão (views ÷ vendas).
+  - Requer rastreamento de visualizações → nova tabela `product_views` (incrementada quando o usuário abre o `QuickViewSheet` ou a página do produto).
 
-## 3. Mesa de Operações (Pedidos)
+### 2. Alertas de Reestoque Inteligentes
 
-- Em `Orders.tsx`:
-  - Adicionar coluna **Status Financeiro** (Pago / Pendente / Expirado / Reembolsado) derivado de `payment_method` + `status`.
-  - Manter coluna **Status Logístico** (Em separação / Enviado / Entregue / Cancelado).
-  - **Checkboxes** por linha + header → barra de ações em massa (Alterar status, Imprimir etiquetas).
-  - **OrderDetailSheet**: timeline de eventos (criação → confirmação → envio → entrega) + bloco "Pagamento PIX" mostrando ID da transação, link de cobrança e expiração quando PIX.
+Aprimorar o card `LowStockAlert` no Dashboard:
 
-> Para PIX, vou ler de `orders` os campos disponíveis (`expires_at`, etc). Não criarei novas tabelas.
+- **Previsão de esgotamento**: calcula a média de vendas/dia dos últimos 30 dias por produto e estima dias restantes (`stock ÷ vendas_diárias`).
+- Badge colorido: 🔴 esgota em <3 dias, 🟡 <7 dias, 🟢 >7 dias.
+- Mostra: "Eclipse esgotará em ~4 dias (média 2,1/dia)".
 
-## 4. Dashboard / BI
+### 3. Impressão de Etiquetas
 
-- Em `Dashboard.tsx`:
-  - Adicionar **gráfico de linha** Receita × Tempo (últimos 30 dias) usando `recharts` (já presente via shadcn).
-  - **Gráfico de barras** Vendas por Categoria.
-  - Painel **Ações Urgentes**: produtos com estoque ≤ min_stock + pedidos pendentes de despacho > 24h.
+Na página **Admin → Pedidos**, adicionar botão **"Imprimir Etiqueta"** em cada pedido:
 
-## 5. Identidade Visual Fox Velour
+- Abre uma nova janela com layout A4 imprimível contendo:
+  - **Etiqueta de envio**: remetente (Fox Velour), destinatário (nome, endereço completo, CEP, telefone), nº do pedido, data.
+  - **Declaração de conteúdo**: tabela com itens, quantidade, valor unitário, valor total, peso estimado.
+- CSS `@media print` para impressão limpa (sem header/sidebar).
+- Botão também disponível em lote: "Imprimir etiquetas selecionadas".
 
-Atualizar `src/index.css` (tokens HSL):
+### 4. Variações de Produto Aprimoradas
 
-- `--background`: branco gelo (`40 30% 98%`)
-- `--card`: branco puro (`0 0% 100%`)
-- `--foreground`: preto suave (`30 10% 12%`)
-- `--primary`: dourado queimado (`35 65% 45%`) — CTAs apenas
-- `--radius`: `0.5rem` (8px)
-- Remover sombras pesadas: `--shadow-card` mais sutil.
-- Tipografia: importar Inter via `index.html` e setar `font-family` no body.
+Já existe `GenerateVariantsDialog` (gera grade tamanho × cor). Vou adicionar:
 
-## Arquivos
+- **Fotos por variação (cor)**: nova coluna `image_url` na tabela `flavors`. No `VariantsTable`, cada linha de cor terá um upload de imagem.
+- **Troca de imagem no site**: no `QuickViewSheet` e na página do produto, ao selecionar uma cor, a imagem principal muda para a foto da variação correspondente (fallback: imagem do produto).
+- **Grade rápida** (já existe via `GenerateVariantsDialog`) — vou adicionar presets de tamanhos comuns: `[P, M, G, GG]`, `[PP, P, M, G, GG]`, `[36, 38, 40, 42, 44]` para 1 clique.
 
-**Criar:**
-- `src/components/admin/ProductFormSheet.tsx` (wrapper Sheet em volta do form existente)
-- `src/components/admin/OrderDetailSheet.tsx`
-- `src/components/admin/CategoryTree.tsx`
-- `src/components/admin/dashboard/RevenueChart.tsx`
-- `src/components/admin/dashboard/CategorySalesChart.tsx`
-- `src/components/admin/dashboard/UrgentActionsPanel.tsx`
+---
 
-**Editar:**
-- `src/components/admin/AdminSidebar.tsx` — submenus colapsáveis
-- `src/App.tsx` — remover rota pix-payments
-- `src/pages/admin/Orders.tsx` — colunas duplas, checkboxes, ações em massa, sheet
-- `src/pages/admin/Categories.tsx` — tree view
-- `src/pages/admin/Products.tsx` — usar Sheet
-- `src/pages/admin/Dashboard.tsx` — gráficos + ações urgentes
-- `src/components/admin/VariantsTable.tsx` — matriz inline
-- `src/index.css` — paleta Fox Velour
-- `index.html` — Inter font
+### Mudanças técnicas resumidas
 
-## Fora de escopo (follow-up)
+- **DB (migrations)**:
+  - `product_views` (id, product_id, user_id?, created_at) + RLS público para insert.
+  - `flavors.image_url TEXT` (nova coluna).
+- **Frontend**:
+  - Nova rota `/admin/reports` + item no `AdminSidebar`.
+  - Hook `useProductAnalytics` (vendas, views, ticket médio, previsão de estoque).
+  - Componente `PrintShippingLabel.tsx` + integração em `admin/Orders.tsx`.
+  - Atualizar `VariantsTable.tsx`, `GenerateVariantsDialog.tsx`, `QuickViewSheet.tsx`, e a página do produto para usar a imagem da variação.
+  - Hook leve `useTrackProductView` chamado no QuickView/página do produto.
 
-- Persistência de drag-and-drop de ordem de categorias.
-- Geração real de PDF de etiqueta de envio (vou stub print HTML).
-- Webhook PIX novo / mudanças no schema de pagamentos.
-- Mudanças nas Edge Functions.
-
-Confirma para eu seguir? Posso também reduzir escopo se preferir entregar em fases (ex: Fase 1 = Visual + Sidebar + Pedidos; Fase 2 = Dashboard BI + Slide-overs).
+Posso prosseguir com tudo, ou você quer priorizar alguma parte (ex: começar só por relatórios + variações)?
