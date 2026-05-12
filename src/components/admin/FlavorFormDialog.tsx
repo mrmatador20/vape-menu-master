@@ -270,6 +270,20 @@ export function FlavorFormDialog({
               )}
             />
 
+            <FormField
+              control={form.control}
+              name="image_url"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Foto desta variante (opcional)</FormLabel>
+                  <FormControl>
+                    <VariantImageField value={field.value || null} onChange={field.onChange} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
             <div className="flex justify-end gap-2">
               <Button
                 type="button"
