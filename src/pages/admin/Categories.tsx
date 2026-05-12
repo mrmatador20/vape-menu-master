@@ -172,42 +172,19 @@ export default function AdminCategories() {
               {!isLoading && filtered.length === 0 && (
                 <p className="text-sm text-muted-foreground text-center py-6">Nenhuma categoria encontrada.</p>
               )}
-              {filtered.map((c) => (
-                <div key={c.id}
-                  className={cn(
-                    'group flex items-center gap-2 rounded-lg border p-3 transition-all cursor-pointer',
-                    selectedId === c.id ? 'border-primary bg-accent/50 shadow-sm' : 'hover:bg-accent/30'
-                  )}
-                  onClick={() => editingId !== c.id && setSelectedId(c.id)}
-                >
-                  {editingId === c.id ? (
-                    <>
-                      <Input value={editName} onChange={(e) => setEditName(e.target.value)} autoFocus
-                        onKeyDown={(e) => { if (e.key === 'Enter') saveRename(c.id, c.name); if (e.key === 'Escape') setEditingId(null); }}
-                        onClick={(e) => e.stopPropagation()} />
-                      <Button size="icon" variant="ghost" onClick={(e) => { e.stopPropagation(); saveRename(c.id, c.name); }}><Save className="h-4 w-4" /></Button>
-                      <Button size="icon" variant="ghost" onClick={(e) => { e.stopPropagation(); setEditingId(null); }}><X className="h-4 w-4" /></Button>
-                    </>
-                  ) : (
-                    <>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium truncate">{c.name}</p>
-                        <p className="text-xs text-muted-foreground flex items-center gap-1">
-                          <Package className="h-3 w-3" /> {c.product_count} produto{c.product_count === 1 ? '' : 's'}
-                        </p>
-                      </div>
-                      <Button size="icon" variant="ghost" className="opacity-0 group-hover:opacity-100"
-                        onClick={(e) => { e.stopPropagation(); setEditingId(c.id); setEditName(c.name); }}>
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button size="icon" variant="ghost" className="opacity-0 group-hover:opacity-100 text-destructive"
-                        onClick={(e) => { e.stopPropagation(); setDeleteCat({ id: c.id, name: c.name, count: c.product_count || 0 }); }}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </>
-                  )}
-                </div>
-              ))}
+              {search.trim() ? (
+                filtered.map((c) => renderCategoryRow(c, false))
+              ) : (
+                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                  <SortableContext items={filtered.map((c) => c.id)} strategy={verticalListSortingStrategy}>
+                    {filtered.map((c) => (
+                      <SortableCategoryRow key={c.id} id={c.id}>
+                        {(listeners) => renderCategoryRow(c, true, listeners)}
+                      </SortableCategoryRow>
+                    ))}
+                  </SortableContext>
+                </DndContext>
+              )}
             </div>
           </CardContent>
         </Card>
