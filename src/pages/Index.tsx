@@ -16,6 +16,7 @@ import { useSiteIdentity } from '@/hooks/useSiteIdentity';
 const Index = () => {
   const { addToCart } = useCart();
   const { data: products, isLoading } = useProducts();
+  const { data: orderedCategories } = useCategories();
   const { data: siteIdentity } = useSiteIdentity();
   const [searchParams] = useSearchParams();
   const [activeCategory, setActiveCategory] = useState<string>('all');
