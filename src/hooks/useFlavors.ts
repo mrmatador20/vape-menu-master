@@ -11,6 +11,7 @@ export interface Flavor {
   color_hex?: string | null;
   size?: string | null;
   sku?: string | null;
+  image_url?: string | null;
   created_at: string;
 }
 

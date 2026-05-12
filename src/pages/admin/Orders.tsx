@@ -157,44 +157,106 @@ export default function AdminOrders() {
     window.open(`https://wa.me/55${clean}?text=${msg}`, '_blank');
   };
 
-  const printOrder = (o: any) => {
-    const w = window.open('', '_blank');
+  const renderShippingLabel = (o: any) => {
+    const items = o.order_items || [];
+    const totalQty = items.reduce((s: number, i: any) => s + Number(i.quantity || 0), 0);
+    const subtotal = items.reduce((s: number, i: any) => s + Number(i.price) * Number(i.quantity || 0), 0);
+    const itemsRows = items.map((i: any) => `
+      <tr>
+        <td>${i.products?.name || 'Produto'}${i.flavor ? ` <span style="color:#666">(${i.flavor})</span>` : ''}</td>
+        <td style="text-align:center">${i.quantity}</td>
+        <td style="text-align:right">R$ ${Number(i.price).toFixed(2)}</td>
+        <td style="text-align:right">R$ ${(Number(i.price) * Number(i.quantity)).toFixed(2)}</td>
+      </tr>`).join('');
+    return `
+    <div class="label-page">
+      <!-- ETIQUETA DE ENVIO -->
+      <section class="card">
+        <div class="head">
+          <div>
+            <div class="brand">FOX VELOUR</div>
+            <div class="muted">Etiqueta de Envio</div>
+          </div>
+          <div class="order-id">#${o.id.slice(0, 8).toUpperCase()}</div>
+        </div>
+        <div class="grid">
+          <div>
+            <div class="lbl">REMETENTE</div>
+            <strong>Fox Velour</strong><br/>
+            <span class="muted">contato@foxvelour.com</span>
+          </div>
+          <div>
+            <div class="lbl">DESTINATÁRIO</div>
+            <strong>${o.customer_name || '—'}</strong><br/>
+            ${o.address_street}, ${o.address_number}${o.address_complement ? ' - ' + o.address_complement : ''}<br/>
+            ${o.address_neighborhood} - ${o.address_city}/${o.address_state || ''}<br/>
+            <strong>CEP ${o.cep || '—'}</strong><br/>
+            <span class="muted">Tel: ${o.customer_phone || '—'}</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- DECLARAÇÃO DE CONTEÚDO -->
+      <section class="card">
+        <div class="head">
+          <div class="brand small">DECLARAÇÃO DE CONTEÚDO</div>
+          <div class="muted">${new Date(o.created_at).toLocaleDateString('pt-BR')}</div>
+        </div>
+        <table>
+          <thead>
+            <tr><th>Item</th><th style="text-align:center">Qtd</th><th style="text-align:right">Vlr. Unit.</th><th style="text-align:right">Total</th></tr>
+          </thead>
+          <tbody>${itemsRows}</tbody>
+          <tfoot>
+            <tr><td colspan="3" style="text-align:right">Subtotal (${totalQty} itens)</td><td style="text-align:right">R$ ${subtotal.toFixed(2)}</td></tr>
+            <tr><td colspan="3" style="text-align:right">Frete</td><td style="text-align:right">R$ ${Number(o.shipping_cost || 0).toFixed(2)}</td></tr>
+            <tr class="grand"><td colspan="3" style="text-align:right">TOTAL</td><td style="text-align:right">R$ ${Number(o.total_amount).toFixed(2)}</td></tr>
+          </tfoot>
+        </table>
+        <div class="footer-note">Pagamento: <strong>${o.payment_method}</strong> · Pedido: #${o.id.slice(0, 8)}</div>
+      </section>
+    </div>`;
+  };
+
+  const openPrintWindow = (htmlBody: string) => {
+    const w = window.open('', '_blank', 'width=900,height=1100');
     if (!w) return;
-    const items = o.order_items?.map((i: any) => `<li>${i.quantity}x ${i.products?.name || 'Produto'}${i.flavor ? ` (${i.flavor})` : ''} - R$ ${Number(i.price).toFixed(2)}</li>`).join('') || '';
     w.document.write(`
-      <html><head><title>Pedido #${o.id.slice(0, 8)}</title>
-      <style>body{font-family:Inter,system-ui;padding:32px;color:#222}h1{border-bottom:2px solid #b8862b;padding-bottom:8px}strong{color:#444}</style>
-      </head><body>
-      <h1>Fox Velour - Pedido #${o.id.slice(0, 8)}</h1>
-      <p><strong>Data:</strong> ${new Date(o.created_at).toLocaleString('pt-BR')}</p>
-      <p><strong>Cliente:</strong> ${o.customer_name || '—'} - ${o.customer_phone || '—'}</p>
-      <p><strong>Endereço:</strong> ${formatAddress(o)}</p>
-      <h3>Itens:</h3><ul>${items}</ul>
-      <p><strong>Frete:</strong> R$ ${Number(o.shipping_cost || 0).toFixed(2)}</p>
-      <p><strong>Pagamento:</strong> ${o.payment_method}</p>
-      <h2>Total: R$ ${Number(o.total_amount).toFixed(2)}</h2>
+      <html><head><title>Etiquetas Fox Velour</title>
+      <style>
+        @page { size: A4; margin: 12mm; }
+        * { box-sizing: border-box; }
+        body { font-family: Inter, system-ui, -apple-system, sans-serif; color: #111; margin: 0; padding: 0; }
+        .label-page { page-break-after: always; padding: 0; }
+        .label-page:last-child { page-break-after: auto; }
+        .card { border: 1.5px solid #111; border-radius: 6px; padding: 14px 16px; margin-bottom: 12px; }
+        .head { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid #ccc; padding-bottom: 8px; margin-bottom: 10px; }
+        .brand { font-size: 18px; font-weight: 800; letter-spacing: 2px; color: #b8862b; }
+        .brand.small { font-size: 13px; letter-spacing: 1.5px; }
+        .order-id { font-family: ui-monospace, Menlo, monospace; font-weight: 700; }
+        .grid { display: grid; grid-template-columns: 1fr 1.4fr; gap: 16px; font-size: 13px; line-height: 1.5; }
+        .lbl { font-size: 9px; letter-spacing: 1.5px; color: #888; text-transform: uppercase; margin-bottom: 4px; }
+        .muted { color: #666; font-size: 11px; }
+        table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        th { text-align: left; padding: 6px 4px; border-bottom: 1.5px solid #111; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; }
+        td { padding: 6px 4px; border-bottom: 1px solid #eee; vertical-align: top; }
+        tfoot td { border-bottom: none; padding-top: 4px; font-size: 12px; }
+        tfoot tr.grand td { border-top: 2px solid #111; padding-top: 8px; font-size: 14px; font-weight: 700; }
+        .footer-note { margin-top: 8px; font-size: 10px; color: #666; text-align: right; }
+        @media print { .no-print { display: none !important; } body { -webkit-print-color-adjust: exact; } }
+      </style>
+      </head><body>${htmlBody}
+      <script>window.onload = () => { setTimeout(() => window.print(), 200); };</script>
       </body></html>`);
     w.document.close();
-    w.print();
   };
+
+  const printOrder = (o: any) => openPrintWindow(renderShippingLabel(o));
 
   const printLabels = (selectedIds: string[]) => {
     const list = (orders || []).filter(o => selectedIds.includes(o.id));
     if (!list.length) return;
-    const w = window.open('', '_blank');
-    if (!w) return;
-    const labels = list.map((o: any) => `
-      <div style="border:1px solid #222;padding:16px;margin-bottom:12px;page-break-inside:avoid">
-        <div style="display:flex;justify-content:space-between;border-bottom:1px solid #ccc;padding-bottom:8px;margin-bottom:8px">
-          <strong>FOX VELOUR</strong><span>#${o.id.slice(0, 8)}</span>
-        </div>
-        <p><strong>Para:</strong> ${o.customer_name || '—'}</p>
-        <p>${formatAddress(o)}</p>
-        <p><strong>Tel:</strong> ${o.customer_phone || '—'}</p>
-      </div>`).join('');
-    w.document.write(`<html><head><title>Etiquetas</title><style>body{font-family:Inter,system-ui;padding:24px}</style></head><body>${labels}</body></html>`);
-    w.document.close();
-    w.print();
+    openPrintWindow(list.map(renderShippingLabel).join(''));
   };
 
   // KPIs

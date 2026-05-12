@@ -270,6 +270,7 @@ export type Database = {
           color_hex: string | null
           created_at: string
           id: string
+          image_url: string | null
           name: string
           price: number | null
           product_id: string
@@ -282,6 +283,7 @@ export type Database = {
           color_hex?: string | null
           created_at?: string
           id?: string
+          image_url?: string | null
           name: string
           price?: number | null
           product_id: string
@@ -294,6 +296,7 @@ export type Database = {
           color_hex?: string | null
           created_at?: string
           id?: string
+          image_url?: string | null
           name?: string
           price?: number | null
           product_id?: string
@@ -508,6 +511,30 @@ export type Database = {
           status?: string
           total_amount?: number
           user_id?: string
+        }
+        Relationships: []
+      }
+      product_views: {
+        Row: {
+          created_at: string
+          id: string
+          product_id: string
+          session_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          product_id: string
+          session_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          product_id?: string
+          session_id?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }

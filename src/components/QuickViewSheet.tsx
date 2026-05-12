@@ -25,6 +25,7 @@ import {
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
 import ProductReviews from './ProductReviews';
+import { useTrackProductView } from '@/hooks/useTrackProductView';
 
 interface QuickViewSheetProps {
   product: Product | null;
@@ -44,6 +45,8 @@ export default function QuickViewSheet({
   const [selectedColor, setSelectedColor] = useState<string | undefined>();
   const [activeImage, setActiveImage] = useState(0);
   const [showReviews, setShowReviews] = useState(false);
+
+  useTrackProductView(open ? product?.id : null, open);
 
   const gallery = product
     ? (product.images && product.images.length > 0
@@ -163,14 +166,20 @@ export default function QuickViewSheet({
                 <span className="text-foreground text-xl font-light tracking-widest">ESGOTADO</span>
               </div>
             )}
-            <img
-              src={optimizedImage(gallery[activeImage] || product.image, { width: 1024, quality: 80 })}
-              srcSet={imageSrcSet(gallery[activeImage] || product.image, [480, 768, 1024, 1280])}
-              sizes="(min-width: 1024px) 50vw, 100vw"
-              alt={product.name}
-              decoding="async"
-              className="w-full h-full object-cover"
-            />
+            {(() => {
+              const variantImage = selectedColorVariant?.image_url || undefined;
+              const heroSrc = variantImage || gallery[activeImage] || product.image;
+              return (
+                <img
+                  src={optimizedImage(heroSrc, { width: 1024, quality: 80 })}
+                  srcSet={imageSrcSet(heroSrc, [480, 768, 1024, 1280])}
+                  sizes="(min-width: 1024px) 50vw, 100vw"
+                  alt={product.name}
+                  decoding="async"
+                  className="w-full h-full object-cover transition-opacity"
+                />
+              );
+            })()}
           </div>
 
           {gallery.length > 1 && (

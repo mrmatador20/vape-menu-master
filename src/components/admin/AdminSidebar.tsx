@@ -21,6 +21,7 @@ const groups: Group[] = [
     title: "Insights", icon: LineChart, items: [
       { title: "Dashboard", url: "/546498@18", icon: LayoutDashboard },
       { title: "Estatísticas", url: "/546498@18/stats", icon: BarChart3 },
+      { title: "Relatórios", url: "/546498@18/reports", icon: LineChart },
       { title: "Métricas Indicações", url: "/546498@18/referrals/metrics", icon: LineChart },
     ],
   },
