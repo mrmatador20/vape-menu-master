@@ -214,9 +214,27 @@ export default function QuickViewSheet({
           </div>
 
           {product.description && (
-            <p className="text-sm text-muted-foreground whitespace-pre-line leading-relaxed">
-              {product.description}
-            </p>
+            <div className="space-y-2">
+              <div
+                className={cn(
+                  'relative text-sm text-muted-foreground whitespace-pre-line leading-relaxed transition-all',
+                  !descExpanded && 'max-h-[5.5rem] overflow-hidden'
+                )}
+              >
+                {product.description}
+                {!descExpanded && (
+                  <div className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-background to-transparent" />
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => setDescExpanded(v => !v)}
+                className="inline-flex items-center gap-1 text-xs uppercase tracking-[0.15em] text-foreground/80 hover:text-foreground transition-colors"
+              >
+                {descExpanded ? 'Mostrar menos' : 'Ler descrição completa'}
+                {descExpanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+              </button>
+            </div>
           )}
 
           {sizes.length > 0 && !isOutOfStock && (
