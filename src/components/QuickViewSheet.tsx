@@ -49,7 +49,7 @@ export default function QuickViewSheet({
 
   useTrackProductView(open ? product?.id : null, open);
 
-  const gallery = product
+  const baseGallery = product
     ? (product.images && product.images.length > 0
         ? product.images
         : product.image
@@ -169,8 +169,13 @@ export default function QuickViewSheet({
               </div>
             )}
             {(() => {
-              const variantImage = selectedColorVariant?.image_url || undefined;
-              const heroSrc = variantImage || gallery[activeImage] || product.image;
+              const variantImages = (selectedColorVariant?.image_urls && selectedColorVariant.image_urls.length > 0)
+                ? selectedColorVariant.image_urls
+                : selectedColorVariant?.image_url
+                  ? [selectedColorVariant.image_url]
+                  : [];
+              const gallery = variantImages.length > 0 ? variantImages : baseGallery;
+              const heroSrc = gallery[activeImage] || gallery[0] || product.image;
               return (
                 <img
                   src={optimizedImage(heroSrc, { width: 1024, quality: 80 })}
@@ -183,6 +188,32 @@ export default function QuickViewSheet({
               );
             })()}
           </div>
+
+          {(() => {
+            const variantImages = (selectedColorVariant?.image_urls && selectedColorVariant.image_urls.length > 0)
+              ? selectedColorVariant.image_urls
+              : selectedColorVariant?.image_url
+                ? [selectedColorVariant.image_url]
+                : [];
+            const gallery = variantImages.length > 0 ? variantImages : baseGallery;
+            return gallery.length > 1 ? (
+              <div className="flex gap-2 overflow-x-auto">
+                {gallery.map((url, i) => (
+                  <button
+                    key={url + i}
+                    type="button"
+                    onClick={() => setActiveImage(i)}
+                    className={cn(
+                      'flex-shrink-0 h-16 w-16 rounded border overflow-hidden transition-all',
+                      i === activeImage ? 'border-primary' : 'border-transparent opacity-60 hover:opacity-100'
+                    )}
+                  >
+                    <img src={optimizedImage(url, { width: 160, quality: 70 })} loading="lazy" decoding="async" alt="" className="w-full h-full object-cover" />
+                  </button>
+                ))}
+              </div>
+            ) : null;
+          })()}
 
           {gallery.length > 1 && (
             <div className="flex gap-2 overflow-x-auto">
