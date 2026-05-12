@@ -118,6 +118,31 @@ export function GenerateVariantsDialog({ open, onOpenChange, productId, productN
           {/* Sizes */}
           <div className="space-y-2">
             <Label>Tamanhos</Label>
+            <div className="flex flex-wrap gap-1.5">
+              {[
+                { label: 'P · M · G · GG', list: ['P', 'M', 'G', 'GG'] },
+                { label: 'PP · P · M · G · GG', list: ['PP', 'P', 'M', 'G', 'GG'] },
+                { label: '36 · 38 · 40 · 42 · 44', list: ['36', '38', '40', '42', '44'] },
+                { label: 'Único', list: ['Único'] },
+              ].map((preset) => (
+                <Button
+                  key={preset.label}
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-xs"
+                  onClick={() => {
+                    const merged = [...sizes];
+                    preset.list.forEach((v) => {
+                      if (!merged.some((s) => s.value === v)) merged.push({ value: v });
+                    });
+                    setSizes(merged);
+                  }}
+                >
+                  + {preset.label}
+                </Button>
+              ))}
+            </div>
             <div className="flex gap-2">
               <Input placeholder="Ex: P, M, G..." value={sizeInput} onChange={(e) => setSizeInput(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addSize())} />
