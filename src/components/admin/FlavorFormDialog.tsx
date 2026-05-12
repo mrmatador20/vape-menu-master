@@ -22,6 +22,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { Flavor } from "@/hooks/useFlavors";
+import { VariantImageField } from "./VariantImageField";
 
 const flavorSchema = z.object({
   name: z.string().min(1, "Nome é obrigatório"),
@@ -31,6 +32,7 @@ const flavorSchema = z.object({
   color_hex: z.string().optional(),
   size: z.string().optional(),
   sku: z.string().optional(),
+  image_url: z.string().nullable().optional(),
 });
 
 type FlavorFormValues = z.infer<typeof flavorSchema>;
@@ -61,6 +63,7 @@ export function FlavorFormDialog({
       color_hex: "#000000",
       size: "",
       sku: "",
+      image_url: null,
     },
   });
 
@@ -74,6 +77,7 @@ export function FlavorFormDialog({
         color_hex: flavor.color_hex || "#000000",
         size: flavor.size || "",
         sku: flavor.sku || "",
+        image_url: flavor.image_url || null,
       });
     } else {
       form.reset({
@@ -84,6 +88,7 @@ export function FlavorFormDialog({
         color_hex: "#000000",
         size: "",
         sku: "",
+        image_url: null,
       });
     }
   }, [flavor, form]);
@@ -98,6 +103,7 @@ export function FlavorFormDialog({
         color_hex: values.color?.trim() ? (values.color_hex || null) : null,
         size: values.size?.trim() || null,
         sku: values.sku?.trim() || null,
+        image_url: values.image_url || null,
       };
 
       if (flavor) {
