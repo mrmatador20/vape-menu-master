@@ -17,6 +17,7 @@ const Index = () => {
   const { addToCart } = useCart();
   const { data: products, isLoading } = useProducts();
   const { data: siteIdentity } = useSiteIdentity();
+  const { data: categoriesData } = useCategories();
   const [searchParams] = useSearchParams();
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [activeSubcategory, setActiveSubcategory] = useState<string>('all');
