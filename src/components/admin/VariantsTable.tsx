@@ -124,7 +124,16 @@ export function VariantsTable({ productId, productName }: Props) {
             ) : (
               filtered.map((f) => (
                 <TableRow key={f.id}>
-                  <TableCell className="font-medium">{f.name}</TableCell>
+                  <TableCell className="font-medium">
+                    <div className="flex items-center gap-2">
+                      {f.image_url ? (
+                        <img src={f.image_url} alt={f.name} className="h-8 w-8 rounded object-cover border" />
+                      ) : (
+                        <div className="h-8 w-8 rounded bg-muted border" />
+                      )}
+                      <span>{f.name}</span>
+                    </div>
+                  </TableCell>
                   <TableCell>{f.size || <span className="text-muted-foreground">—</span>}</TableCell>
                   <TableCell>
                     {f.color ? (
