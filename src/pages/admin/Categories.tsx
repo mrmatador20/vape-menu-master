@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Navigate } from 'react-router-dom';
-import { Loader2, Plus, Pencil, Trash2, Tags, Save, X, Search, FolderTree, Package, ArrowUp, ArrowDown } from 'lucide-react';
+import { Loader2, Plus, Pencil, Trash2, Tags, Save, X, Search, FolderTree, Package } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -83,21 +83,6 @@ export default function AdminCategories() {
     toast.success('Categoria removida');
     if (selectedId === deleteCat.id) setSelectedId(null);
     setDeleteCat(null);
-    qc.invalidateQueries({ queryKey: ['categories'] });
-  };
-
-  const moveCat = async (id: string, direction: -1 | 1) => {
-    const idx = categories.findIndex((c) => c.id === id);
-    const neighbor = categories[idx + direction];
-    if (!neighbor) return;
-    const a = categories[idx];
-    const aOrder = a.display_order ?? idx;
-    const bOrder = neighbor.display_order ?? idx + direction;
-    const [e1, e2] = await Promise.all([
-      supabase.from('categories').update({ display_order: bOrder } as any).eq('id', a.id),
-      supabase.from('categories').update({ display_order: aOrder } as any).eq('id', neighbor.id),
-    ]);
-    if (e1.error || e2.error) return toast.error('Erro ao reordenar');
     qc.invalidateQueries({ queryKey: ['categories'] });
   };
 
@@ -194,21 +179,6 @@ export default function AdminCategories() {
                           <Package className="h-3 w-3" /> {c.product_count} produto{c.product_count === 1 ? '' : 's'}
                         </p>
                       </div>
-                      {(() => {
-                        const idx = categories.findIndex((x) => x.id === c.id);
-                        return (
-                          <>
-                            <Button size="icon" variant="ghost" className="opacity-0 group-hover:opacity-100" disabled={idx <= 0}
-                              onClick={(e) => { e.stopPropagation(); moveCat(c.id, -1); }} title="Mover para cima">
-                              <ArrowUp className="h-4 w-4" />
-                            </Button>
-                            <Button size="icon" variant="ghost" className="opacity-0 group-hover:opacity-100" disabled={idx >= categories.length - 1}
-                              onClick={(e) => { e.stopPropagation(); moveCat(c.id, 1); }} title="Mover para baixo">
-                              <ArrowDown className="h-4 w-4" />
-                            </Button>
-                          </>
-                        );
-                      })()}
                       <Button size="icon" variant="ghost" className="opacity-0 group-hover:opacity-100"
                         onClick={(e) => { e.stopPropagation(); setEditingId(c.id); setEditName(c.name); }}>
                         <Pencil className="h-4 w-4" />
