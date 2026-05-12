@@ -100,6 +100,8 @@ export default function AdminCategories() {
     if (e1.error || e2.error) return toast.error('Erro ao reordenar');
     qc.invalidateQueries({ queryKey: ['categories'] });
   };
+
+  const createSub = async () => {
     const name = newSub.trim();
     if (!name || !selectedCat) return;
     const { error } = await supabase.from('subcategories' as any).insert({ name, category_id: selectedCat.id } as any);
