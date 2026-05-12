@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useCart, Product } from '@/context/CartContext';
 import { useProducts } from '@/hooks/useProducts';
+import { useCategories } from '@/hooks/useCategories';
 import ProductCard from '@/components/ProductCard';
 import QuickViewSheet from '@/components/QuickViewSheet';
 import Header from '@/components/Header';
