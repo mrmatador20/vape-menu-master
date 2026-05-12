@@ -257,10 +257,10 @@ export function FlavorFormDialog({
                 </div>
 
                 <div>
-                  <Label className="text-xs">Foto desta cor (opcional)</Label>
-                  <VariantImageField
-                    value={c.image_url}
-                    onChange={(v) => updateColor(i, { image_url: v })}
+                  <Label className="text-xs">Fotos desta cor (até 6)</Label>
+                  <VariantImagesField
+                    values={c.image_urls}
+                    onChange={(v) => updateColor(i, { image_urls: v })}
                   />
                 </div>
               </div>
