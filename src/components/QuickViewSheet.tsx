@@ -95,6 +95,7 @@ export default function QuickViewSheet({
     if (!open) return;
     setActiveImage(0);
     setShowReviews(false);
+    setDescExpanded(false);
     if (flavors && flavors.length > 0) {
       const inStock = flavors.find(f => f.stock > 0);
       setSelectedFlavor((inStock || flavors[0]).name);
