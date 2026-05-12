@@ -41,8 +41,13 @@ const Index = () => {
     const available = products.filter(
       p => p.visible_in_all !== false && (p.stock ?? 0) > 0
     );
-    return Array.from(new Set(available.map(p => p.category))).sort();
-  }, [products]);
+    const availableSet = new Set(available.map(p => p.category));
+    const ordered = (orderedCategories || [])
+      .map(c => c.name)
+      .filter(name => availableSet.has(name));
+    const extras = Array.from(availableSet).filter(c => !ordered.includes(c)).sort();
+    return [...ordered, ...extras];
+  }, [products, orderedCategories]);
 
   const availableProducts = useMemo(
     () => (products || []).filter(p => p.visible_in_all !== false && (p.stock ?? 0) > 0),
