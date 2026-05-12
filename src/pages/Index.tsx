@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useCart, Product } from '@/context/CartContext';
 import { useProducts } from '@/hooks/useProducts';
+import { useCategories } from '@/hooks/useCategories';
 import ProductCard from '@/components/ProductCard';
 import QuickViewSheet from '@/components/QuickViewSheet';
 import Header from '@/components/Header';
@@ -15,6 +16,7 @@ import { useSiteIdentity } from '@/hooks/useSiteIdentity';
 const Index = () => {
   const { addToCart } = useCart();
   const { data: products, isLoading } = useProducts();
+  const { data: orderedCategories } = useCategories();
   const { data: siteIdentity } = useSiteIdentity();
   const [searchParams] = useSearchParams();
   const [activeCategory, setActiveCategory] = useState<string>('all');
@@ -39,8 +41,13 @@ const Index = () => {
     const available = products.filter(
       p => p.visible_in_all !== false && (p.stock ?? 0) > 0
     );
-    return Array.from(new Set(available.map(p => p.category))).sort();
-  }, [products]);
+    const availableSet = new Set(available.map(p => p.category));
+    const ordered = (orderedCategories || [])
+      .map(c => c.name)
+      .filter(name => availableSet.has(name));
+    const extras = Array.from(availableSet).filter(c => !ordered.includes(c)).sort();
+    return [...ordered, ...extras];
+  }, [products, orderedCategories]);
 
   const availableProducts = useMemo(
     () => (products || []).filter(p => p.visible_in_all !== false && (p.stock ?? 0) > 0),
