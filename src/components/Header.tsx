@@ -49,6 +49,7 @@ const Header = () => {
   const navigate = useNavigate();
   const { data: role } = useUserRole();
   const { data: products } = useProducts();
+  const { data: orderedCategories } = useCategories();
   const { data: siteIdentity } = useSiteIdentity();
   const siteName = siteIdentity?.site_name ?? 'Fox Velour';
   const { isNavigationBlocked } = useAuthState();
@@ -65,10 +66,15 @@ const Header = () => {
     [products]
   );
 
-  const categories = useMemo(
-    () => Array.from(new Set(availableProducts.map(p => p.category))).sort(),
-    [availableProducts]
-  );
+  const categories = useMemo(() => {
+    const available = new Set(availableProducts.map(p => p.category));
+    const ordered = (orderedCategories || [])
+      .map(c => c.name)
+      .filter(name => available.has(name));
+    // Append any product categories not yet in the categories table (fallback)
+    const extras = Array.from(available).filter(c => !ordered.includes(c)).sort();
+    return [...ordered, ...extras];
+  }, [availableProducts, orderedCategories]);
 
   const getCategorySubcategories = (category: string) => {
     const subs = availableProducts
