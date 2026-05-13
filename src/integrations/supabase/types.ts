@@ -269,6 +269,7 @@ export type Database = {
           color: string | null
           color_hex: string | null
           created_at: string
+          display_order: number
           id: string
           image_url: string | null
           image_urls: string[]
@@ -283,6 +284,7 @@ export type Database = {
           color?: string | null
           color_hex?: string | null
           created_at?: string
+          display_order?: number
           id?: string
           image_url?: string | null
           image_urls?: string[]
@@ -297,6 +299,7 @@ export type Database = {
           color?: string | null
           color_hex?: string | null
           created_at?: string
+          display_order?: number
           id?: string
           image_url?: string | null
           image_urls?: string[]

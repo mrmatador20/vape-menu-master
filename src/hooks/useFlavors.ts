@@ -13,6 +13,7 @@ export interface Flavor {
   sku?: string | null;
   image_url?: string | null;
   image_urls?: string[] | null;
+  display_order?: number;
   created_at: string;
 }
 
@@ -24,7 +25,9 @@ export const useFlavors = (productId: string) => {
       const { data, error } = await supabase
         .from('flavors')
         .select('*')
-        .eq('product_id', productId);
+        .eq('product_id', productId)
+        .order('display_order', { ascending: true })
+        .order('created_at', { ascending: true });
 
       if (error) throw error;
       return data as Flavor[];
