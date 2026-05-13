@@ -97,6 +97,7 @@ const Cart = () => {
                           variant="outline"
                           onClick={() => updateQuantity(`${item.id}-${item.flavor || 'no-flavor'}`, item.quantity - 1)}
                           className="h-8 w-8 p-0"
+                          aria-label="Diminuir quantidade"
                         >
                           <Minus className="h-4 w-4" />
                         </Button>
@@ -108,6 +109,7 @@ const Cart = () => {
                           variant="outline"
                           onClick={() => updateQuantity(`${item.id}-${item.flavor || 'no-flavor'}`, item.quantity + 1)}
                           className="h-8 w-8 p-0"
+                          aria-label="Aumentar quantidade"
                         >
                           <Plus className="h-4 w-4" />
                         </Button>
@@ -123,6 +125,7 @@ const Cart = () => {
                           variant="ghost"
                           onClick={() => removeFromCart(`${item.id}-${item.flavor || 'no-flavor'}`)}
                           className="text-destructive hover:text-destructive/90"
+                          aria-label="Remover item do carrinho"
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
