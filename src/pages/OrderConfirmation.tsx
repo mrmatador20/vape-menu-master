@@ -146,6 +146,7 @@ const OrderConfirmation = () => {
           </CardContent>
         </Card>
 
+        <h2 className="sr-only">Detalhes do pedido</h2>
         <div className="grid md:grid-cols-2 gap-6">
           <Card>
             <CardHeader>

@@ -125,6 +125,7 @@ export const BannerCarousel = () => {
                 onClick={prevBanner}
                 disabled={isTransitioning}
                 className="absolute left-4 top-1/2 -translate-y-1/2 z-10 hover:bg-white/20 bg-black/30"
+                aria-label="Banner anterior"
               >
                 <ChevronLeft className="h-5 w-5 text-white" />
               </Button>
@@ -134,6 +135,7 @@ export const BannerCarousel = () => {
                 onClick={nextBanner}
                 disabled={isTransitioning}
                 className="absolute right-4 top-1/2 -translate-y-1/2 z-10 hover:bg-white/20 bg-black/30"
+                aria-label="Próximo banner"
               >
                 <ChevronRight className="h-5 w-5 text-white" />
               </Button>

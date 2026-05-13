@@ -14,8 +14,8 @@ import { toast } from "sonner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { PostDeliveryReviewDialog } from "@/components/PostDeliveryReviewDialog";
 import { AsaasPaymentDialog } from "@/components/AsaasPaymentDialog";
-import {
 import { usePageMeta } from '@/hooks/usePageMeta';
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -29,6 +29,7 @@ import { usePageMeta } from '@/hooks/usePageMeta';
 import { useQueryClient } from "@tanstack/react-query";
 
 export default function MyOrders() {
+  usePageMeta({ title: 'Meus Pedidos - Fox Velour', description: 'Acompanhe o histórico e o status dos seus pedidos na Fox Velour.', path: '/my-orders' });
   const navigate = useNavigate();
   const [userId, setUserId] = useState<string | null>(null);
   const [payingOrder, setPayingOrder] = useState<any | null>(null);
@@ -244,6 +245,7 @@ export default function MyOrders() {
               Histórico completo dos seus pedidos
             </p>
           </div>
+          <h2 className="sr-only">Lista de pedidos</h2>
 
           <div className="grid gap-6">
             {orders.map((order) => (

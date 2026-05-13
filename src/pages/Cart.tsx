@@ -41,16 +41,16 @@ const Cart = () => {
     return (
       <>
         <Header />
-        <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center bg-gradient-hero">
+        <main className="min-h-[calc(100vh-4rem)] flex items-center justify-center bg-gradient-hero">
           <div className="text-center space-y-4">
-            <h2 className="text-2xl font-bold text-foreground">Seu carrinho está vazio</h2>
+            <h1 className="text-2xl font-bold text-foreground">Seu carrinho está vazio</h1>
             <p className="text-muted-foreground">Adicione alguns produtos para continuar</p>
             <Button onClick={() => navigate('/')} className="bg-primary hover:bg-primary/90">
               <ArrowLeft className="h-4 w-4 mr-2" />
               Voltar às compras
             </Button>
           </div>
-        </div>
+        </main>
       </>
     );
   }
@@ -58,7 +58,7 @@ const Cart = () => {
   return (
     <>
       <Header />
-      <div className="min-h-[calc(100vh-4rem)] bg-gradient-hero py-8">
+      <main className="min-h-[calc(100vh-4rem)] bg-gradient-hero py-8">
         <div className="container max-w-4xl">
           <div className="flex items-center gap-4 mb-6">
             <Button
@@ -97,6 +97,7 @@ const Cart = () => {
                           variant="outline"
                           onClick={() => updateQuantity(`${item.id}-${item.flavor || 'no-flavor'}`, item.quantity - 1)}
                           className="h-8 w-8 p-0"
+                          aria-label="Diminuir quantidade"
                         >
                           <Minus className="h-4 w-4" />
                         </Button>
@@ -108,6 +109,7 @@ const Cart = () => {
                           variant="outline"
                           onClick={() => updateQuantity(`${item.id}-${item.flavor || 'no-flavor'}`, item.quantity + 1)}
                           className="h-8 w-8 p-0"
+                          aria-label="Aumentar quantidade"
                         >
                           <Plus className="h-4 w-4" />
                         </Button>
@@ -123,6 +125,7 @@ const Cart = () => {
                           variant="ghost"
                           onClick={() => removeFromCart(`${item.id}-${item.flavor || 'no-flavor'}`)}
                           className="text-destructive hover:text-destructive/90"
+                          aria-label="Remover item do carrinho"
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -156,7 +159,7 @@ const Cart = () => {
             </div>
           </Card>
         </div>
-      </div>
+      </main>
     </>
   );
 };

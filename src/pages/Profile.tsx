@@ -23,8 +23,8 @@ import { ReferralTierBadge } from '@/components/ReferralTierBadge';
 import { AvatarUpload } from '@/components/AvatarUpload';
 import { Badge } from '@/components/ui/badge';
 import { SavedAddressesManager } from '@/components/SavedAddressesManager';
-import {
 import { usePageMeta } from '@/hooks/usePageMeta';
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -212,6 +212,7 @@ const Profile = () => {
           <h1 className="text-3xl font-bold text-foreground mb-2">Meu Perfil</h1>
           <p className="text-muted-foreground">Gerencie suas informações pessoais e endereço de entrega</p>
         </div>
+        <h2 className="sr-only">Seções do perfil</h2>
 
         <div className="grid gap-6">
           {/* Account Info Card */}
