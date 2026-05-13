@@ -545,10 +545,7 @@ serve(async (req) => {
     if (itemsError) {
       console.error('[create-order] Error creating order items:', JSON.stringify(itemsError));
       return new Response(
-        JSON.stringify({ 
-          error: 'Falha ao criar itens do pedido',
-          details: itemsError.message 
-        }),
+        JSON.stringify({ error: 'Falha ao criar itens do pedido' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
