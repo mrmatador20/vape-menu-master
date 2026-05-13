@@ -226,6 +226,8 @@ const Index = () => {
         </div>
       </section>
 
+      </main>
+
       <QuickViewSheet
         product={quickViewProduct}
         open={!!quickViewProduct}
