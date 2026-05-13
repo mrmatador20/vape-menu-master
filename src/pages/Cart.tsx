@@ -58,7 +58,7 @@ const Cart = () => {
   return (
     <>
       <Header />
-      <div className="min-h-[calc(100vh-4rem)] bg-gradient-hero py-8">
+      <main className="min-h-[calc(100vh-4rem)] bg-gradient-hero py-8">
         <div className="container max-w-4xl">
           <div className="flex items-center gap-4 mb-6">
             <Button
