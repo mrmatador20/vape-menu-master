@@ -215,7 +215,7 @@ serve(async (req: Request): Promise<Response> => {
   } catch (error: any) {
     console.error("[notify-log-cleanup] Error:", error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: "Erro interno. Tente novamente." }),
       {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },

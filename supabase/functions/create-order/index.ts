@@ -521,10 +521,7 @@ serve(async (req) => {
     if (orderError) {
       console.error('[create-order] Error creating order:', JSON.stringify(orderError));
       return new Response(
-        JSON.stringify({ 
-          error: 'Falha ao criar pedido. Por favor, tente novamente.',
-          details: orderError.message 
-        }),
+        JSON.stringify({ error: 'Falha ao criar pedido. Por favor, tente novamente.' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -548,10 +545,7 @@ serve(async (req) => {
     if (itemsError) {
       console.error('[create-order] Error creating order items:', JSON.stringify(itemsError));
       return new Response(
-        JSON.stringify({ 
-          error: 'Falha ao criar itens do pedido',
-          details: itemsError.message 
-        }),
+        JSON.stringify({ error: 'Falha ao criar itens do pedido' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -594,10 +588,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('[create-order] Unhandled error:', error);
     return new Response(
-      JSON.stringify({ 
-        error: 'Internal server error',
-        details: error instanceof Error ? error.message : 'Unknown error'
-      }),
+      JSON.stringify({ error: 'Erro interno. Tente novamente.' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
