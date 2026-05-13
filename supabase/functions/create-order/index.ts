@@ -521,10 +521,7 @@ serve(async (req) => {
     if (orderError) {
       console.error('[create-order] Error creating order:', JSON.stringify(orderError));
       return new Response(
-        JSON.stringify({ 
-          error: 'Falha ao criar pedido. Por favor, tente novamente.',
-          details: orderError.message 
-        }),
+        JSON.stringify({ error: 'Falha ao criar pedido. Por favor, tente novamente.' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
