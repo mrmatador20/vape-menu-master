@@ -115,13 +115,9 @@ Deno.serve(async (req) => {
 
   } catch (error) {
     console.error('Audit log error:', error)
-    const errorMessage = error instanceof Error ? error.message : 'Failed to create audit log'
     
     return new Response(
-      JSON.stringify({ 
-        error: errorMessage,
-        details: error 
-      }),
+      JSON.stringify({ error: 'Failed to create audit log' }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 500 
