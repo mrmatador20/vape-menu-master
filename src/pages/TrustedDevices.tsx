@@ -218,6 +218,7 @@ const TrustedDevices = () => {
                                     setEditingDeviceId(device.id);
                                     setNewDeviceName(device.device_name || '');
                                   }}
+                                  aria-label="Renomear dispositivo"
                                 >
                                   <Edit2 className="h-3 w-3" />
                                 </Button>
