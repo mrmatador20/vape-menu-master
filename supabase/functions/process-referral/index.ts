@@ -96,6 +96,15 @@ serve(async (req) => {
       );
     }
 
+    // 2.2. Order must be confirmed/delivered before awarding points
+    if (!['confirmed', 'delivered'].includes(order.status)) {
+      console.log('[process-referral] Order not yet confirmed, status:', order.status);
+      return new Response(
+        JSON.stringify({ success: false, message: 'Order must be confirmed before awarding points' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+      );
+    }
+
     // 3. Check if user is referring themselves (not allowed)
     if (order.user_id === referrerProfile.id) {
       console.log('[process-referral] User cannot refer themselves');
