@@ -101,6 +101,23 @@ serve(async (req) => {
       });
     }
 
+    // Ownership check: order must belong to authenticated user
+    const { data: ownerOrder, error: ownerErr } = await authClient
+      .from('orders')
+      .select('id, user_id')
+      .eq('id', orderId)
+      .maybeSingle();
+    if (ownerErr || !ownerOrder) {
+      return new Response(JSON.stringify({ error: 'Pedido não encontrado' }), {
+        status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    if (ownerOrder.user_id !== authUser.id) {
+      return new Response(JSON.stringify({ error: 'Acesso negado' }), {
+        status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     // Anti-fraude: rate limit por orderId + IP
     const clientIp = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
     const rateLimitKey = `${orderId}:${clientIp}`;
