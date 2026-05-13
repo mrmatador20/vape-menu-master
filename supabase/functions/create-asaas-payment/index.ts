@@ -73,7 +73,6 @@ serve(async (req) => {
     const body = await req.json();
     const {
       orderId,
-      amount,
       description,
       paymentMethod,
       payerName,
@@ -93,18 +92,18 @@ serve(async (req) => {
       cardHolderPhone,
     } = body;
 
-    safeLog('[Asaas] Request received', { orderId, paymentMethod, amount });
+    safeLog('[Asaas] Request received', { orderId, paymentMethod });
 
-    if (!orderId || !amount || !paymentMethod) {
+    if (!orderId || !paymentMethod) {
       return new Response(JSON.stringify({ error: 'Dados incompletos' }), {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    // Ownership check: order must belong to authenticated user
+    // Ownership check + server-side amount: fetch authoritative total from DB
     const { data: ownerOrder, error: ownerErr } = await authClient
       .from('orders')
-      .select('id, user_id')
+      .select('id, user_id, total_amount, status')
       .eq('id', orderId)
       .maybeSingle();
     if (ownerErr || !ownerOrder) {
@@ -117,6 +116,13 @@ serve(async (req) => {
         status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+    // Prevent double-payment: only allow payment for orders awaiting payment
+    if (ownerOrder.status && !['pending', 'pending_payment'].includes(ownerOrder.status)) {
+      return new Response(JSON.stringify({ error: 'Pedido não está aguardando pagamento' }), {
+        status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const amount = ownerOrder.total_amount;
 
     // Anti-fraude: rate limit por orderId + IP
     const clientIp = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';

@@ -32,10 +32,10 @@ serve(async (req) => {
       });
     }
 
-    const { orderId, amount, description, payerEmail, payerCpf } = await req.json();
+    const { orderId, description, payerEmail, payerCpf } = await req.json();
 
     // Validação rigorosa de campos obrigatórios
-    if (!orderId || !amount || !description) {
+    if (!orderId || !description) {
       console.error('[MercadoPago] Missing required fields');
       return new Response(
         JSON.stringify({ error: 'Dados incompletos para processamento' }),
@@ -43,10 +43,10 @@ serve(async (req) => {
       );
     }
 
-    // Ownership check
+    // Ownership check + server-side amount: fetch authoritative total from DB
     const { data: ownerOrder, error: ownerErr } = await supabaseAuth
       .from('orders')
-      .select('id, user_id')
+      .select('id, user_id, total_amount, status')
       .eq('id', orderId)
       .maybeSingle();
     if (ownerErr || !ownerOrder) {
@@ -59,6 +59,12 @@ serve(async (req) => {
         status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+    if (ownerOrder.status && !['pending', 'pending_payment'].includes(ownerOrder.status)) {
+      return new Response(JSON.stringify({ error: 'Pedido não está aguardando pagamento' }), {
+        status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const amount = ownerOrder.total_amount;
 
     // Validação de CPF obrigatório para PIX
     if (!payerCpf) {
