@@ -245,6 +245,7 @@ export default function MyOrders() {
               Histórico completo dos seus pedidos
             </p>
           </div>
+          <h2 className="sr-only">Lista de pedidos</h2>
 
           <div className="grid gap-6">
             {orders.map((order) => (
