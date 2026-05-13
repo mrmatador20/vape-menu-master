@@ -13,7 +13,6 @@ const orderRequestSchema = z.object({
     id: z.string().uuid(),
     quantity: z.number().int().min(1).max(100),
     flavor: z.string().trim().max(50).optional(),
-    price: z.number().nonnegative().optional(), // ✅ Aceitar preço do frontend
   })).min(1),
   customerName: z.string().trim().min(2).max(120),
   customerPhone: z.string().trim().min(10).max(20),
