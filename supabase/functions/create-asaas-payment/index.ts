@@ -50,6 +50,26 @@ serve(async (req) => {
   }
 
   try {
+    // Authentication: require valid JWT
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: 'Não autenticado' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const authClient = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+    );
+    const { data: { user: authUser }, error: authErr } = await authClient.auth.getUser(
+      authHeader.replace('Bearer ', '')
+    );
+    if (authErr || !authUser) {
+      return new Response(JSON.stringify({ error: 'Não autenticado' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     const body = await req.json();
     const {
       orderId,
@@ -78,6 +98,23 @@ serve(async (req) => {
     if (!orderId || !amount || !paymentMethod) {
       return new Response(JSON.stringify({ error: 'Dados incompletos' }), {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Ownership check: order must belong to authenticated user
+    const { data: ownerOrder, error: ownerErr } = await authClient
+      .from('orders')
+      .select('id, user_id')
+      .eq('id', orderId)
+      .maybeSingle();
+    if (ownerErr || !ownerOrder) {
+      return new Response(JSON.stringify({ error: 'Pedido não encontrado' }), {
+        status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    if (ownerOrder.user_id !== authUser.id) {
+      return new Response(JSON.stringify({ error: 'Acesso negado' }), {
+        status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 

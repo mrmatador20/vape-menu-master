@@ -41,3 +41,9 @@ verify_jwt = false
 
 [functions.cancel-asaas-payment]
 verify_jwt = true
+
+[functions.security-anomaly-alerts]
+verify_jwt = true
+
+[functions.notify-log-cleanup]
+verify_jwt = true
