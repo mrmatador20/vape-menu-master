@@ -257,7 +257,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('[MercadoPago Webhook] Error:', error);
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }),
+      JSON.stringify({ error: 'Erro interno. Tente novamente.' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
