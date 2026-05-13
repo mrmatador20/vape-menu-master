@@ -18,6 +18,7 @@ import { useSavedAddresses } from '@/hooks/useSavedAddresses';
 import { SavedAddressSelector } from '@/components/SavedAddressSelector';
 import { Tables } from '@/integrations/supabase/types';
 import { Checkbox } from '@/components/ui/checkbox';
+import { usePageMeta } from '@/hooks/usePageMeta';
 
 const checkoutSchema = z.object({
   customerName: z.string().trim().min(2, 'Nome completo é obrigatório').max(120, 'Nome muito longo'),
@@ -44,6 +45,8 @@ const checkoutSchema = z.object({
 });
 
 const Checkout = () => {
+  usePageMeta({ title: 'Finalizar Compra - Fox Velour', description: 'Conclua seu pedido com segurança na Fox Velour.', path: '/checkout' });
+
   const { items, totalPrice, clearCart, getFinalPrice } = useCart();
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);

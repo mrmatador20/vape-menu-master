@@ -8,8 +8,11 @@ import { Card } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { Loader2, ArrowLeft } from 'lucide-react';
 import Header from '@/components/Header';
+import { usePageMeta } from '@/hooks/usePageMeta';
 
 const ForgotPassword = () => {
+  usePageMeta({ title: 'Recuperar Senha - Fox Velour', description: 'Recupere o acesso à sua conta Fox Velour por e-mail.', path: '/forgot-password' });
+
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [email, setEmail] = useState('');

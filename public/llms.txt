@@ -1,0 +1,9 @@
+# Fox Velour
+
+> Marca premium especializada em moda fitness, difusores, sabonetes líquidos, body splashes e perfumes com estética minimalista e exclusiva.
+
+## Pages
+
+- [Home](/): Catálogo de produtos Fox Velour — fragrâncias, moda fitness e cuidados pessoais.
+- [Carrinho](/cart): Itens selecionados para compra.
+- [Login](/auth): Acesso e cadastro de clientes.
