@@ -157,14 +157,24 @@ export default function AdminOrders() {
     window.open(`https://wa.me/55${clean}?text=${msg}`, '_blank');
   };
 
+  const escapeHtml = (val: any): string => {
+    if (val === null || val === undefined) return '';
+    return String(val)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  };
+
   const renderShippingLabel = (o: any) => {
     const items = o.order_items || [];
     const totalQty = items.reduce((s: number, i: any) => s + Number(i.quantity || 0), 0);
     const subtotal = items.reduce((s: number, i: any) => s + Number(i.price) * Number(i.quantity || 0), 0);
     const itemsRows = items.map((i: any) => `
       <tr>
-        <td>${i.products?.name || 'Produto'}${i.flavor ? ` <span style="color:#666">(${i.flavor})</span>` : ''}</td>
-        <td style="text-align:center">${i.quantity}</td>
+        <td>${escapeHtml(i.products?.name || 'Produto')}${i.flavor ? ` <span style="color:#666">(${escapeHtml(i.flavor)})</span>` : ''}</td>
+        <td style="text-align:center">${escapeHtml(i.quantity)}</td>
         <td style="text-align:right">R$ ${Number(i.price).toFixed(2)}</td>
         <td style="text-align:right">R$ ${(Number(i.price) * Number(i.quantity)).toFixed(2)}</td>
       </tr>`).join('');
@@ -177,7 +187,7 @@ export default function AdminOrders() {
             <div class="brand">FOX VELOUR</div>
             <div class="muted">Etiqueta de Envio</div>
           </div>
-          <div class="order-id">#${o.id.slice(0, 8).toUpperCase()}</div>
+          <div class="order-id">#${escapeHtml(o.id.slice(0, 8).toUpperCase())}</div>
         </div>
         <div class="grid">
           <div>
@@ -187,11 +197,11 @@ export default function AdminOrders() {
           </div>
           <div>
             <div class="lbl">DESTINATÁRIO</div>
-            <strong>${o.customer_name || '—'}</strong><br/>
-            ${o.address_street}, ${o.address_number}${o.address_complement ? ' - ' + o.address_complement : ''}<br/>
-            ${o.address_neighborhood} - ${o.address_city}/${o.address_state || ''}<br/>
-            <strong>CEP ${o.cep || '—'}</strong><br/>
-            <span class="muted">Tel: ${o.customer_phone || '—'}</span>
+            <strong>${escapeHtml(o.customer_name || '—')}</strong><br/>
+            ${escapeHtml(o.address_street)}, ${escapeHtml(o.address_number)}${o.address_complement ? ' - ' + escapeHtml(o.address_complement) : ''}<br/>
+            ${escapeHtml(o.address_neighborhood)} - ${escapeHtml(o.address_city)}/${escapeHtml(o.address_state || '')}<br/>
+            <strong>CEP ${escapeHtml(o.cep || '—')}</strong><br/>
+            <span class="muted">Tel: ${escapeHtml(o.customer_phone || '—')}</span>
           </div>
         </div>
       </section>
@@ -213,7 +223,7 @@ export default function AdminOrders() {
             <tr class="grand"><td colspan="3" style="text-align:right">TOTAL</td><td style="text-align:right">R$ ${Number(o.total_amount).toFixed(2)}</td></tr>
           </tfoot>
         </table>
-        <div class="footer-note">Pagamento: <strong>${o.payment_method}</strong> · Pedido: #${o.id.slice(0, 8)}</div>
+        <div class="footer-note">Pagamento: <strong>${escapeHtml(o.payment_method)}</strong> · Pedido: #${escapeHtml(o.id.slice(0, 8))}</div>
       </section>
     </div>`;
   };
