@@ -1451,10 +1451,12 @@ export type Database = {
           end_time: string
           id: string
           is_active: boolean
+          is_referral_reward: boolean
           max_uses: number
           schedule_type: string
           start_time: string
           type: string
+          user_id: string
           valid_until: string
           value: number
         }[]

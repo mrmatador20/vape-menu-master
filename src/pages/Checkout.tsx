@@ -329,22 +329,8 @@ const Checkout = () => {
 
       const discount = data[0];
 
-      // Verificar se é cupom de indicação do próprio usuário
-      const { data: discountDetails, error: discountDetailsError } = await supabase
-        .from('discounts')
-        .select('user_id, is_referral_reward')
-        .eq('code', code)
-        .maybeSingle();
-
-      if (discountDetailsError) {
-        console.error('Erro ao verificar proprietário do cupom:', discountDetailsError);
-        toast.error('Erro ao validar cupom');
-        setAppliedDiscount(null);
-        return;
-      }
-
-      // Se for cupom de indicação e pertencer ao usuário logado
-      if (discountDetails?.is_referral_reward && discountDetails?.user_id === userId) {
+      // Verify self-referral usage using ownership info returned by the RPC
+      if (discount.is_referral_reward && discount.user_id === userId) {
         toast.error('Você não pode usar seu próprio cupom de indicação');
         setAppliedDiscount(null);
         return;
