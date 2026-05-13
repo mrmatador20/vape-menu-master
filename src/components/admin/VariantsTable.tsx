@@ -221,3 +221,75 @@ export function VariantsTable({ productId, productName }: Props) {
     </div>
   );
 }
+
+interface SortableVariantRowProps {
+  flavor: Flavor;
+  draggable: boolean;
+  onDuplicate: () => void;
+  onEdit: () => void;
+  onDelete: () => void;
+}
+
+function SortableVariantRow({ flavor: f, draggable, onDuplicate, onEdit, onDelete }: SortableVariantRowProps) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: f.id, disabled: !draggable });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.6 : 1,
+  };
+  return (
+    <TableRow ref={setNodeRef} style={style}>
+      <TableCell className="w-[40px]">
+        <button
+          type="button"
+          {...attributes}
+          {...listeners}
+          disabled={!draggable}
+          className="h-7 w-7 inline-flex items-center justify-center rounded hover:bg-muted text-muted-foreground cursor-grab active:cursor-grabbing disabled:opacity-30 disabled:cursor-not-allowed"
+          aria-label="Arrastar para reordenar"
+        >
+          <GripVertical className="h-4 w-4" />
+        </button>
+      </TableCell>
+      <TableCell className="font-medium">
+        <div className="flex items-center gap-2">
+          {f.image_url ? (
+            <img src={f.image_url} alt={f.name} className="h-8 w-8 rounded object-cover border" />
+          ) : (
+            <div className="h-8 w-8 rounded bg-muted border" />
+          )}
+          <span>{f.name}</span>
+        </div>
+      </TableCell>
+      <TableCell>{f.size || <span className="text-muted-foreground">—</span>}</TableCell>
+      <TableCell>
+        {f.color ? (
+          <div className="flex items-center gap-2">
+            {f.color_hex && (
+              <span className="inline-block h-4 w-4 rounded-full border" style={{ background: f.color_hex }} />
+            )}
+            <span>{f.color}</span>
+          </div>
+        ) : <span className="text-muted-foreground">—</span>}
+      </TableCell>
+      <TableCell>
+        {f.sku ? <code className="text-xs bg-muted px-1.5 py-0.5 rounded">{f.sku}</code> : <span className="text-muted-foreground">—</span>}
+      </TableCell>
+      <TableCell className="text-right">
+        <Badge variant={f.stock === 0 ? 'destructive' : f.stock < 5 ? 'outline' : 'secondary'}>
+          {f.stock}
+        </Badge>
+      </TableCell>
+      <TableCell className="text-right">
+        {f.price ? `R$ ${Number(f.price).toFixed(2)}` : <span className="text-muted-foreground">base</span>}
+      </TableCell>
+      <TableCell className="text-right">
+        <div className="flex justify-end gap-1">
+          <Button type="button" size="icon" variant="ghost" onClick={onDuplicate} title="Duplicar"><Copy className="h-4 w-4" /></Button>
+          <Button type="button" size="icon" variant="ghost" onClick={onEdit} title="Editar"><Pencil className="h-4 w-4" /></Button>
+          <Button type="button" size="icon" variant="ghost" className="text-destructive" onClick={onDelete} title="Excluir"><Trash2 className="h-4 w-4" /></Button>
+        </div>
+      </TableCell>
+    </TableRow>
+  );
+}
