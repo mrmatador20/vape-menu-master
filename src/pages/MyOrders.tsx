@@ -29,6 +29,7 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 
 export default function MyOrders() {
+  usePageMeta({ title: 'Meus Pedidos - Fox Velour', description: 'Acompanhe o histórico e o status dos seus pedidos na Fox Velour.', path: '/my-orders' });
   const navigate = useNavigate();
   const [userId, setUserId] = useState<string | null>(null);
   const [payingOrder, setPayingOrder] = useState<any | null>(null);
