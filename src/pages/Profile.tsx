@@ -23,8 +23,8 @@ import { ReferralTierBadge } from '@/components/ReferralTierBadge';
 import { AvatarUpload } from '@/components/AvatarUpload';
 import { Badge } from '@/components/ui/badge';
 import { SavedAddressesManager } from '@/components/SavedAddressesManager';
-import {
 import { usePageMeta } from '@/hooks/usePageMeta';
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
