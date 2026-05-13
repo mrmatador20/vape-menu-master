@@ -12,6 +12,26 @@ serve(async (req) => {
   }
 
   try {
+    // Authentication
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: 'Não autenticado' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const supabaseAuth = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+    );
+    const { data: { user: authUser }, error: authErr } = await supabaseAuth.auth.getUser(
+      authHeader.replace('Bearer ', '')
+    );
+    if (authErr || !authUser) {
+      return new Response(JSON.stringify({ error: 'Não autenticado' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     const { orderId, amount, description, payerEmail, payerCpf } = await req.json();
 
     // Validação rigorosa de campos obrigatórios
@@ -21,6 +41,23 @@ serve(async (req) => {
         JSON.stringify({ error: 'Dados incompletos para processamento' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
+    }
+
+    // Ownership check
+    const { data: ownerOrder, error: ownerErr } = await supabaseAuth
+      .from('orders')
+      .select('id, user_id')
+      .eq('id', orderId)
+      .maybeSingle();
+    if (ownerErr || !ownerOrder) {
+      return new Response(JSON.stringify({ error: 'Pedido não encontrado' }), {
+        status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    if (ownerOrder.user_id !== authUser.id) {
+      return new Response(JSON.stringify({ error: 'Acesso negado' }), {
+        status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     // Validação de CPF obrigatório para PIX
