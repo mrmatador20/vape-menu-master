@@ -51,17 +51,58 @@ export function VariantsTable({ productId, productName }: Props) {
   const [open, setOpen] = useState(false);
   const [openGen, setOpenGen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [orderedIds, setOrderedIds] = useState<string[]>([]);
+
+  useEffect(() => {
+    setOrderedIds(flavors.map((f) => f.id));
+  }, [flavors]);
+
+  const ordered = useMemo(() => {
+    const map = new Map(flavors.map((f) => [f.id, f]));
+    const list = orderedIds.map((id) => map.get(id)).filter(Boolean) as Flavor[];
+    flavors.forEach((f) => { if (!orderedIds.includes(f.id)) list.push(f); });
+    return list;
+  }, [flavors, orderedIds]);
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
-    return flavors.filter(
+    return ordered.filter(
       (f) =>
         f.name.toLowerCase().includes(q) ||
         (f.sku || '').toLowerCase().includes(q) ||
         (f.color || '').toLowerCase().includes(q) ||
         (f.size || '').toLowerCase().includes(q),
     );
-  }, [flavors, search]);
+  }, [ordered, search]);
+
+  const isSearching = search.trim().length > 0;
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIndex = orderedIds.indexOf(String(active.id));
+    const newIndex = orderedIds.indexOf(String(over.id));
+    if (oldIndex === -1 || newIndex === -1) return;
+    const next = arrayMove(orderedIds, oldIndex, newIndex);
+    setOrderedIds(next);
+
+    const updates = next.map((id, idx) =>
+      supabase.from('flavors').update({ display_order: idx }).eq('id', id),
+    );
+    const results = await Promise.all(updates);
+    const failed = results.find((r) => r.error);
+    if (failed?.error) {
+      toast.error('Erro ao salvar ordem: ' + failed.error.message);
+    } else {
+      toast.success('Ordem salva');
+    }
+    qc.invalidateQueries({ queryKey: ['flavors', productId] });
+  };
 
   const totalStock = flavors.reduce((sum, f) => sum + (f.stock || 0), 0);
 
