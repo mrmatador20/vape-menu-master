@@ -133,6 +133,7 @@ const TrustedDevices = () => {
               Gerencie os dispositivos onde você optou por não precisar de verificação 2FA por 30 dias
             </p>
           </div>
+          <h2 className="sr-only">Lista de dispositivos confiáveis</h2>
 
           <Alert className="mb-6 bg-muted/50 border-primary/20">
             <Shield className="h-4 w-4" />
