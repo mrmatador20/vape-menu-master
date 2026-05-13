@@ -156,7 +156,7 @@ const Cart = () => {
             </div>
           </Card>
         </div>
-      </div>
+      </main>
     </>
   );
 };
