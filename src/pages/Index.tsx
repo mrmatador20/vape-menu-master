@@ -95,7 +95,7 @@ const Index = () => {
       <section className="py-24 md:py-32 px-4">
         <div className="container max-w-4xl text-center space-y-8">
           <h1 className="font-serif text-3xl sm:text-5xl md:text-7xl font-normal tracking-[0.08em] sm:tracking-[0.15em] leading-tight sm:leading-[1.1] uppercase text-foreground max-w-[14ch] sm:max-w-none mx-auto animate-in fade-in slide-in-from-bottom-4 duration-1000">
-            {siteIdentity?.site_hero_title ?? 'Fox Velour'}
+            {siteIdentity?.site_hero_title ?? 'Fox Velour — Fragrâncias e Estilo Premium'}
           </h1>
           <div className="mx-auto h-px w-16 bg-primary/60" />
           <p className="text-sm md:text-base text-muted-foreground max-w-xl mx-auto leading-relaxed font-light whitespace-pre-line animate-in fade-in duration-1000 delay-200">
