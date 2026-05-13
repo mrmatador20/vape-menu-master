@@ -302,11 +302,12 @@ serve(async (req) => {
       const productFlavors = flavorsByProduct.get(item.id) || [];
       let stockToCheck = product.stock;
       let stockSource = 'product';
+      let selectedFlavor: Flavor | undefined;
 
       // If item has a flavor, check flavor stock instead
       if (item.flavor && productFlavors.length > 0) {
         // Cart sends composite "name • color" or just "name". Match against either.
-        const selectedFlavor = productFlavors.find((f: any) => {
+        selectedFlavor = productFlavors.find((f: any) => {
           if (f.name === item.flavor) return true;
           const composite = f.color ? `${f.name} • ${f.color}` : f.name;
           return composite === item.flavor;
@@ -339,26 +340,23 @@ serve(async (req) => {
         );
       }
 
-      // ✅ Usar preço do frontend se disponível (já com desconto aplicado)
-      // Caso contrário, calcular no servidor (fallback para compatibilidade)
-      let finalPrice: number;
-      
-      if (item.price !== undefined && item.price !== null) {
-        // Usar preço enviado pelo frontend (já com desconto do produto base aplicado)
-        finalPrice = Number(item.price);
-        console.log(`[create-order] Using frontend price for ${product.name}: ${finalPrice}`);
-      } else {
-        // Fallback: calcular preço no servidor (para compatibilidade com clientes antigos)
-        finalPrice = Number(product.price);
-        if (product.discount_value && product.discount_value > 0) {
-          if (product.discount_type === 'percent') {
-            finalPrice = finalPrice * (1 - product.discount_value / 100);
-          } else if (product.discount_type === 'fixed') {
-            finalPrice = Math.max(0, finalPrice - product.discount_value);
-          }
+      // SECURITY: Always compute price server-side from DB. Never trust client.
+      // Use flavor price override if set, otherwise product base price.
+      let basePrice: number =
+        selectedFlavor && selectedFlavor.price != null
+          ? Number(selectedFlavor.price)
+          : Number(product.price);
+
+      let finalPrice = basePrice;
+      if (product.discount_value && product.discount_value > 0) {
+        if (product.discount_type === 'percent') {
+          finalPrice = finalPrice * (1 - product.discount_value / 100);
+        } else if (product.discount_type === 'fixed') {
+          finalPrice = Math.max(0, finalPrice - product.discount_value);
         }
-        console.log(`[create-order] Calculated server price for ${product.name}: ${finalPrice}`);
       }
+      finalPrice = Math.max(0, Number(finalPrice.toFixed(2)));
+      console.log(`[create-order] Server price for ${product.name}: ${finalPrice}`);
 
       const itemTotal = finalPrice * item.quantity;
       totalAmount += itemTotal;
