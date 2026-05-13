@@ -52,6 +52,8 @@ interface Flavor {
   product_id: string;
   name: string;
   stock: number;
+  color?: string | null;
+  price?: number | null;
 }
 
 interface OrderRequest {
