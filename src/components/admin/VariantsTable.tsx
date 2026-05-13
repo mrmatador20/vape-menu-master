@@ -161,6 +161,7 @@ export function VariantsTable({ productId, productName }: Props) {
         <Table>
           <TableHeader>
             <TableRow className="bg-muted/40">
+              <TableHead className="w-[40px]"></TableHead>
               <TableHead>Variante</TableHead>
               <TableHead>Tamanho</TableHead>
               <TableHead>Cor</TableHead>
@@ -170,63 +171,37 @@ export function VariantsTable({ productId, productName }: Props) {
               <TableHead className="w-[140px] text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
-          <TableBody>
-            {isLoading ? (
-              <TableRow><TableCell colSpan={7} className="text-center py-8">Carregando...</TableCell></TableRow>
-            ) : filtered.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                  {flavors.length === 0 ? 'Nenhuma variante. Crie uma ou gere combinações automaticamente.' : 'Nenhum resultado.'}
-                </TableCell>
-              </TableRow>
-            ) : (
-              filtered.map((f) => (
-                <TableRow key={f.id}>
-                  <TableCell className="font-medium">
-                    <div className="flex items-center gap-2">
-                      {f.image_url ? (
-                        <img src={f.image_url} alt={f.name} className="h-8 w-8 rounded object-cover border" />
-                      ) : (
-                        <div className="h-8 w-8 rounded bg-muted border" />
-                      )}
-                      <span>{f.name}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell>{f.size || <span className="text-muted-foreground">—</span>}</TableCell>
-                  <TableCell>
-                    {f.color ? (
-                      <div className="flex items-center gap-2">
-                        {f.color_hex && (
-                          <span className="inline-block h-4 w-4 rounded-full border" style={{ background: f.color_hex }} />
-                        )}
-                        <span>{f.color}</span>
-                      </div>
-                    ) : <span className="text-muted-foreground">—</span>}
-                  </TableCell>
-                  <TableCell>
-                    {f.sku ? <code className="text-xs bg-muted px-1.5 py-0.5 rounded">{f.sku}</code> : <span className="text-muted-foreground">—</span>}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Badge variant={f.stock === 0 ? 'destructive' : f.stock < 5 ? 'outline' : 'secondary'}>
-                      {f.stock}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {f.price ? `R$ ${Number(f.price).toFixed(2)}` : <span className="text-muted-foreground">base</span>}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-1">
-                      <Button type="button" size="icon" variant="ghost" onClick={() => handleDuplicate(f)} title="Duplicar"><Copy className="h-4 w-4" /></Button>
-                      <Button type="button" size="icon" variant="ghost" onClick={() => { setEditing(f); setOpen(true); }} title="Editar"><Pencil className="h-4 w-4" /></Button>
-                      <Button type="button" size="icon" variant="ghost" className="text-destructive" onClick={() => setDeleteId(f.id)} title="Excluir"><Trash2 className="h-4 w-4" /></Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <SortableContext items={filtered.map((f) => f.id)} strategy={verticalListSortingStrategy}>
+              <TableBody>
+                {isLoading ? (
+                  <TableRow><TableCell colSpan={8} className="text-center py-8">Carregando...</TableCell></TableRow>
+                ) : filtered.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                      {flavors.length === 0 ? 'Nenhuma variante. Crie uma ou gere combinações automaticamente.' : 'Nenhum resultado.'}
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filtered.map((f) => (
+                    <SortableVariantRow
+                      key={f.id}
+                      flavor={f}
+                      draggable={!isSearching}
+                      onDuplicate={() => handleDuplicate(f)}
+                      onEdit={() => { setEditing(f); setOpen(true); }}
+                      onDelete={() => setDeleteId(f.id)}
+                    />
+                  ))
+                )}
+              </TableBody>
+            </SortableContext>
+          </DndContext>
         </Table>
       </div>
+      {isSearching && (
+        <p className="text-xs text-muted-foreground">Limpe a busca para reordenar as variantes.</p>
+      )}
 
       <FlavorFormDialog open={open} onOpenChange={setOpen} productId={productId} flavor={editing} />
       <GenerateVariantsDialog open={openGen} onOpenChange={setOpenGen} productId={productId} productName={productName} />
