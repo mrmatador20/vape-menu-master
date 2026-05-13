@@ -672,6 +672,8 @@ const Checkout = () => {
           Voltar para o carrinho
         </Button>
 
+        <h1 className="text-3xl font-bold mb-6 text-foreground">Finalizar Compra</h1>
+
         <div className="grid md:grid-cols-2 gap-8">
           <Card className="p-6">
             <h2 className="text-2xl font-bold mb-6">Informações de Entrega</h2>
