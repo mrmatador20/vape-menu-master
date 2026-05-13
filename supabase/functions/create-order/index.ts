@@ -36,7 +36,6 @@ interface OrderItem {
   id: string;
   quantity: number;
   flavor?: string;
-  price?: number; // ✅ Aceitar preço do frontend
 }
 
 interface Product {
