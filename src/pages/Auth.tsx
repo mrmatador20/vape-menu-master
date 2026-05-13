@@ -19,8 +19,11 @@ import { MFAVerificationGate } from '@/components/MFAVerificationGate';
 import { validatePassword, getPasswordStrength, getStrengthColor, passwordRequirements } from '@/lib/passwordValidation';
 import { checkRateLimit, resetRateLimit } from '@/lib/rateLimit';
 import { checkPwnedPassword, formatPwnedCount } from '@/lib/pwnedPassword';
+import { usePageMeta } from '@/hooks/usePageMeta';
 
 const Auth = () => {
+  usePageMeta({ title: 'Entrar ou Cadastrar - Fox Velour', description: 'Acesse sua conta Fox Velour ou crie uma nova para gerenciar pedidos e endereços.', path: '/auth' });
+
   const navigate = useNavigate();
   const { listFactors } = useMFA();
   const { checkAuthRequires2FA, rememberDevice: saveRememberDevice } = useAuthGuard();

@@ -24,6 +24,7 @@ import { AvatarUpload } from '@/components/AvatarUpload';
 import { Badge } from '@/components/ui/badge';
 import { SavedAddressesManager } from '@/components/SavedAddressesManager';
 import {
+import { usePageMeta } from '@/hooks/usePageMeta';
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -50,6 +51,8 @@ const profileSchema = z.object({
 type ProfileFormData = z.infer<typeof profileSchema>;
 
 const Profile = () => {
+  usePageMeta({ title: 'Meu Perfil - Fox Velour', description: 'Gerencie seus dados pessoais, endereços e preferências de segurança.', path: '/profile' });
+
   const navigate = useNavigate();
   const { profile, isLoading, updateProfile, isUpdating } = useProfile();
   const { listFactors, unenrollMFA, isUnenrolling } = useMFA();

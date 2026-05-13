@@ -6,8 +6,11 @@ import { useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import Header from '@/components/Header';
+import { usePageMeta } from '@/hooks/usePageMeta';
 
 const Cart = () => {
+  usePageMeta({ title: 'Carrinho - Fox Velour', description: 'Revise os itens do seu carrinho e finalize sua compra na Fox Velour.', path: '/cart' });
+
   const { items, removeFromCart, updateQuantity, totalPrice, getFinalPrice } = useCart();
   const navigate = useNavigate();
   const [isAuthenticated, setIsAuthenticated] = useState(false);

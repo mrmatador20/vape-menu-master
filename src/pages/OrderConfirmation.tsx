@@ -8,6 +8,7 @@ import Header from '@/components/Header';
 import { z } from 'zod';
 import { toast } from 'sonner';
 import { AsaasPaymentDialog } from '@/components/AsaasPaymentDialog';
+import { usePageMeta } from '@/hooks/usePageMeta';
 
 const orderItemSchema = z.object({
   name: z.string().min(1, 'Nome do produto é obrigatório'),
@@ -41,6 +42,8 @@ const orderDataSchema = z.object({
 type OrderData = z.infer<typeof orderDataSchema>;
 
 const OrderConfirmation = () => {
+  usePageMeta({ title: 'Pedido Confirmado - Fox Velour', description: 'Confirmação do seu pedido Fox Velour com detalhes e pagamento.', path: '/order-confirmation' });
+
   const location = useLocation();
   const navigate = useNavigate();
   const [orderData, setOrderData] = useState<OrderData | null>(null);
