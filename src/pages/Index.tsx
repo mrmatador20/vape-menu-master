@@ -12,8 +12,14 @@ import { BannerCarousel } from '@/components/BannerCarousel';
 import { Loader2 } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { useSiteIdentity } from '@/hooks/useSiteIdentity';
+import { usePageMeta } from '@/hooks/usePageMeta';
 
 const Index = () => {
+  usePageMeta({
+    title: 'Fox Velour | Fragrâncias e Estilo Premium',
+    description: 'Compre perfumes, body splashes, difusores, sabonetes líquidos e moda fitness premium na Fox Velour. Estética minimalista e exclusiva.',
+    path: '/',
+  });
   const { addToCart } = useCart();
   const { data: products, isLoading } = useProducts();
   const { data: orderedCategories } = useCategories();
