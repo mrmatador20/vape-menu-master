@@ -12,11 +12,13 @@ import Header from '@/components/Header';
 import { validatePassword, getPasswordStrength, getStrengthColor, passwordRequirements } from '@/lib/passwordValidation';
 import { checkRateLimit, resetRateLimit } from '@/lib/rateLimit';
 import { checkPwnedPassword, formatPwnedCount } from '@/lib/pwnedPassword';
+import { usePageMeta } from '@/hooks/usePageMeta';
 
 // Flag to indicate user is in password reset flow
 const RESET_PASSWORD_FLAG = 'password_reset_flow';
 
 const ResetPassword = () => {
+  usePageMeta({ title: 'Redefinir Senha - Fox Velour', description: 'Crie uma nova senha segura para sua conta Fox Velour.', path: '/reset-password' });
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [isValidSession, setIsValidSession] = useState<boolean | null>(null);
