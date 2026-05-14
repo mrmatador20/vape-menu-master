@@ -60,6 +60,43 @@ const Index = () => {
     [products]
   );
 
+  // Inject ItemList + Product JSON-LD for catalog rich results
+  useEffect(() => {
+    const id = 'catalog-jsonld';
+    document.getElementById(id)?.remove();
+    if (!availableProducts.length) return;
+    const items = availableProducts.slice(0, 30).map((p, i) => ({
+      '@type': 'ListItem',
+      position: i + 1,
+      item: {
+        '@type': 'Product',
+        name: p.name,
+        description: p.description,
+        image: p.image,
+        offers: {
+          '@type': 'Offer',
+          price: Number(p.price).toFixed(2),
+          priceCurrency: 'BRL',
+          availability: (p.stock ?? 0) > 0
+            ? 'https://schema.org/InStock'
+            : 'https://schema.org/OutOfStock',
+          url: `https://foxvelour.com/?product=${p.id}`,
+        },
+      },
+    }));
+    const script = document.createElement('script');
+    script.type = 'application/ld+json';
+    script.id = id;
+    script.text = JSON.stringify({
+      '@context': 'https://schema.org',
+      '@type': 'ItemList',
+      name: 'Catálogo Fox Velour',
+      itemListElement: items,
+    });
+    document.head.appendChild(script);
+    return () => { document.getElementById(id)?.remove(); };
+  }, [availableProducts]);
+
   const handleCategoryChange = (category: string) => {
     setActiveCategory(category);
     setActiveSubcategory('all');
