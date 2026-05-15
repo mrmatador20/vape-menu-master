@@ -35,10 +35,26 @@ import AdminAuditLogs from "./pages/admin/AuditLogs";
 import AdminSecurityDashboard from "./pages/admin/SecurityDashboard";
 import AdminReferrals from "./pages/admin/Referrals";
 import AdminReferralMetrics from "./pages/admin/ReferralMetrics";
+import AdminInfluencerMetrics from "./pages/admin/InfluencerMetrics";
 import AdminReports from "./pages/admin/Reports";
 import TrustedDevices from "./pages/TrustedDevices";
 
 const queryClient = new QueryClient();
+
+const INFLUENCER_COUPON_KEY = 'influencer_coupon_code';
+
+// Capture ?cupom= from URL on app load
+if (typeof window !== 'undefined') {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const cupom = params.get('cupom');
+    if (cupom && cupom.trim().length > 0) {
+      localStorage.setItem(INFLUENCER_COUPON_KEY, cupom.trim().toUpperCase());
+    }
+  } catch (e) {
+    console.warn('Failed to read ?cupom= param', e);
+  }
+}
 
 // Component to check if user is in password reset flow
 const ResetFlowGuard = ({ children }: { children: React.ReactNode }) => {
@@ -139,6 +155,7 @@ const App = () => (
                 <Route path="shipping-rates" element={<AdminShippingRates />} />
                 <Route path="referrals" element={<AdminReferrals />} />
                 <Route path="referrals/metrics" element={<AdminReferralMetrics />} />
+                <Route path="influencer-metrics" element={<AdminInfluencerMetrics />} />
                 <Route path="banners" element={<AdminBanners />} />
                 <Route path="audit-logs" element={<AdminAuditLogs />} />
                 <Route path="settings" element={<AdminSettings />} />

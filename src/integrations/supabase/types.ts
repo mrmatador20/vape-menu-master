@@ -130,6 +130,42 @@ export type Database = {
           },
         ]
       }
+      coupon_conversions: {
+        Row: {
+          coupon_code: string
+          created_at: string
+          discount_amount: number
+          discount_id: string
+          id: string
+          influencer_name: string | null
+          influencer_user_id: string | null
+          order_id: string
+          order_total: number
+        }
+        Insert: {
+          coupon_code: string
+          created_at?: string
+          discount_amount?: number
+          discount_id: string
+          id?: string
+          influencer_name?: string | null
+          influencer_user_id?: string | null
+          order_id: string
+          order_total: number
+        }
+        Update: {
+          coupon_code?: string
+          created_at?: string
+          discount_amount?: number
+          discount_id?: string
+          id?: string
+          influencer_name?: string | null
+          influencer_user_id?: string | null
+          order_id?: string
+          order_total?: number
+        }
+        Relationships: []
+      }
       discount_usage: {
         Row: {
           discount_id: string
@@ -176,7 +212,10 @@ export type Database = {
           day_of_week: number | null
           end_time: string | null
           id: string
+          influencer_name: string | null
+          influencer_user_id: string | null
           is_active: boolean
+          is_influencer_coupon: boolean
           is_referral_reward: boolean | null
           max_uses: number | null
           reward_id: string | null
@@ -194,7 +233,10 @@ export type Database = {
           day_of_week?: number | null
           end_time?: string | null
           id?: string
+          influencer_name?: string | null
+          influencer_user_id?: string | null
           is_active?: boolean
+          is_influencer_coupon?: boolean
           is_referral_reward?: boolean | null
           max_uses?: number | null
           reward_id?: string | null
@@ -212,7 +254,10 @@ export type Database = {
           day_of_week?: number | null
           end_time?: string | null
           id?: string
+          influencer_name?: string | null
+          influencer_user_id?: string | null
           is_active?: boolean
+          is_influencer_coupon?: boolean
           is_referral_reward?: boolean | null
           max_uses?: number | null
           reward_id?: string | null

@@ -32,6 +32,8 @@ export function DiscountFormDialog({ open, onOpenChange, discount }: DiscountFor
       valid_until: discount.valid_until ? discount.valid_until.split('T')[0] : null,
       is_active: discount.is_active,
       max_uses: discount.max_uses,
+      is_influencer_coupon: discount.is_influencer_coupon || false,
+      influencer_name: discount.influencer_name || '',
     } : {
       code: '',
       type: 'percent',
@@ -43,10 +45,13 @@ export function DiscountFormDialog({ open, onOpenChange, discount }: DiscountFor
       valid_until: null as string | null,
       is_active: true,
       max_uses: null as number | null,
+      is_influencer_coupon: false,
+      influencer_name: '',
     },
   });
 
   const scheduleType = watch('schedule_type');
+  const isInfluencerCoupon = watch('is_influencer_coupon');
 
   // Reset form when discount prop changes or dialog opens
   useEffect(() => {
@@ -63,6 +68,8 @@ export function DiscountFormDialog({ open, onOpenChange, discount }: DiscountFor
           valid_until: discount.valid_until ? discount.valid_until.split('T')[0] : null,
           is_active: discount.is_active,
           max_uses: discount.max_uses,
+          is_influencer_coupon: discount.is_influencer_coupon || false,
+          influencer_name: discount.influencer_name || '',
         });
       } else {
         reset({
@@ -76,6 +83,8 @@ export function DiscountFormDialog({ open, onOpenChange, discount }: DiscountFor
           valid_until: null,
           is_active: true,
           max_uses: null,
+          is_influencer_coupon: false,
+          influencer_name: '',
         });
       }
     }
@@ -118,6 +127,10 @@ export function DiscountFormDialog({ open, onOpenChange, discount }: DiscountFor
       valid_until: data.valid_until && data.valid_until.trim() !== '' ? data.valid_until : null,
       max_uses: data.max_uses && Number(data.max_uses) > 0 ? Number(data.max_uses) : null,
       is_active: data.is_active,
+      is_influencer_coupon: !!data.is_influencer_coupon,
+      influencer_name: data.is_influencer_coupon && data.influencer_name?.trim()
+        ? data.influencer_name.trim()
+        : null,
     };
     
     console.log('Dados a serem enviados:', cleanedData);
@@ -258,6 +271,32 @@ export function DiscountFormDialog({ open, onOpenChange, discount }: DiscountFor
               onCheckedChange={(checked) => setValue('is_active', checked)}
             />
             <Label htmlFor="is_active">Ativo</Label>
+          </div>
+
+          <div className="border rounded-lg p-4 space-y-3 bg-muted/30">
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="is_influencer_coupon"
+                checked={!!isInfluencerCoupon}
+                onCheckedChange={(checked) => setValue('is_influencer_coupon', checked)}
+              />
+              <Label htmlFor="is_influencer_coupon" className="font-medium">
+                Cupom de Influencer/Parceiro
+              </Label>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Vendas feitas com este cupom serão registradas no painel de métricas de parceiros.
+            </p>
+            {isInfluencerCoupon && (
+              <div className="space-y-2">
+                <Label htmlFor="influencer_name">Nome do Responsável/Influencer</Label>
+                <Input
+                  id="influencer_name"
+                  {...register('influencer_name')}
+                  placeholder="Ex: Emilly Souza"
+                />
+              </div>
+            )}
           </div>
 
           <div className="flex justify-end gap-2">

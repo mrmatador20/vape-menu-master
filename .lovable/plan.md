@@ -1,57 +1,75 @@
-## Painel Admin — Novas funcionalidades
+## Rastreio de Vendas por Cupom (Influencers)
 
-Vou implementar 4 grandes melhorias no painel admin da Fox Velour. Como é um pacote grande, abaixo está o plano para você aprovar antes de eu começar.
-
----
-
-### 1. Relatórios de Performance
-
-Nova página **Admin → Relatórios** (`/admin/reports`) com:
-
-- **Ticket Médio**: receita total ÷ nº pedidos confirmados/entregues, com comparativo por período (7d / 30d / 90d).
-- **Receita por período**: gráfico de linhas (recharts) com vendas diárias.
-- **Top Produtos Mais Vendidos**: ranking por quantidade vendida (via `order_items`).
-- **Produtos Mais Vistos vs. Mais Vendidos**: tabela comparativa com taxa de conversão (views ÷ vendas).
-  - Requer rastreamento de visualizações → nova tabela `product_views` (incrementada quando o usuário abre o `QuickViewSheet` ou a página do produto).
-
-### 2. Alertas de Reestoque Inteligentes
-
-Aprimorar o card `LowStockAlert` no Dashboard:
-
-- **Previsão de esgotamento**: calcula a média de vendas/dia dos últimos 30 dias por produto e estima dias restantes (`stock ÷ vendas_diárias`).
-- Badge colorido: 🔴 esgota em <3 dias, 🟡 <7 dias, 🟢 >7 dias.
-- Mostra: "Eclipse esgotará em ~4 dias (média 2,1/dia)".
-
-### 3. Impressão de Etiquetas
-
-Na página **Admin → Pedidos**, adicionar botão **"Imprimir Etiqueta"** em cada pedido:
-
-- Abre uma nova janela com layout A4 imprimível contendo:
-  - **Etiqueta de envio**: remetente (Fox Velour), destinatário (nome, endereço completo, CEP, telefone), nº do pedido, data.
-  - **Declaração de conteúdo**: tabela com itens, quantidade, valor unitário, valor total, peso estimado.
-- CSS `@media print` para impressão limpa (sem header/sidebar).
-- Botão também disponível em lote: "Imprimir etiquetas selecionadas".
-
-### 4. Variações de Produto Aprimoradas
-
-Já existe `GenerateVariantsDialog` (gera grade tamanho × cor). Vou adicionar:
-
-- **Fotos por variação (cor)**: nova coluna `image_url` na tabela `flavors`. No `VariantsTable`, cada linha de cor terá um upload de imagem.
-- **Troca de imagem no site**: no `QuickViewSheet` e na página do produto, ao selecionar uma cor, a imagem principal muda para a foto da variação correspondente (fallback: imagem do produto).
-- **Grade rápida** (já existe via `GenerateVariantsDialog`) — vou adicionar presets de tamanhos comuns: `[P, M, G, GG]`, `[PP, P, M, G, GG]`, `[36, 38, 40, 42, 44]` para 1 clique.
+Adicionar sistema completo de tracking de cupons vinculados a influencers, com métricas e link automático.
 
 ---
 
-### Mudanças técnicas resumidas
+### 1. Banco de Dados (migration)
 
-- **DB (migrations)**:
-  - `product_views` (id, product_id, user_id?, created_at) + RLS público para insert.
-  - `flavors.image_url TEXT` (nova coluna).
-- **Frontend**:
-  - Nova rota `/admin/reports` + item no `AdminSidebar`.
-  - Hook `useProductAnalytics` (vendas, views, ticket médio, previsão de estoque).
-  - Componente `PrintShippingLabel.tsx` + integração em `admin/Orders.tsx`.
-  - Atualizar `VariantsTable.tsx`, `GenerateVariantsDialog.tsx`, `QuickViewSheet.tsx`, e a página do produto para usar a imagem da variação.
-  - Hook leve `useTrackProductView` chamado no QuickView/página do produto.
+**Alterações em `discounts`:**
+- `influencer_name TEXT` — nome livre do influencer/responsável
+- `influencer_user_id UUID` — opcional, vínculo a usuário cadastrado
+- `is_influencer_coupon BOOLEAN DEFAULT false`
 
-Posso prosseguir com tudo, ou você quer priorizar alguma parte (ex: começar só por relatórios + variações)?
+**Nova tabela `coupon_conversions`:**
+- `id`, `order_id`, `discount_id`, `coupon_code`, `influencer_name`, `influencer_user_id`
+- `order_total NUMERIC`, `discount_amount NUMERIC`
+- `created_at`
+- RLS: apenas admin pode SELECT; service_role insere
+
+**Trigger em `orders`:**
+- Quando status muda para `confirmed`/`delivered`, busca `discount_usage` daquele pedido
+- Se o cupom for `is_influencer_coupon = true`, insere em `coupon_conversions`
+
+**View `influencer_metrics_summary`:**
+- Agrega por cupom: total de usos, valor total vendido, último uso
+- Acessível apenas para admins
+
+---
+
+### 2. Admin — Formulário de Cupom
+
+Em `DiscountFormDialog.tsx`:
+- Switch "Cupom de Influencer/Parceiro"
+- Quando ativo, mostra:
+  - Input "Nome do Influencer/Responsável" (texto livre)
+  - Combobox opcional "Vincular a usuário cadastrado" (busca em `profiles`)
+
+---
+
+### 3. Admin — Painel de Métricas
+
+Nova rota `/admin/influencer-metrics` (e botão "Ver Métricas" na página de Descontos):
+- Tabela: **Cupom | Influencer | Total de Usos | Valor Total Vendido | Última Venda**
+- Filtro por intervalo de datas (date-range picker)
+- Cards de resumo: Total de vendas via influencers, Top 3 cupons
+- Ordenação por valor vendido (ranking)
+- Design em dourado/branco (consistente com painel atual)
+
+Botão "Ver Métricas" passa a abrir essa página (substitui modal genérico, se existir).
+
+---
+
+### 4. Link de Indicação Automático
+
+Novo campo gerado: `https://foxvelour.com/?cupom=EMILLY10`
+- Botão "Copiar link" ao lado de cada cupom de influencer
+- No frontend (`App.tsx` ou `CartContext`), ler `?cupom=` na URL e salvar em localStorage
+- Aplicar automaticamente no checkout
+
+---
+
+### 5. Resumo Técnico
+
+- **Migration:** alter `discounts`, criar `coupon_conversions`, criar trigger `track_coupon_conversion`, criar view de métricas
+- **Backend:** trigger no Postgres faz tudo automaticamente — sem mudanças em edge functions
+- **Frontend novo/editado:**
+  - `src/components/admin/DiscountFormDialog.tsx` (campos influencer)
+  - `src/pages/admin/InfluencerMetrics.tsx` (nova página)
+  - `src/hooks/useInfluencerMetrics.ts` (novo hook com filtro de data)
+  - `src/pages/admin/Discounts.tsx` (botão "Ver Métricas" + coluna influencer)
+  - `src/components/admin/AdminSidebar.tsx` (item de menu)
+  - `src/App.tsx` (rota + leitura de `?cupom=`)
+  - `src/context/CartContext.tsx` (auto-aplicar cupom da URL no checkout)
+
+Posso prosseguir com tudo?

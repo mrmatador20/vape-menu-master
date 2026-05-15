@@ -77,7 +77,9 @@ const Checkout = () => {
     cep: '',
     paymentMethod: 'pix',
     changeAmount: '',
-    discountCode: '',
+    discountCode: (typeof window !== 'undefined'
+      ? localStorage.getItem('influencer_coupon_code') || ''
+      : ''),
     cpf: '',
     referralCode: '',
   });
