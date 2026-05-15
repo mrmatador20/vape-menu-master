@@ -4,7 +4,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Plus, Trash2, Pencil } from "lucide-react";
+import { Loader2, Plus, Trash2, Pencil, BarChart3, Copy, Sparkles } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { DiscountFormDialog } from "@/components/admin/DiscountFormDialog";
 import { useState } from "react";
@@ -16,6 +17,13 @@ export default function AdminDiscounts() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingDiscount, setEditingDiscount] = useState<any>(null);
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
+
+  const copyInfluencerLink = (code: string) => {
+    const url = `${window.location.origin}/?cupom=${code}`;
+    navigator.clipboard.writeText(url);
+    toast.success('Link de indicação copiado!');
+  };
 
   if (roleLoading) {
     return (
