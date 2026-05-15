@@ -35,6 +35,7 @@ import AdminAuditLogs from "./pages/admin/AuditLogs";
 import AdminSecurityDashboard from "./pages/admin/SecurityDashboard";
 import AdminReferrals from "./pages/admin/Referrals";
 import AdminReferralMetrics from "./pages/admin/ReferralMetrics";
+import AdminInfluencerMetrics from "./pages/admin/InfluencerMetrics";
 import AdminReports from "./pages/admin/Reports";
 import TrustedDevices from "./pages/TrustedDevices";
 
@@ -139,6 +140,7 @@ const App = () => (
                 <Route path="shipping-rates" element={<AdminShippingRates />} />
                 <Route path="referrals" element={<AdminReferrals />} />
                 <Route path="referrals/metrics" element={<AdminReferralMetrics />} />
+                <Route path="influencer-metrics" element={<AdminInfluencerMetrics />} />
                 <Route path="banners" element={<AdminBanners />} />
                 <Route path="audit-logs" element={<AdminAuditLogs />} />
                 <Route path="settings" element={<AdminSettings />} />

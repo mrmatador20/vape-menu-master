@@ -2,7 +2,7 @@ import { useState } from "react";
 import {
   LayoutDashboard, Package, ShoppingCart, BarChart3, Tag, Star, Truck,
   Settings, Megaphone, Shield, Gift, FolderTree, ChevronDown, Boxes,
-  ClipboardList, LineChart, ShieldCheck, Wrench,
+  ClipboardList, LineChart, ShieldCheck, Wrench, Trophy,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
@@ -23,6 +23,7 @@ const groups: Group[] = [
       { title: "Estatísticas", url: "/546498@18/stats", icon: BarChart3 },
       { title: "Relatórios", url: "/546498@18/reports", icon: LineChart },
       { title: "Métricas Indicações", url: "/546498@18/referrals/metrics", icon: LineChart },
+      { title: "Métricas Parceiros", url: "/546498@18/influencer-metrics", icon: Trophy },
     ],
   },
   {
