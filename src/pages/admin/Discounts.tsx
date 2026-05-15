@@ -114,11 +114,49 @@ export default function AdminDiscounts() {
           <h1 className="text-3xl font-bold">Gestão de Descontos</h1>
           <p className="text-muted-foreground">Crie e gerencie cupons de desconto</p>
         </div>
-        <Button onClick={() => setDialogOpen(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          Novo Desconto
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => navigate('/546498@18/influencer-metrics')}>
+            <BarChart3 className="h-4 w-4 mr-2" />
+            Ver Métricas
+          </Button>
+          <Button onClick={() => setDialogOpen(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Novo Desconto
+          </Button>
+        </div>
       </div>
+
+      {/* Cupons de Parceiros - destaque */}
+      {discounts && discounts.filter((d: any) => d.is_influencer_coupon).length > 0 && (
+        <Card className="border-primary/30">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-primary" />
+              Cupons Ativos de Parceiros
+            </CardTitle>
+            <CardDescription>Cupons vinculados a influencers — clique para copiar o link de indicação</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-3">
+              {discounts
+                .filter((d: any) => d.is_influencer_coupon)
+                .map((d: any) => (
+                  <div key={d.id} className="flex items-center justify-between border rounded-lg p-3 bg-muted/30">
+                    <div>
+                      <div className="font-mono font-semibold">{d.code}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {d.influencer_name || 'Sem responsável'} · {d.usage_count || 0} usos
+                      </div>
+                    </div>
+                    <Button size="sm" variant="ghost" onClick={() => copyInfluencerLink(d.code)}>
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader>
@@ -130,6 +168,7 @@ export default function AdminDiscounts() {
             <TableHeader>
               <TableRow>
                 <TableHead>Código</TableHead>
+                <TableHead>Parceiro</TableHead>
                 <TableHead>Tipo</TableHead>
                 <TableHead>Valor</TableHead>
                 <TableHead>Agendamento</TableHead>
@@ -144,6 +183,16 @@ export default function AdminDiscounts() {
                 <TableRow key={discount.id}>
                   <TableCell className="font-mono font-semibold">
                     {discount.code}
+                  </TableCell>
+                  <TableCell>
+                    {discount.is_influencer_coupon ? (
+                      <Badge variant="secondary" className="gap-1">
+                        <Sparkles className="h-3 w-3" />
+                        {discount.influencer_name || 'Parceiro'}
+                      </Badge>
+                    ) : (
+                      <span className="text-muted-foreground text-sm">—</span>
+                    )}
                   </TableCell>
                   <TableCell>
                     <Badge variant="outline">
@@ -177,6 +226,16 @@ export default function AdminDiscounts() {
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-2">
+                      {discount.is_influencer_coupon && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          title="Copiar link de indicação"
+                          onClick={() => copyInfluencerLink(discount.code)}
+                        >
+                          <Copy className="h-4 w-4" />
+                        </Button>
+                      )}
                       <Button
                         variant="ghost"
                         size="sm"
