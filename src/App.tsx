@@ -41,6 +41,21 @@ import TrustedDevices from "./pages/TrustedDevices";
 
 const queryClient = new QueryClient();
 
+const INFLUENCER_COUPON_KEY = 'influencer_coupon_code';
+
+// Capture ?cupom= from URL on app load
+if (typeof window !== 'undefined') {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const cupom = params.get('cupom');
+    if (cupom && cupom.trim().length > 0) {
+      localStorage.setItem(INFLUENCER_COUPON_KEY, cupom.trim().toUpperCase());
+    }
+  } catch (e) {
+    console.warn('Failed to read ?cupom= param', e);
+  }
+}
+
 // Component to check if user is in password reset flow
 const ResetFlowGuard = ({ children }: { children: React.ReactNode }) => {
   const isInResetFlow = localStorage.getItem('password_reset_flow') === 'true';
