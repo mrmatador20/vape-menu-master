@@ -600,6 +600,20 @@ const Profile = () => {
           {/* User Coupons */}
           <UserCouponsCard />
 
+          {/* Affiliate Area */}
+          <Card className="cursor-pointer hover:border-primary transition-colors" onClick={() => navigate('/affiliate')}>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <ShieldCheck className="h-5 w-5" />
+                Área do Afiliado
+              </CardTitle>
+              <CardDescription>
+                Veja o desempenho do seu cupom de parceiro (se houver)
+              </CardDescription>
+            </CardHeader>
+          </Card>
+
+
           {/* Orders History Link */}
           <Card className="cursor-pointer hover:border-primary transition-colors" onClick={() => navigate('/my-orders')}>
             <CardHeader>
