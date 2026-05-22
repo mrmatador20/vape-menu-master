@@ -49,6 +49,7 @@ export function DiscountFormDialog({ open, onOpenChange, discount }: DiscountFor
       max_uses: null as number | null,
       is_influencer_coupon: false,
       influencer_name: '',
+      influencer_user_id: null as string | null,
     },
   });
 
