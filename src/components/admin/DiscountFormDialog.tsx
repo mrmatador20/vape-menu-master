@@ -296,13 +296,30 @@ export function DiscountFormDialog({ open, onOpenChange, discount }: DiscountFor
               Vendas feitas com este cupom serão registradas no painel de métricas de parceiros.
             </p>
             {isInfluencerCoupon && (
-              <div className="space-y-2">
-                <Label htmlFor="influencer_name">Nome do Responsável/Influencer</Label>
-                <Input
-                  id="influencer_name"
-                  {...register('influencer_name')}
-                  placeholder="Ex: Emilly Souza"
-                />
+              <div className="space-y-3">
+                <div className="space-y-2">
+                  <Label>Parceiro Vinculado (conta cadastrada)</Label>
+                  <InfluencerCombobox
+                    value={watch('influencer_user_id') as string | null}
+                    onChange={(userId, name) => {
+                      setValue('influencer_user_id', userId);
+                      if (userId && name) setValue('influencer_name', name);
+                    }}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Vincule à conta do parceiro para rastrear comissões automaticamente.
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="influencer_name">
+                    Nome de Exibição {watch('influencer_user_id') ? '' : '(obrigatório se sem conta)'}
+                  </Label>
+                  <Input
+                    id="influencer_name"
+                    {...register('influencer_name')}
+                    placeholder="Ex: Emilly Souza"
+                  />
+                </div>
               </div>
             )}
           </div>
