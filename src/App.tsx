@@ -38,6 +38,7 @@ import AdminReferralMetrics from "./pages/admin/ReferralMetrics";
 import AdminInfluencerMetrics from "./pages/admin/InfluencerMetrics";
 import AdminReports from "./pages/admin/Reports";
 import TrustedDevices from "./pages/TrustedDevices";
+import Affiliate from "./pages/Affiliate";
 
 const queryClient = new QueryClient();
 
@@ -133,6 +134,13 @@ const App = () => (
                 <ResetFlowGuard>
                   <ProtectedRoute>
                     <TrustedDevices />
+                  </ProtectedRoute>
+                </ResetFlowGuard>
+              } />
+              <Route path="/affiliate" element={
+                <ResetFlowGuard>
+                  <ProtectedRoute>
+                    <Affiliate />
                   </ProtectedRoute>
                 </ResetFlowGuard>
               } />

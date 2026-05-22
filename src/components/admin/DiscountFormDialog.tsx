@@ -4,11 +4,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Check, ChevronsUpDown, Loader2, X } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { useForm } from "react-hook-form";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 interface DiscountFormDialogProps {
   open: boolean;
@@ -33,6 +37,7 @@ export function DiscountFormDialog({ open, onOpenChange, discount }: DiscountFor
       is_active: discount.is_active,
       max_uses: discount.max_uses,
       is_influencer_coupon: discount.is_influencer_coupon || false,
+      influencer_user_id: discount.influencer_user_id || null,
       influencer_name: discount.influencer_name || '',
     } : {
       code: '',
@@ -46,12 +51,31 @@ export function DiscountFormDialog({ open, onOpenChange, discount }: DiscountFor
       is_active: true,
       max_uses: null as number | null,
       is_influencer_coupon: false,
+      influencer_user_id: null as string | null,
       influencer_name: '',
     },
   });
 
   const scheduleType = watch('schedule_type');
   const isInfluencerCoupon = watch('is_influencer_coupon');
+  const influencerUserId = watch('influencer_user_id');
+
+  const [userPickerOpen, setUserPickerOpen] = useState(false);
+  const [userSearch, setUserSearch] = useState('');
+
+  const { data: users, isLoading: usersLoading } = useQuery({
+    queryKey: ['influencer-user-search', userSearch],
+    enabled: open && !!isInfluencerCoupon,
+    queryFn: async () => {
+      const { data, error } = await (supabase.rpc as any)('list_users_for_influencer_linking', {
+        search_text: userSearch || null,
+      });
+      if (error) throw error;
+      return (data ?? []) as { id: string; full_name: string | null; email: string }[];
+    },
+  });
+
+  const selectedUser = users?.find((u) => u.id === influencerUserId);
 
   // Reset form when discount prop changes or dialog opens
   useEffect(() => {
@@ -69,6 +93,7 @@ export function DiscountFormDialog({ open, onOpenChange, discount }: DiscountFor
           is_active: discount.is_active,
           max_uses: discount.max_uses,
           is_influencer_coupon: discount.is_influencer_coupon || false,
+          influencer_user_id: discount.influencer_user_id || null,
           influencer_name: discount.influencer_name || '',
         });
       } else {
@@ -84,6 +109,7 @@ export function DiscountFormDialog({ open, onOpenChange, discount }: DiscountFor
           is_active: true,
           max_uses: null,
           is_influencer_coupon: false,
+          influencer_user_id: null,
           influencer_name: '',
         });
       }
@@ -128,10 +154,18 @@ export function DiscountFormDialog({ open, onOpenChange, discount }: DiscountFor
       max_uses: data.max_uses && Number(data.max_uses) > 0 ? Number(data.max_uses) : null,
       is_active: data.is_active,
       is_influencer_coupon: !!data.is_influencer_coupon,
+      influencer_user_id: data.is_influencer_coupon && data.influencer_user_id
+        ? data.influencer_user_id
+        : null,
       influencer_name: data.is_influencer_coupon && data.influencer_name?.trim()
         ? data.influencer_name.trim()
         : null,
     };
+
+    if (cleanedData.is_influencer_coupon && !cleanedData.influencer_user_id && !cleanedData.influencer_name) {
+      toast.error('Vincule um parceiro ou informe o nome do responsável');
+      return;
+    }
     
     console.log('Dados a serem enviados:', cleanedData);
     saveMutation.mutate(cleanedData);
@@ -288,13 +322,103 @@ export function DiscountFormDialog({ open, onOpenChange, discount }: DiscountFor
               Vendas feitas com este cupom serão registradas no painel de métricas de parceiros.
             </p>
             {isInfluencerCoupon && (
-              <div className="space-y-2">
-                <Label htmlFor="influencer_name">Nome do Responsável/Influencer</Label>
-                <Input
-                  id="influencer_name"
-                  {...register('influencer_name')}
-                  placeholder="Ex: Emilly Souza"
-                />
+              <div className="space-y-3">
+                <div className="space-y-2">
+                  <Label>Vincular a um usuário cadastrado</Label>
+                  <Popover open={userPickerOpen} onOpenChange={setUserPickerOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        role="combobox"
+                        className="w-full justify-between font-normal"
+                      >
+                        {selectedUser ? (
+                          <span className="truncate text-left">
+                            {selectedUser.full_name || 'Sem nome'}{' '}
+                            <span className="text-muted-foreground">· {selectedUser.email}</span>
+                          </span>
+                        ) : influencerUserId ? (
+                          <span className="text-muted-foreground truncate">Carregando usuário…</span>
+                        ) : (
+                          <span className="text-muted-foreground">Buscar por nome ou e-mail…</span>
+                        )}
+                        <ChevronsUpDown className="h-4 w-4 opacity-50 shrink-0 ml-2" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                      <Command shouldFilter={false}>
+                        <CommandInput
+                          placeholder="Digite nome ou e-mail…"
+                          value={userSearch}
+                          onValueChange={setUserSearch}
+                        />
+                        <CommandList>
+                          {usersLoading ? (
+                            <div className="py-6 flex justify-center">
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            </div>
+                          ) : (
+                            <>
+                              <CommandEmpty>Nenhum usuário encontrado.</CommandEmpty>
+                              <CommandGroup>
+                                {users?.map((u) => (
+                                  <CommandItem
+                                    key={u.id}
+                                    value={u.id}
+                                    onSelect={() => {
+                                      setValue('influencer_user_id', u.id);
+                                      if (!watch('influencer_name')) {
+                                        setValue('influencer_name', u.full_name || '');
+                                      }
+                                      setUserPickerOpen(false);
+                                    }}
+                                  >
+                                    <Check
+                                      className={cn(
+                                        'mr-2 h-4 w-4',
+                                        influencerUserId === u.id ? 'opacity-100' : 'opacity-0'
+                                      )}
+                                    />
+                                    <div className="flex flex-col">
+                                      <span className="text-sm">{u.full_name || 'Sem nome'}</span>
+                                      <span className="text-xs text-muted-foreground">{u.email}</span>
+                                    </div>
+                                  </CommandItem>
+                                ))}
+                              </CommandGroup>
+                            </>
+                          )}
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                  {influencerUserId && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 px-2 text-xs text-muted-foreground"
+                      onClick={() => setValue('influencer_user_id', null)}
+                    >
+                      <X className="h-3 w-3 mr-1" /> Remover vínculo
+                    </Button>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="influencer_name">
+                    Nome do Responsável/Influencer{' '}
+                    <span className="text-xs text-muted-foreground font-normal">
+                      (use se não houver conta cadastrada)
+                    </span>
+                  </Label>
+                  <Input
+                    id="influencer_name"
+                    {...register('influencer_name')}
+                    placeholder="Ex: Emilly Souza"
+                  />
+                </div>
               </div>
             )}
           </div>

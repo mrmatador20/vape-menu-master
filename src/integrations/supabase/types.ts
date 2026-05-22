@@ -271,6 +271,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "discounts_influencer_user_id_fkey"
+            columns: ["influencer_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "discounts_reward_id_fkey"
             columns: ["reward_id"]
             isOneToOne: false
@@ -1482,6 +1489,14 @@ export type Database = {
       is_password_change_required: {
         Args: { user_profile_id: string }
         Returns: boolean
+      }
+      list_users_for_influencer_linking: {
+        Args: { search_text?: string }
+        Returns: {
+          email: string
+          full_name: string
+          id: string
+        }[]
       }
       update_user_tier: { Args: { p_user_id: string }; Returns: undefined }
       user_purchased_product: {
