@@ -9,7 +9,6 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useEffect } from "react";
-import { InfluencerCombobox } from "./InfluencerCombobox";
 
 interface DiscountFormDialogProps {
   open: boolean;
@@ -35,7 +34,6 @@ export function DiscountFormDialog({ open, onOpenChange, discount }: DiscountFor
       max_uses: discount.max_uses,
       is_influencer_coupon: discount.is_influencer_coupon || false,
       influencer_name: discount.influencer_name || '',
-      influencer_user_id: discount.influencer_user_id || null,
     } : {
       code: '',
       type: 'percent',
@@ -49,7 +47,6 @@ export function DiscountFormDialog({ open, onOpenChange, discount }: DiscountFor
       max_uses: null as number | null,
       is_influencer_coupon: false,
       influencer_name: '',
-      influencer_user_id: null as string | null,
     },
   });
 
@@ -73,7 +70,6 @@ export function DiscountFormDialog({ open, onOpenChange, discount }: DiscountFor
           max_uses: discount.max_uses,
           is_influencer_coupon: discount.is_influencer_coupon || false,
           influencer_name: discount.influencer_name || '',
-          influencer_user_id: discount.influencer_user_id || null,
         });
       } else {
         reset({
@@ -89,7 +85,6 @@ export function DiscountFormDialog({ open, onOpenChange, discount }: DiscountFor
           max_uses: null,
           is_influencer_coupon: false,
           influencer_name: '',
-          influencer_user_id: null,
         });
       }
     }
@@ -133,9 +128,6 @@ export function DiscountFormDialog({ open, onOpenChange, discount }: DiscountFor
       max_uses: data.max_uses && Number(data.max_uses) > 0 ? Number(data.max_uses) : null,
       is_active: data.is_active,
       is_influencer_coupon: !!data.is_influencer_coupon,
-      influencer_user_id: data.is_influencer_coupon && data.influencer_user_id
-        ? data.influencer_user_id
-        : null,
       influencer_name: data.is_influencer_coupon && data.influencer_name?.trim()
         ? data.influencer_name.trim()
         : null,
@@ -296,30 +288,13 @@ export function DiscountFormDialog({ open, onOpenChange, discount }: DiscountFor
               Vendas feitas com este cupom serão registradas no painel de métricas de parceiros.
             </p>
             {isInfluencerCoupon && (
-              <div className="space-y-3">
-                <div className="space-y-2">
-                  <Label>Parceiro Vinculado (conta cadastrada)</Label>
-                  <InfluencerCombobox
-                    value={watch('influencer_user_id') as string | null}
-                    onChange={(userId, name) => {
-                      setValue('influencer_user_id', userId);
-                      if (userId && name) setValue('influencer_name', name);
-                    }}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Vincule à conta do parceiro para rastrear comissões automaticamente.
-                  </p>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="influencer_name">
-                    Nome de Exibição {watch('influencer_user_id') ? '' : '(obrigatório se sem conta)'}
-                  </Label>
-                  <Input
-                    id="influencer_name"
-                    {...register('influencer_name')}
-                    placeholder="Ex: Emilly Souza"
-                  />
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="influencer_name">Nome do Responsável/Influencer</Label>
+                <Input
+                  id="influencer_name"
+                  {...register('influencer_name')}
+                  placeholder="Ex: Emilly Souza"
+                />
               </div>
             )}
           </div>

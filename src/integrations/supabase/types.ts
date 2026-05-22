@@ -271,13 +271,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "discounts_influencer_user_id_fkey"
-            columns: ["influencer_user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "discounts_reward_id_fkey"
             columns: ["reward_id"]
             isOneToOne: false
