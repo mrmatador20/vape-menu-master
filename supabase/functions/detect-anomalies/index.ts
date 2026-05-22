@@ -27,7 +27,7 @@ async function getIPLocation(ip: string): Promise<GeoLocation | null> {
       return null
     }
     
-    const response = await fetch(`http://ip-api.com/json/${ip}?fields=country,city,regionName`)
+    const response = await fetch(`https://ip-api.com/json/${ip}?fields=country,city,regionName`)
     if (response.ok) {
       const data = await response.json()
       return {
