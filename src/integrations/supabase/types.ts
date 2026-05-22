@@ -1510,7 +1510,9 @@ export type Database = {
           day_of_week: number
           end_time: string
           id: string
+          influencer_user_id: string
           is_active: boolean
+          is_influencer_coupon: boolean
           is_referral_reward: boolean
           max_uses: number
           schedule_type: string
