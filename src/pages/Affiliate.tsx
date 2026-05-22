@@ -139,8 +139,6 @@ export default function Affiliate() {
                         <TableHead>Data</TableHead>
                         <TableHead>Cupom</TableHead>
                         <TableHead>Pedido</TableHead>
-                        <TableHead className="text-right">Valor</TableHead>
-                        <TableHead className="text-right">Desconto</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -152,12 +150,6 @@ export default function Affiliate() {
                           <TableCell className="font-mono text-sm">{row.coupon_code}</TableCell>
                           <TableCell className="font-mono text-xs text-muted-foreground">
                             #{row.order_id.substring(0, 8)}
-                          </TableCell>
-                          <TableCell className="text-right font-semibold">
-                            {formatBRL(Number(row.order_total))}
-                          </TableCell>
-                          <TableCell className="text-right text-muted-foreground">
-                            {formatBRL(Number(row.discount_amount))}
                           </TableCell>
                         </TableRow>
                       ))}
