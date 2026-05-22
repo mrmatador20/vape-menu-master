@@ -37,6 +37,7 @@ export function DiscountFormDialog({ open, onOpenChange, discount }: DiscountFor
       is_active: discount.is_active,
       max_uses: discount.max_uses,
       is_influencer_coupon: discount.is_influencer_coupon || false,
+      influencer_user_id: discount.influencer_user_id || null,
       influencer_name: discount.influencer_name || '',
     } : {
       code: '',
@@ -50,12 +51,31 @@ export function DiscountFormDialog({ open, onOpenChange, discount }: DiscountFor
       is_active: true,
       max_uses: null as number | null,
       is_influencer_coupon: false,
+      influencer_user_id: null as string | null,
       influencer_name: '',
     },
   });
 
   const scheduleType = watch('schedule_type');
   const isInfluencerCoupon = watch('is_influencer_coupon');
+  const influencerUserId = watch('influencer_user_id');
+
+  const [userPickerOpen, setUserPickerOpen] = useState(false);
+  const [userSearch, setUserSearch] = useState('');
+
+  const { data: users, isLoading: usersLoading } = useQuery({
+    queryKey: ['influencer-user-search', userSearch],
+    enabled: open && !!isInfluencerCoupon,
+    queryFn: async () => {
+      const { data, error } = await (supabase.rpc as any)('list_users_for_influencer_linking', {
+        search_text: userSearch || null,
+      });
+      if (error) throw error;
+      return (data ?? []) as { id: string; full_name: string | null; email: string }[];
+    },
+  });
+
+  const selectedUser = users?.find((u) => u.id === influencerUserId);
 
   // Reset form when discount prop changes or dialog opens
   useEffect(() => {
@@ -73,6 +93,7 @@ export function DiscountFormDialog({ open, onOpenChange, discount }: DiscountFor
           is_active: discount.is_active,
           max_uses: discount.max_uses,
           is_influencer_coupon: discount.is_influencer_coupon || false,
+          influencer_user_id: discount.influencer_user_id || null,
           influencer_name: discount.influencer_name || '',
         });
       } else {
@@ -88,6 +109,7 @@ export function DiscountFormDialog({ open, onOpenChange, discount }: DiscountFor
           is_active: true,
           max_uses: null,
           is_influencer_coupon: false,
+          influencer_user_id: null,
           influencer_name: '',
         });
       }
