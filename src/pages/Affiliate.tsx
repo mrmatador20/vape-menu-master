@@ -100,31 +100,13 @@ export default function Affiliate() {
             </div>
 
             {/* Totals */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Card>
                 <CardHeader className="pb-2">
                   <CardDescription className="flex items-center gap-2">
                     <Receipt className="h-4 w-4" /> Total de usos
                   </CardDescription>
                   <CardTitle className="text-2xl">{data.totals.totalUses}</CardTitle>
-                </CardHeader>
-              </Card>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardDescription className="flex items-center gap-2">
-                    <TrendingUp className="h-4 w-4" /> Total vendido
-                  </CardDescription>
-                  <CardTitle className="text-2xl">{formatBRL(data.totals.totalRevenue)}</CardTitle>
-                </CardHeader>
-              </Card>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardDescription className="flex items-center gap-2">
-                    <Tag className="h-4 w-4" /> Descontos
-                  </CardDescription>
-                  <CardTitle className="text-2xl">
-                    {formatBRL(data.totals.totalDiscount)}
-                  </CardTitle>
                 </CardHeader>
               </Card>
               <Card className="border-dashed">
