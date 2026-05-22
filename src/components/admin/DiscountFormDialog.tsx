@@ -154,10 +154,18 @@ export function DiscountFormDialog({ open, onOpenChange, discount }: DiscountFor
       max_uses: data.max_uses && Number(data.max_uses) > 0 ? Number(data.max_uses) : null,
       is_active: data.is_active,
       is_influencer_coupon: !!data.is_influencer_coupon,
+      influencer_user_id: data.is_influencer_coupon && data.influencer_user_id
+        ? data.influencer_user_id
+        : null,
       influencer_name: data.is_influencer_coupon && data.influencer_name?.trim()
         ? data.influencer_name.trim()
         : null,
     };
+
+    if (cleanedData.is_influencer_coupon && !cleanedData.influencer_user_id && !cleanedData.influencer_name) {
+      toast.error('Vincule um parceiro ou informe o nome do responsável');
+      return;
+    }
     
     console.log('Dados a serem enviados:', cleanedData);
     saveMutation.mutate(cleanedData);
