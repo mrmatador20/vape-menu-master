@@ -35,6 +35,7 @@ export function DiscountFormDialog({ open, onOpenChange, discount }: DiscountFor
       max_uses: discount.max_uses,
       is_influencer_coupon: discount.is_influencer_coupon || false,
       influencer_name: discount.influencer_name || '',
+      influencer_user_id: discount.influencer_user_id || null,
     } : {
       code: '',
       type: 'percent',
