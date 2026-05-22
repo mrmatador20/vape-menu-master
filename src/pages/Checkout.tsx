@@ -341,6 +341,13 @@ const Checkout = () => {
         return;
       }
 
+      // Anti-fraude: bloquear auto-uso de cupom de parceiro/influencer
+      if ((discount as any).is_influencer_coupon && (discount as any).influencer_user_id === userId) {
+        toast.error('Você não pode usar seu próprio cupom de parceiro.');
+        setAppliedDiscount(null);
+        return;
+      }
+
       // Verificar limite total de usos
       if (discount.max_uses) {
         const { count, error: countError } = await supabase
