@@ -468,17 +468,52 @@ serve(async (req) => {
 
     if (settingsError) {
       console.error('[create-order] Error fetching free shipping settings:', settingsError);
-    } else {
-      console.log('[create-order] Free shipping settings retrieved');
     }
 
     const freeShippingMinValue = freeShippingSettings ? parseFloat(freeShippingSettings.value) : 0;
     const subtotal = totalAmount - discountAmount;
-    
-    // Aplicar frete grátis se o subtotal qualificar
-    const qualifiesForFreeShipping = freeShippingMinValue > 0 && subtotal >= freeShippingMinValue;
-    const finalShippingCost = qualifiesForFreeShipping ? 0 : orderData.shippingCost;
-    
+
+    // SECURITY: Resolve shipping cost server-side from shipping_rates.
+    // Never trust client-supplied shippingCost (prevents zero-shipping fraud).
+    console.log('[create-order] Resolving server-side shipping rate for CEP:', orderData.cep);
+    let serverShippingCost = 0;
+    let cepRateMinFree: number | null = null;
+
+    const { data: cepRate } = await supabaseClient
+      .from('shipping_rates')
+      .select('price, free_shipping_min_value')
+      .eq('cep', orderData.cep)
+      .maybeSingle();
+
+    if (cepRate) {
+      serverShippingCost = Number(cepRate.price) || 0;
+      cepRateMinFree = cepRate.free_shipping_min_value !== null ? Number(cepRate.free_shipping_min_value) : null;
+    } else {
+      const { data: globalRate } = await supabaseClient
+        .from('shipping_rates')
+        .select('price, free_shipping_min_value')
+        .is('cep', null)
+        .maybeSingle();
+
+      if (globalRate) {
+        serverShippingCost = Number(globalRate.price) || 0;
+        cepRateMinFree = globalRate.free_shipping_min_value !== null ? Number(globalRate.free_shipping_min_value) : null;
+      } else {
+        console.error('[create-order] No shipping rate configured for CEP or globally');
+        return new Response(
+          JSON.stringify({ error: 'Nenhuma taxa de entrega configurada para este CEP. Entre em contato com o suporte.' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
+    const effectiveFreeShippingMin = cepRateMinFree !== null && cepRateMinFree > 0
+      ? cepRateMinFree
+      : freeShippingMinValue;
+
+    const qualifiesForFreeShipping = effectiveFreeShippingMin > 0 && subtotal >= effectiveFreeShippingMin;
+    const finalShippingCost = qualifiesForFreeShipping ? 0 : serverShippingCost;
+
     const finalAmount = subtotal + finalShippingCost;
 
     console.log('[create-order] Creating order in database with total:', finalAmount);
