@@ -561,7 +561,8 @@ export default function AdminOrders() {
                 <ol className="space-y-3">
                   {[
                     { key: 'created', label: 'Pedido criado', date: detailOrder.created_at, done: true },
-                    { key: 'paid', label: 'Pagamento confirmado', date: null, done: ['confirmed', 'shipped', 'delivered'].includes(detailOrder.status) },
+                    { key: 'paid', label: 'Pago', date: null, done: ['confirmed', 'shipped', 'delivered'].includes(detailOrder.status) },
+                    { key: 'packing', label: 'Em processo de embalagem', date: null, done: ['confirmed', 'shipped', 'delivered'].includes(detailOrder.status) },
                     { key: 'shipped', label: 'Enviado', date: null, done: ['shipped', 'delivered'].includes(detailOrder.status) },
                     { key: 'delivered', label: 'Entregue', date: null, done: detailOrder.status === 'delivered' },
                   ].map((step, idx) => (
@@ -577,6 +578,7 @@ export default function AdminOrders() {
                     </li>
                   ))}
                 </ol>
+
               </div>
 
               {/* Customer */}
