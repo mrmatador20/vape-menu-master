@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Bell, BellRing, Volume2, VolumeX } from "lucide-react";
+import { Bell, BellRing, Volume2, VolumeX, Play, Music2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -7,11 +7,19 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { playSound, SOUND_PRESETS, type SoundId } from "@/lib/notificationSounds";
 
 type OrderNotification = {
   id: string;
@@ -23,38 +31,9 @@ type OrderNotification = {
 
 const STORAGE_KEY = "admin_order_notifications";
 const MUTE_KEY = "admin_order_notifications_muted";
+const SOUND_KEY = "admin_order_notifications_sound";
+const DEFAULT_SOUND: SoundId = "ding_dong";
 const MAX_STORED = 20;
-
-function playBeep() {
-  try {
-    const AudioCtx =
-      (window as any).AudioContext || (window as any).webkitAudioContext;
-    if (!AudioCtx) return;
-    const ctx = new AudioCtx();
-    const playTone = (freq: number, start: number, duration: number) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = "sine";
-      osc.frequency.value = freq;
-      gain.gain.setValueAtTime(0, ctx.currentTime + start);
-      gain.gain.linearRampToValueAtTime(0.25, ctx.currentTime + start + 0.02);
-      gain.gain.exponentialRampToValueAtTime(
-        0.001,
-        ctx.currentTime + start + duration,
-      );
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start(ctx.currentTime + start);
-      osc.stop(ctx.currentTime + start + duration);
-    };
-    // pleasant two-tone "ding-dong"
-    playTone(880, 0, 0.25);
-    playTone(1175, 0.18, 0.35);
-    setTimeout(() => ctx.close().catch(() => {}), 800);
-  } catch (e) {
-    console.warn("[Notify] beep failed", e);
-  }
-}
 
 export function OrderNotificationBell() {
   const navigate = useNavigate();
