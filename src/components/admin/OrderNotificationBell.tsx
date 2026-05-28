@@ -48,9 +48,17 @@ export function OrderNotificationBell() {
   const [muted, setMuted] = useState<boolean>(
     () => localStorage.getItem(MUTE_KEY) === "1",
   );
+  const [soundId, setSoundId] = useState<SoundId>(() => {
+    const stored = localStorage.getItem(SOUND_KEY) as SoundId | null;
+    return stored && SOUND_PRESETS.some((s) => s.id === stored)
+      ? stored
+      : DEFAULT_SOUND;
+  });
   const [ringing, setRinging] = useState(false);
   const mutedRef = useRef(muted);
   mutedRef.current = muted;
+  const soundRef = useRef<SoundId>(soundId);
+  soundRef.current = soundId;
 
   // persist
   useEffect(() => {
@@ -59,6 +67,9 @@ export function OrderNotificationBell() {
   useEffect(() => {
     localStorage.setItem(MUTE_KEY, muted ? "1" : "0");
   }, [muted]);
+  useEffect(() => {
+    localStorage.setItem(SOUND_KEY, soundId);
+  }, [soundId]);
 
   // realtime subscription
   useEffect(() => {
