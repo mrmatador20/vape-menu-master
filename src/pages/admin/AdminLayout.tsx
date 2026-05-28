@@ -10,6 +10,7 @@ import { useAuthGuard } from "@/hooks/useAuthGuard";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { OrderNotificationBell } from "@/components/admin/OrderNotificationBell";
 
 export default function AdminLayout() {
   const { data: role, isLoading: roleLoading } = useUserRole();
