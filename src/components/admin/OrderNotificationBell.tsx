@@ -173,6 +173,40 @@ export function OrderNotificationBell() {
             )}
           </div>
         </div>
+        <div className="px-3 py-2 border-b bg-muted/30 space-y-1.5">
+          <div className="flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+            <Music2 className="h-3 w-3" />
+            Som de notificação
+          </div>
+          <div className="flex items-center gap-2">
+            <Select value={soundId} onValueChange={(v) => setSoundId(v as SoundId)}>
+              <SelectTrigger className="h-8 text-xs flex-1">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {SOUND_PRESETS.map((s) => (
+                  <SelectItem key={s.id} value={s.id} className="text-xs">
+                    <div className="flex flex-col">
+                      <span className="font-medium">{s.label}</span>
+                      <span className="text-[10px] text-muted-foreground">
+                        {s.description}
+                      </span>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-8 w-8 shrink-0"
+              onClick={() => playSound(soundId)}
+              title="Testar som"
+            >
+              <Play className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        </div>
         <ScrollArea className="max-h-80">
           {notifications.length === 0 ? (
             <div className="px-3 py-8 text-center text-sm text-muted-foreground">
