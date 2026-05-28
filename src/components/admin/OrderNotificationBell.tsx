@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Bell, BellRing, Volume2, VolumeX } from "lucide-react";
+import { Bell, BellRing, Volume2, VolumeX, Play, Music2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -7,11 +7,19 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { playSound, SOUND_PRESETS, type SoundId } from "@/lib/notificationSounds";
 
 type OrderNotification = {
   id: string;
@@ -23,38 +31,9 @@ type OrderNotification = {
 
 const STORAGE_KEY = "admin_order_notifications";
 const MUTE_KEY = "admin_order_notifications_muted";
+const SOUND_KEY = "admin_order_notifications_sound";
+const DEFAULT_SOUND: SoundId = "ding_dong";
 const MAX_STORED = 20;
-
-function playBeep() {
-  try {
-    const AudioCtx =
-      (window as any).AudioContext || (window as any).webkitAudioContext;
-    if (!AudioCtx) return;
-    const ctx = new AudioCtx();
-    const playTone = (freq: number, start: number, duration: number) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = "sine";
-      osc.frequency.value = freq;
-      gain.gain.setValueAtTime(0, ctx.currentTime + start);
-      gain.gain.linearRampToValueAtTime(0.25, ctx.currentTime + start + 0.02);
-      gain.gain.exponentialRampToValueAtTime(
-        0.001,
-        ctx.currentTime + start + duration,
-      );
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start(ctx.currentTime + start);
-      osc.stop(ctx.currentTime + start + duration);
-    };
-    // pleasant two-tone "ding-dong"
-    playTone(880, 0, 0.25);
-    playTone(1175, 0.18, 0.35);
-    setTimeout(() => ctx.close().catch(() => {}), 800);
-  } catch (e) {
-    console.warn("[Notify] beep failed", e);
-  }
-}
 
 export function OrderNotificationBell() {
   const navigate = useNavigate();
@@ -69,9 +48,17 @@ export function OrderNotificationBell() {
   const [muted, setMuted] = useState<boolean>(
     () => localStorage.getItem(MUTE_KEY) === "1",
   );
+  const [soundId, setSoundId] = useState<SoundId>(() => {
+    const stored = localStorage.getItem(SOUND_KEY) as SoundId | null;
+    return stored && SOUND_PRESETS.some((s) => s.id === stored)
+      ? stored
+      : DEFAULT_SOUND;
+  });
   const [ringing, setRinging] = useState(false);
   const mutedRef = useRef(muted);
   mutedRef.current = muted;
+  const soundRef = useRef<SoundId>(soundId);
+  soundRef.current = soundId;
 
   // persist
   useEffect(() => {
@@ -80,6 +67,9 @@ export function OrderNotificationBell() {
   useEffect(() => {
     localStorage.setItem(MUTE_KEY, muted ? "1" : "0");
   }, [muted]);
+  useEffect(() => {
+    localStorage.setItem(SOUND_KEY, soundId);
+  }, [soundId]);
 
   // realtime subscription
   useEffect(() => {
@@ -103,7 +93,7 @@ export function OrderNotificationBell() {
             return [newItem, ...prev].slice(0, MAX_STORED);
           });
 
-          if (!mutedRef.current) playBeep();
+          if (!mutedRef.current) playSound(soundRef.current);
           setRinging(true);
           setTimeout(() => setRinging(false), 2500);
 
@@ -181,6 +171,40 @@ export function OrderNotificationBell() {
                 Limpar
               </Button>
             )}
+          </div>
+        </div>
+        <div className="px-3 py-2 border-b bg-muted/30 space-y-1.5">
+          <div className="flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+            <Music2 className="h-3 w-3" />
+            Som de notificação
+          </div>
+          <div className="flex items-center gap-2">
+            <Select value={soundId} onValueChange={(v) => setSoundId(v as SoundId)}>
+              <SelectTrigger className="h-8 text-xs flex-1">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {SOUND_PRESETS.map((s) => (
+                  <SelectItem key={s.id} value={s.id} className="text-xs">
+                    <div className="flex flex-col">
+                      <span className="font-medium">{s.label}</span>
+                      <span className="text-[10px] text-muted-foreground">
+                        {s.description}
+                      </span>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-8 w-8 shrink-0"
+              onClick={() => playSound(soundId)}
+              title="Testar som"
+            >
+              <Play className="h-3.5 w-3.5" />
+            </Button>
           </div>
         </div>
         <ScrollArea className="max-h-80">
