@@ -234,8 +234,13 @@ export default function AdminLayout() {
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
         <AdminSidebar />
-        <main className="flex-1 p-6 overflow-auto">
-          <Outlet />
+        <main className="flex-1 overflow-auto">
+          <div className="sticky top-0 z-30 flex items-center justify-end gap-2 px-6 py-3 border-b bg-background/80 backdrop-blur">
+            <OrderNotificationBell />
+          </div>
+          <div className="p-6">
+            <Outlet />
+          </div>
         </main>
       </div>
     </SidebarProvider>
