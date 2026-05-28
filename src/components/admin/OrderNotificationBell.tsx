@@ -93,7 +93,7 @@ export function OrderNotificationBell() {
             return [newItem, ...prev].slice(0, MAX_STORED);
           });
 
-          if (!mutedRef.current) playBeep();
+          if (!mutedRef.current) playSound(soundRef.current);
           setRinging(true);
           setTimeout(() => setRinging(false), 2500);
 
