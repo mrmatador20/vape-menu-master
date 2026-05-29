@@ -2,6 +2,8 @@ import React, { createContext, useContext, useState, useCallback, useEffect } fr
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useCartSync } from '@/hooks/useCartSync';
+import { fetchStoreDiscount, resolveEffectiveDiscount } from '@/hooks/useStoreDiscount';
+
 
 export interface Product {
   id: string;
@@ -135,16 +137,23 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
       }
     }
 
-    // ✅ Aplicar desconto ao preço (tanto para produto base quanto variações)
+    // ✅ Aplicar desconto efetivo (próprio do produto ou desconto global da loja)
+    const storeDiscount = await fetchStoreDiscount();
+    const effective = resolveEffectiveDiscount(
+      currentProduct.discount_value,
+      currentProduct.discount_type as 'percent' | 'fixed' | undefined,
+      storeDiscount,
+    );
     let finalPrice = variantPrice;
-    if (currentProduct.discount_value && currentProduct.discount_value > 0) {
-      if (currentProduct.discount_type === 'percent') {
-        finalPrice = variantPrice * (1 - currentProduct.discount_value / 100);
-      } else if (currentProduct.discount_type === 'fixed') {
-        finalPrice = variantPrice - currentProduct.discount_value;
+    if (effective.value > 0) {
+      if (effective.type === 'percent') {
+        finalPrice = variantPrice * (1 - effective.value / 100);
+      } else {
+        finalPrice = variantPrice - effective.value;
       }
       finalPrice = Math.max(0, finalPrice);
     }
+
 
     // Verificar estoque disponível
     if (stockToCheck === 0) {
