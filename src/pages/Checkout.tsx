@@ -390,16 +390,43 @@ const Checkout = () => {
         return;
       }
 
+      // Calcular subtotal elegível conforme a abrangência do cupom
+      const scopeType = (discount as any).scope_type || 'all';
+      const scopeCategory = (discount as any).scope_category;
+      const scopeSubcategory = (discount as any).scope_subcategory;
+
+      const eligibleTotal = items.reduce((sum, item) => {
+        const matches =
+          scopeType === 'all' ||
+          (scopeType === 'category' && item.category === scopeCategory) ||
+          (scopeType === 'subcategory' &&
+            item.category === scopeCategory &&
+            item.subcategory === scopeSubcategory);
+        return matches ? sum + getFinalPrice(item) * item.quantity : sum;
+      }, 0);
+
+      if (eligibleTotal <= 0) {
+        toast.error(
+          scopeType === 'subcategory'
+            ? `Este cupom é válido apenas para itens da subcategoria "${scopeSubcategory}"`
+            : scopeType === 'category'
+            ? `Este cupom é válido apenas para itens da categoria "${scopeCategory}"`
+            : 'Cupom não se aplica aos itens do carrinho'
+        );
+        setAppliedDiscount(null);
+        return;
+      }
+
       let discountAmount = 0;
 
       if (discount.type === 'percent') {
-        discountAmount = (totalPrice * discount.value) / 100;
+        discountAmount = (eligibleTotal * discount.value) / 100;
       } else {
         discountAmount = discount.value;
       }
 
-      // Não pode descontar mais que o total
-      discountAmount = Math.min(discountAmount, totalPrice);
+      // Não pode descontar mais que o subtotal elegível
+      discountAmount = Math.min(discountAmount, eligibleTotal);
 
       setAppliedDiscount({
         code: discount.code,
