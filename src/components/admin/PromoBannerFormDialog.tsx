@@ -99,12 +99,12 @@ export function PromoBannerFormDialog({ banner, trigger }: Props) {
       }
 
       const payload = {
-        title,
+        title: title || null,
         eyebrow: eyebrow || null,
         subtitle: subtitle || null,
         description: description || null,
-        button_label: buttonLabel,
-        button_link: buttonLink,
+        button_label: buttonLabel || null,
+        button_link: buttonLink || null,
         coupon_code: couponCode || null,
         is_active: isActive,
         display_order: displayOrder,
@@ -201,8 +201,8 @@ export function PromoBannerFormDialog({ banner, trigger }: Props) {
               <Input value={eyebrow} onChange={(e) => setEyebrow(e.target.value)} placeholder="EDIÇÃO LIMITADA" />
             </div>
             <div className="space-y-2">
-              <Label>Título *</Label>
-              <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="COLEÇÃO CASUAL" required />
+              <Label>Título</Label>
+              <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="COLEÇÃO CASUAL" />
             </div>
           </div>
 

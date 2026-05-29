@@ -4,14 +4,14 @@ import { toast } from 'sonner';
 
 export interface PromoBanner {
   id: string;
-  title: string;
+  title: string | null;
   subtitle: string | null;
   description: string | null;
   eyebrow: string | null;
   image_url: string;
   mobile_image_url: string | null;
-  button_label: string;
-  button_link: string;
+  button_label: string | null;
+  button_link: string | null;
   coupon_code: string | null;
   is_active: boolean;
   display_order: number;
