@@ -47,6 +47,7 @@ export function BannerFormDialog({ banner, trigger }: BannerFormDialogProps) {
   const [eyebrow, setEyebrow] = useState('');
   const [ctaLabel, setCtaLabel] = useState('');
   const [ctaHref, setCtaHref] = useState('');
+  const [heightVh, setHeightVh] = useState(70);
 
   const createBanner = useCreateBanner();
   const updateBanner = useUpdateBanner();
@@ -68,6 +69,7 @@ export function BannerFormDialog({ banner, trigger }: BannerFormDialogProps) {
       setEyebrow((banner as any).eyebrow || '');
       setCtaLabel((banner as any).cta_label || '');
       setCtaHref((banner as any).cta_href || '');
+      setHeightVh((banner as any).height_vh ?? 70);
 
       if (banner.full_banner_image_url) {
         setBannerType('full');
@@ -214,6 +216,7 @@ export function BannerFormDialog({ banner, trigger }: BannerFormDialogProps) {
         eyebrow: eyebrow || null,
         cta_label: ctaLabel || null,
         cta_href: ctaHref || null,
+        height_vh: heightVh,
       };
 
       if (banner) {
@@ -254,6 +257,7 @@ export function BannerFormDialog({ banner, trigger }: BannerFormDialogProps) {
     setEyebrow('');
     setCtaLabel('');
     setCtaHref('');
+    setHeightVh(70);
   };
 
 
@@ -489,6 +493,40 @@ export function BannerFormDialog({ banner, trigger }: BannerFormDialogProps) {
               <p className="text-xs text-muted-foreground">
                 Deixe o botão em branco para não exibi-lo. Use o campo "Título" como chamada principal e "Descrição" como subtítulo.
               </p>
+
+              <div className="space-y-2 pt-2 border-t">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="heightVh">Altura do banner</Label>
+                  <span className="text-xs text-muted-foreground tabular-nums">
+                    {heightVh}vh
+                  </span>
+                </div>
+                <Input
+                  id="heightVh"
+                  type="range"
+                  min={30}
+                  max={100}
+                  step={1}
+                  value={heightVh}
+                  onChange={(e) => setHeightVh(parseInt(e.target.value))}
+                />
+                <div className="flex gap-2 items-center">
+                  <Input
+                    type="number"
+                    min={30}
+                    max={100}
+                    value={heightVh}
+                    onChange={(e) => {
+                      const v = parseInt(e.target.value);
+                      if (!isNaN(v)) setHeightVh(Math.min(100, Math.max(30, v)));
+                    }}
+                    className="w-24"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Escala em % da altura da tela (30 = compacto, 70 = padrão, 100 = tela cheia).
+                  </p>
+                </div>
+              </div>
             </div>
           )}
 
