@@ -1,0 +1,1 @@
+ALTER TABLE public.promo_banners ADD COLUMN IF NOT EXISTS show_button boolean NOT NULL DEFAULT false;

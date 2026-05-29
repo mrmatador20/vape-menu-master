@@ -32,6 +32,7 @@ export function PromoBannerFormDialog({ banner, trigger }: Props) {
   const [buttonLink, setButtonLink] = useState('/');
   const [couponCode, setCouponCode] = useState('');
   const [isActive, setIsActive] = useState(true);
+  const [showButton, setShowButton] = useState(false);
   const [displayOrder, setDisplayOrder] = useState(0);
   const [rotationSeconds, setRotationSeconds] = useState(6);
   const [overlayOpacity, setOverlayOpacity] = useState(0.35);
@@ -55,6 +56,7 @@ export function PromoBannerFormDialog({ banner, trigger }: Props) {
     setButtonLink(banner.button_link);
     setCouponCode(banner.coupon_code || '');
     setIsActive(banner.is_active);
+    setShowButton(banner.show_button ?? false);
     setDisplayOrder(banner.display_order);
     setRotationSeconds(banner.rotation_seconds);
     setOverlayOpacity(Number(banner.overlay_opacity ?? 0.35));
@@ -66,7 +68,7 @@ export function PromoBannerFormDialog({ banner, trigger }: Props) {
   const reset = () => {
     setTitle(''); setEyebrow(''); setSubtitle(''); setDescription('');
     setButtonLabel('Comprar Agora'); setButtonLink('/'); setCouponCode('');
-    setIsActive(true); setDisplayOrder(0); setRotationSeconds(6);
+    setIsActive(true); setShowButton(false); setDisplayOrder(0); setRotationSeconds(6);
     setOverlayOpacity(0.35); setTextAlign('left');
     setImageUrl(''); setMobileImageUrl(''); setDesktopFile(null); setMobileFile(null);
   };
@@ -107,6 +109,7 @@ export function PromoBannerFormDialog({ banner, trigger }: Props) {
         button_link: buttonLink || null,
         coupon_code: couponCode || null,
         is_active: isActive,
+        show_button: showButton,
         display_order: displayOrder,
         rotation_seconds: rotationSeconds,
         overlay_opacity: overlayOpacity,
@@ -214,6 +217,14 @@ export function PromoBannerFormDialog({ banner, trigger }: Props) {
           <div className="space-y-2">
             <Label>Descrição</Label>
             <Textarea rows={2} value={description} onChange={(e) => setDescription(e.target.value)} />
+          </div>
+
+          {/* Show button toggle */}
+          <div className="flex items-center gap-2 rounded border p-3 bg-muted/30">
+            <Switch checked={showButton} onCheckedChange={setShowButton} id="pb-show-btn" />
+            <Label htmlFor="pb-show-btn" className="cursor-pointer">
+              Exibir botão "Comprar Agora" neste banner
+            </Label>
           </div>
 
           {/* CTA */}

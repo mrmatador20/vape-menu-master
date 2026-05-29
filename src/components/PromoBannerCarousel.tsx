@@ -116,7 +116,7 @@ export const PromoBannerCarousel = () => {
                 Cupom: {current.coupon_code}
               </p>
             )}
-            {current.button_label && current.button_link && (
+            {current.show_button && current.button_label && current.button_link && (
               <div className={cn('pt-2', current.text_align === 'center' && 'flex justify-center')}>
                 <Link
                   to={current.button_link}
