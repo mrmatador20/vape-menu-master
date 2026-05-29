@@ -1,0 +1,1 @@
+ALTER TABLE public.banners ADD COLUMN IF NOT EXISTS height_vh integer NOT NULL DEFAULT 70;

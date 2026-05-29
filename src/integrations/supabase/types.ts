@@ -55,6 +55,7 @@ export type Database = {
           display_order: number
           eyebrow: string | null
           full_banner_image_url: string | null
+          height_vh: number
           id: string
           is_active: boolean
           position: string
@@ -76,6 +77,7 @@ export type Database = {
           display_order?: number
           eyebrow?: string | null
           full_banner_image_url?: string | null
+          height_vh?: number
           id?: string
           is_active?: boolean
           position?: string
@@ -97,6 +99,7 @@ export type Database = {
           display_order?: number
           eyebrow?: string | null
           full_banner_image_url?: string | null
+          height_vh?: number
           id?: string
           is_active?: boolean
           position?: string
