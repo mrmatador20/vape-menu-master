@@ -32,6 +32,7 @@ export function PromoBannerFormDialog({ banner, trigger }: Props) {
   const [buttonLink, setButtonLink] = useState('/');
   const [couponCode, setCouponCode] = useState('');
   const [isActive, setIsActive] = useState(true);
+  const [showButton, setShowButton] = useState(false);
   const [displayOrder, setDisplayOrder] = useState(0);
   const [rotationSeconds, setRotationSeconds] = useState(6);
   const [overlayOpacity, setOverlayOpacity] = useState(0.35);
