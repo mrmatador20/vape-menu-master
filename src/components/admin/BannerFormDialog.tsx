@@ -43,15 +43,9 @@ export function BannerFormDialog({ banner, trigger }: BannerFormDialogProps) {
   const [scheduledEnd, setScheduledEnd] = useState<Date | undefined>();
   const [startTime, setStartTime] = useState('00:00');
   const [endTime, setEndTime] = useState('23:59');
-  const [position, setPosition] = useState<'top' | 'home_promo'>('top');
-  const [eyebrow, setEyebrow] = useState('');
-  const [ctaLabel, setCtaLabel] = useState('');
-  const [ctaHref, setCtaHref] = useState('');
-  const [heightVh, setHeightVh] = useState(70);
 
   const createBanner = useCreateBanner();
   const updateBanner = useUpdateBanner();
-
 
   useEffect(() => {
     if (banner) {
@@ -65,12 +59,7 @@ export function BannerFormDialog({ banner, trigger }: BannerFormDialogProps) {
       setTransitionType(banner.transition_type || 'fade');
       setBackgroundImagePreview(banner.background_image_url);
       setFullBannerImagePreview(banner.full_banner_image_url);
-      setPosition((banner as any).position || 'top');
-      setEyebrow((banner as any).eyebrow || '');
-      setCtaLabel((banner as any).cta_label || '');
-      setCtaHref((banner as any).cta_href || '');
-      setHeightVh((banner as any).height_vh ?? 70);
-
+      
       if (banner.full_banner_image_url) {
         setBannerType('full');
       } else {
@@ -90,7 +79,6 @@ export function BannerFormDialog({ banner, trigger }: BannerFormDialogProps) {
       }
     }
   }, [banner]);
-
 
   // Auto-play animation preview
   useEffect(() => {
@@ -212,17 +200,12 @@ export function BannerFormDialog({ banner, trigger }: BannerFormDialogProps) {
         transition_type: transitionType,
         scheduled_start: scheduledStart ? combineDateAndTime(scheduledStart, startTime) : null,
         scheduled_end: scheduledEnd ? combineDateAndTime(scheduledEnd, endTime) : null,
-        position,
-        eyebrow: eyebrow || null,
-        cta_label: ctaLabel || null,
-        cta_href: ctaHref || null,
-        height_vh: heightVh,
       };
 
       if (banner) {
         await updateBanner.mutateAsync({ id: banner.id, ...bannerData });
       } else {
-        await createBanner.mutateAsync(bannerData as any);
+        await createBanner.mutateAsync(bannerData);
       }
 
       setOpen(false);
@@ -233,7 +216,6 @@ export function BannerFormDialog({ banner, trigger }: BannerFormDialogProps) {
       setUploading(false);
     }
   };
-
 
   const resetForm = () => {
     setTitle('');
@@ -253,13 +235,7 @@ export function BannerFormDialog({ banner, trigger }: BannerFormDialogProps) {
     setScheduledEnd(undefined);
     setStartTime('00:00');
     setEndTime('23:59');
-    setPosition('top');
-    setEyebrow('');
-    setCtaLabel('');
-    setCtaHref('');
-    setHeightVh(70);
   };
-
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -276,25 +252,6 @@ export function BannerFormDialog({ banner, trigger }: BannerFormDialogProps) {
           <DialogTitle>{banner ? 'Editar Banner' : 'Criar Novo Banner'}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Posição do banner */}
-          <div className="space-y-2">
-            <Label htmlFor="position">Posição no Site *</Label>
-            <Select value={position} onValueChange={(v) => setPosition(v as 'top' | 'home_promo')}>
-              <SelectTrigger id="position">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="top">Topo da loja (faixa/announcement)</SelectItem>
-                <SelectItem value="home_promo">Banner promocional da Home (full-width abaixo do Hero)</SelectItem>
-              </SelectContent>
-            </Select>
-            <p className="text-xs text-muted-foreground">
-              {position === 'home_promo'
-                ? 'Use uma imagem grande (recomendado 1920x1080). Os campos abaixo controlam título, subtítulo e botão sobre a imagem.'
-                : 'Faixa fina no topo de todas as páginas.'}
-            </p>
-          </div>
-
           <Tabs value={bannerType} onValueChange={(v) => setBannerType(v as 'color' | 'full')}>
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="color">Banner com Cor/Imagem de Fundo</TabsTrigger>
@@ -304,7 +261,6 @@ export function BannerFormDialog({ banner, trigger }: BannerFormDialogProps) {
             <TabsContent value="color" className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="title">Título *</Label>
-
                 <Input
                   id="title"
                   value={title}
@@ -449,88 +405,6 @@ export function BannerFormDialog({ banner, trigger }: BannerFormDialogProps) {
               </div>
             </TabsContent>
           </Tabs>
-
-          {/* Campos específicos do banner promocional da Home */}
-          {position === 'home_promo' && (
-            <div className="space-y-4 border rounded-lg p-4 bg-muted/30">
-              <div>
-                <h3 className="text-sm font-medium">Conteúdo sobre a imagem</h3>
-                <p className="text-xs text-muted-foreground">
-                  Aparece sobreposto à imagem do banner promocional.
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="eyebrow">Texto pequeno (eyebrow)</Label>
-                <Input
-                  id="eyebrow"
-                  value={eyebrow}
-                  onChange={(e) => setEyebrow(e.target.value)}
-                  placeholder="COLEÇÃO CASUAL"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="ctaLabel">Texto do botão (CTA)</Label>
-                  <Input
-                    id="ctaLabel"
-                    value={ctaLabel}
-                    onChange={(e) => setCtaLabel(e.target.value)}
-                    placeholder="Ver Coleção"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="ctaHref">Link do botão</Label>
-                  <Input
-                    id="ctaHref"
-                    value={ctaHref}
-                    onChange={(e) => setCtaHref(e.target.value)}
-                    placeholder="/?category=perfumes"
-                  />
-                </div>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Deixe o botão em branco para não exibi-lo. Use o campo "Título" como chamada principal e "Descrição" como subtítulo.
-              </p>
-
-              <div className="space-y-2 pt-2 border-t">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="heightVh">Altura do banner</Label>
-                  <span className="text-xs text-muted-foreground tabular-nums">
-                    {heightVh}vh
-                  </span>
-                </div>
-                <Input
-                  id="heightVh"
-                  type="range"
-                  min={30}
-                  max={100}
-                  step={1}
-                  value={heightVh}
-                  onChange={(e) => setHeightVh(parseInt(e.target.value))}
-                />
-                <div className="flex gap-2 items-center">
-                  <Input
-                    type="number"
-                    min={30}
-                    max={100}
-                    value={heightVh}
-                    onChange={(e) => {
-                      const v = parseInt(e.target.value);
-                      if (!isNaN(v)) setHeightVh(Math.min(100, Math.max(30, v)));
-                    }}
-                    className="w-24"
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Escala em % da altura da tela (30 = compacto, 70 = padrão, 100 = tela cheia).
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-
-
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">

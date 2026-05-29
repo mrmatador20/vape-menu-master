@@ -77,10 +77,9 @@ export default function Banners() {
         <div>
           <h1 className="text-3xl font-bold">Banners Promocionais</h1>
           <p className="text-muted-foreground mt-1">
-            Gerencie a faixa do topo e o banner promocional da Home
+            Gerencie os banners que aparecem no topo da loja
           </p>
         </div>
-
         <BannerFormDialog />
       </div>
 
@@ -123,9 +122,6 @@ export default function Banners() {
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1 space-y-3">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <Badge variant="outline">
-                      {(banner as any).position === 'home_promo' ? 'Home — Promo' : 'Topo'}
-                    </Badge>
                     <Badge variant={getBannerStatus(banner).variant}>
                       {getBannerStatus(banner).label}
                     </Badge>
@@ -133,7 +129,6 @@ export default function Banners() {
                       {banner.is_active ? 'Ativo' : 'Inativo'}
                     </Badge>
                   </div>
-
                   
                   <div className="text-sm text-muted-foreground space-y-1">
                     <p>Ordem: {banner.display_order} • Rotação: {banner.rotation_seconds}s</p>
