@@ -55,12 +55,25 @@ export default function AdminStoreDiscount() {
         { key: "store_discount_value", value: String(Number(value) || 0) },
       ];
       for (const row of payload) {
-        const { error } = await supabase
+        const { data: existing } = await supabase
           .from("settings")
-          .upsert(row, { onConflict: "key" });
-        if (error) throw error;
+          .select("id")
+          .eq("key", row.key)
+          .maybeSingle();
+        if (existing) {
+          const { error } = await supabase
+            .from("settings")
+            .update({ value: row.value })
+            .eq("key", row.key);
+          if (error) throw error;
+        } else {
+          const { error } = await supabase
+            .from("settings")
+            .insert({ key: row.key, value: row.value });
+          if (error) throw error;
+        }
       }
-    },
+
     onSuccess: () => {
       toast.success("Desconto da loja salvo com sucesso!");
       queryClient.invalidateQueries({ queryKey: ["admin-store-discount"] });
