@@ -31,6 +31,7 @@ import AdminReviews from "./pages/admin/Reviews";
 import AdminShippingRates from "./pages/admin/ShippingRates";
 import AdminSettings from "./pages/admin/Settings";
 import AdminBanners from "./pages/admin/Banners";
+import AdminPromoBanners from "./pages/admin/PromoBanners";
 import AdminAuditLogs from "./pages/admin/AuditLogs";
 import AdminSecurityDashboard from "./pages/admin/SecurityDashboard";
 import AdminReferrals from "./pages/admin/Referrals";
@@ -165,6 +166,7 @@ const App = () => (
                 <Route path="referrals/metrics" element={<AdminReferralMetrics />} />
                 <Route path="influencer-metrics" element={<AdminInfluencerMetrics />} />
                 <Route path="banners" element={<AdminBanners />} />
+                <Route path="promo-banners" element={<AdminPromoBanners />} />
                 <Route path="audit-logs" element={<AdminAuditLogs />} />
                 <Route path="settings" element={<AdminSettings />} />
               </Route>

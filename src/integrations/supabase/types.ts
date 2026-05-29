@@ -727,13 +727,17 @@ export type Database = {
           created_at: string
           description: string | null
           display_order: number
+          eyebrow: string | null
           id: string
           image_url: string
           is_active: boolean
+          mobile_image_url: string | null
+          overlay_opacity: number
           rotation_seconds: number
           scheduled_end: string | null
           scheduled_start: string | null
           subtitle: string | null
+          text_align: string
           title: string
           updated_at: string
         }
@@ -744,13 +748,17 @@ export type Database = {
           created_at?: string
           description?: string | null
           display_order?: number
+          eyebrow?: string | null
           id?: string
           image_url: string
           is_active?: boolean
+          mobile_image_url?: string | null
+          overlay_opacity?: number
           rotation_seconds?: number
           scheduled_end?: string | null
           scheduled_start?: string | null
           subtitle?: string | null
+          text_align?: string
           title: string
           updated_at?: string
         }
@@ -761,13 +769,17 @@ export type Database = {
           created_at?: string
           description?: string | null
           display_order?: number
+          eyebrow?: string | null
           id?: string
           image_url?: string
           is_active?: boolean
+          mobile_image_url?: string | null
+          overlay_opacity?: number
           rotation_seconds?: number
           scheduled_end?: string | null
           scheduled_start?: string | null
           subtitle?: string | null
+          text_align?: string
           title?: string
           updated_at?: string
         }
