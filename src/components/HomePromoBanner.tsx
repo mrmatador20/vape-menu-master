@@ -1,37 +1,35 @@
 import { Link } from 'react-router-dom';
-import promoImage from '@/assets/home-promo-banner.jpg';
-
-interface HomePromoBannerProps {
-  imageUrl?: string;
-  eyebrow?: string;
-  title?: string;
-  subtitle?: string;
-  ctaLabel?: string;
-  ctaHref?: string;
-}
+import { useActivePromoBanner } from '@/hooks/useBanners';
 
 /**
- * Banner promocional full-width, editorial fashion.
- * Texto posicionado à esquerda com overlay sutil somente nessa área,
- * preservando a fotografia à direita.
+ * Banner promocional full-width editorial, configurável pelo admin
+ * (tabela `banners`, position = 'home_promo').
+ *
+ * Não renderiza nada se não houver banner promo ativo cadastrado.
  */
-const HomePromoBanner = ({
-  imageUrl = promoImage,
-  eyebrow = 'Coleção Casual',
-  title = 'Promoção 10%',
-  subtitle = 'Peças selecionadas para uma estação de elegância silenciosa.',
-  ctaLabel = 'Ver Coleção',
-  ctaHref = '/?category=all',
-}: HomePromoBannerProps) => {
+const HomePromoBanner = () => {
+  const { data: banner, isLoading } = useActivePromoBanner();
+
+  if (isLoading || !banner) return null;
+
+  const imageUrl = banner.full_banner_image_url || banner.background_image_url;
+  if (!imageUrl) return null;
+
+  const eyebrow = banner.eyebrow?.trim();
+  const title = banner.title?.trim();
+  const subtitle = banner.description?.trim();
+  const ctaLabel = banner.cta_label?.trim();
+  const ctaHref = banner.cta_href?.trim() || '/';
+
   return (
     <section
-      aria-label="Banner promocional"
+      aria-label={title || 'Banner promocional'}
       className="relative w-full overflow-hidden bg-card"
     >
       <div className="relative w-full h-[70vh] min-h-[420px] max-h-[760px]">
         <img
           src={imageUrl}
-          alt=""
+          alt={title || ''}
           width={1920}
           height={1080}
           loading="lazy"
@@ -46,28 +44,36 @@ const HomePromoBanner = ({
 
         <div className="relative h-full container max-w-7xl mx-auto px-6 md:px-10 flex items-center">
           <div className="max-w-xl text-white space-y-7 md:space-y-9">
-            <span className="block text-[10.5px] md:text-[11px] uppercase tracking-[0.45em] font-light text-white/85">
-              {eyebrow}
-            </span>
+            {eyebrow && (
+              <span className="block text-[10.5px] md:text-[11px] uppercase tracking-[0.45em] font-light text-white/85">
+                {eyebrow}
+              </span>
+            )}
 
-            <h2 className="font-serif font-light text-4xl sm:text-5xl md:text-6xl leading-[1.05] tracking-[0.04em] uppercase">
-              {title}
-            </h2>
+            {title && (
+              <h2 className="font-serif font-light text-4xl sm:text-5xl md:text-6xl leading-[1.05] tracking-[0.04em] uppercase">
+                {title}
+              </h2>
+            )}
 
             <div className="h-px w-12 bg-white/70" />
 
-            <p className="text-sm md:text-base font-light leading-relaxed text-white/85 max-w-md">
-              {subtitle}
-            </p>
+            {subtitle && (
+              <p className="text-sm md:text-base font-light leading-relaxed text-white/85 max-w-md">
+                {subtitle}
+              </p>
+            )}
 
-            <div className="pt-2">
-              <Link
-                to={ctaHref}
-                className="inline-flex items-center text-[11px] md:text-xs uppercase tracking-[0.35em] font-light text-white border border-white/80 hover:bg-white hover:text-foreground px-9 py-4 rounded-none transition-colors duration-300"
-              >
-                {ctaLabel}
-              </Link>
-            </div>
+            {ctaLabel && (
+              <div className="pt-2">
+                <Link
+                  to={ctaHref}
+                  className="inline-flex items-center text-[11px] md:text-xs uppercase tracking-[0.35em] font-light text-white border border-white/80 hover:bg-white hover:text-foreground px-9 py-4 rounded-none transition-colors duration-300"
+                >
+                  {ctaLabel}
+                </Link>
+              </div>
+            )}
           </div>
         </div>
       </div>
