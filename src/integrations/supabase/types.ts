@@ -235,6 +235,9 @@ export type Database = {
           max_uses: number | null
           reward_id: string | null
           schedule_type: string
+          scope_category: string | null
+          scope_subcategory: string | null
+          scope_type: string
           start_time: string | null
           times_used: number | null
           type: string
@@ -256,6 +259,9 @@ export type Database = {
           max_uses?: number | null
           reward_id?: string | null
           schedule_type: string
+          scope_category?: string | null
+          scope_subcategory?: string | null
+          scope_type?: string
           start_time?: string | null
           times_used?: number | null
           type: string
@@ -277,6 +283,9 @@ export type Database = {
           max_uses?: number | null
           reward_id?: string | null
           schedule_type?: string
+          scope_category?: string | null
+          scope_subcategory?: string | null
+          scope_type?: string
           start_time?: string | null
           times_used?: number | null
           type?: string
@@ -1639,6 +1648,9 @@ export type Database = {
           is_referral_reward: boolean
           max_uses: number
           schedule_type: string
+          scope_category: string
+          scope_subcategory: string
+          scope_type: string
           start_time: string
           type: string
           user_id: string
