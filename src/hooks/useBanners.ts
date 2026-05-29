@@ -22,6 +22,7 @@ export interface Banner {
   eyebrow: string | null;
   cta_label: string | null;
   cta_href: string | null;
+  height_vh: number;
   created_at: string;
   updated_at: string;
 }

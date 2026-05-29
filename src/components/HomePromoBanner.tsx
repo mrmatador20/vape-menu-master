@@ -21,12 +21,17 @@ const HomePromoBanner = () => {
   const ctaLabel = banner.cta_label?.trim();
   const ctaHref = banner.cta_href?.trim() || '/';
 
+  const heightVh = Math.min(100, Math.max(30, (banner as any).height_vh ?? 70));
+
   return (
     <section
       aria-label={title || 'Banner promocional'}
       className="relative w-full overflow-hidden bg-card"
     >
-      <div className="relative w-full h-[70vh] min-h-[420px] max-h-[760px]">
+      <div
+        className="relative w-full min-h-[320px] max-h-[900px]"
+        style={{ height: `${heightVh}vh` }}
+      >
         <img
           src={imageUrl}
           alt={title || ''}
