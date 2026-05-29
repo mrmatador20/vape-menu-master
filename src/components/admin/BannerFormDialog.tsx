@@ -272,6 +272,25 @@ export function BannerFormDialog({ banner, trigger }: BannerFormDialogProps) {
           <DialogTitle>{banner ? 'Editar Banner' : 'Criar Novo Banner'}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Posição do banner */}
+          <div className="space-y-2">
+            <Label htmlFor="position">Posição no Site *</Label>
+            <Select value={position} onValueChange={(v) => setPosition(v as 'top' | 'home_promo')}>
+              <SelectTrigger id="position">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="top">Topo da loja (faixa/announcement)</SelectItem>
+                <SelectItem value="home_promo">Banner promocional da Home (full-width abaixo do Hero)</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              {position === 'home_promo'
+                ? 'Use uma imagem grande (recomendado 1920x1080). Os campos abaixo controlam título, subtítulo e botão sobre a imagem.'
+                : 'Faixa fina no topo de todas as páginas.'}
+            </p>
+          </div>
+
           <Tabs value={bannerType} onValueChange={(v) => setBannerType(v as 'color' | 'full')}>
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="color">Banner com Cor/Imagem de Fundo</TabsTrigger>
@@ -281,6 +300,7 @@ export function BannerFormDialog({ banner, trigger }: BannerFormDialogProps) {
             <TabsContent value="color" className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="title">Título *</Label>
+
                 <Input
                   id="title"
                   value={title}
