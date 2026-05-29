@@ -49,11 +49,16 @@ export type Database = {
           background_color: string
           background_image_url: string | null
           created_at: string
+          cta_href: string | null
+          cta_label: string | null
           description: string | null
           display_order: number
+          eyebrow: string | null
           full_banner_image_url: string | null
+          height_vh: number
           id: string
           is_active: boolean
+          position: string
           rotation_seconds: number
           scheduled_end: string | null
           scheduled_start: string | null
@@ -66,11 +71,16 @@ export type Database = {
           background_color?: string
           background_image_url?: string | null
           created_at?: string
+          cta_href?: string | null
+          cta_label?: string | null
           description?: string | null
           display_order?: number
+          eyebrow?: string | null
           full_banner_image_url?: string | null
+          height_vh?: number
           id?: string
           is_active?: boolean
+          position?: string
           rotation_seconds?: number
           scheduled_end?: string | null
           scheduled_start?: string | null
@@ -83,11 +93,16 @@ export type Database = {
           background_color?: string
           background_image_url?: string | null
           created_at?: string
+          cta_href?: string | null
+          cta_label?: string | null
           description?: string | null
           display_order?: number
+          eyebrow?: string | null
           full_banner_image_url?: string | null
+          height_vh?: number
           id?: string
           is_active?: boolean
+          position?: string
           rotation_seconds?: number
           scheduled_end?: string | null
           scheduled_start?: string | null
@@ -700,6 +715,60 @@ export type Database = {
           password_changed_at?: string | null
           phone?: string | null
           referral_code?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      promo_banners: {
+        Row: {
+          button_label: string
+          button_link: string
+          coupon_code: string | null
+          created_at: string
+          description: string | null
+          display_order: number
+          id: string
+          image_url: string
+          is_active: boolean
+          rotation_seconds: number
+          scheduled_end: string | null
+          scheduled_start: string | null
+          subtitle: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          button_label?: string
+          button_link?: string
+          coupon_code?: string | null
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          id?: string
+          image_url: string
+          is_active?: boolean
+          rotation_seconds?: number
+          scheduled_end?: string | null
+          scheduled_start?: string | null
+          subtitle?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          button_label?: string
+          button_link?: string
+          coupon_code?: string | null
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          id?: string
+          image_url?: string
+          is_active?: boolean
+          rotation_seconds?: number
+          scheduled_end?: string | null
+          scheduled_start?: string | null
+          subtitle?: string | null
+          title?: string
           updated_at?: string
         }
         Relationships: []
