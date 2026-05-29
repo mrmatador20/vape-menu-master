@@ -219,6 +219,14 @@ export function PromoBannerFormDialog({ banner, trigger }: Props) {
             <Textarea rows={2} value={description} onChange={(e) => setDescription(e.target.value)} />
           </div>
 
+          {/* Show button toggle */}
+          <div className="flex items-center gap-2 rounded border p-3 bg-muted/30">
+            <Switch checked={showButton} onCheckedChange={setShowButton} id="pb-show-btn" />
+            <Label htmlFor="pb-show-btn" className="cursor-pointer">
+              Exibir botão "Comprar Agora" neste banner
+            </Label>
+          </div>
+
           {/* CTA */}
           <div className="grid md:grid-cols-3 gap-4">
             <div className="space-y-2">
