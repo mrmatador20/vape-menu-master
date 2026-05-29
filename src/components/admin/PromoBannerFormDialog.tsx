@@ -191,6 +191,13 @@ export function PromoBannerFormDialog({ banner, trigger }: Props) {
 
           <div className="space-y-2">
             <Label>Imagem (.webp recomendado) *</Label>
+            <div className="flex items-start gap-2 p-2.5 rounded-md bg-primary/5 border border-primary/15 text-[12px] text-primary/90">
+              <ImageIcon className="h-4 w-4 shrink-0 mt-0.5" />
+              <div className="space-y-0.5">
+                <p className="font-medium">Proporção recomendada: 3:2 (desktop) / 16:9 (mobile)</p>
+                <p className="text-muted-foreground">Dimensões ideais: <span className="font-mono text-foreground">1200 × 800 px</span> (mín. 800 × 530 px). A imagem será centralizada e cobrirá a área (crop automático).</p>
+              </div>
+            </div>
             <div className="flex gap-2">
               <Input
                 type="file"
