@@ -43,9 +43,14 @@ export function BannerFormDialog({ banner, trigger }: BannerFormDialogProps) {
   const [scheduledEnd, setScheduledEnd] = useState<Date | undefined>();
   const [startTime, setStartTime] = useState('00:00');
   const [endTime, setEndTime] = useState('23:59');
+  const [position, setPosition] = useState<'top' | 'home_promo'>('top');
+  const [eyebrow, setEyebrow] = useState('');
+  const [ctaLabel, setCtaLabel] = useState('');
+  const [ctaHref, setCtaHref] = useState('');
 
   const createBanner = useCreateBanner();
   const updateBanner = useUpdateBanner();
+
 
   useEffect(() => {
     if (banner) {
@@ -59,7 +64,11 @@ export function BannerFormDialog({ banner, trigger }: BannerFormDialogProps) {
       setTransitionType(banner.transition_type || 'fade');
       setBackgroundImagePreview(banner.background_image_url);
       setFullBannerImagePreview(banner.full_banner_image_url);
-      
+      setPosition((banner as any).position || 'top');
+      setEyebrow((banner as any).eyebrow || '');
+      setCtaLabel((banner as any).cta_label || '');
+      setCtaHref((banner as any).cta_href || '');
+
       if (banner.full_banner_image_url) {
         setBannerType('full');
       } else {
@@ -79,6 +88,7 @@ export function BannerFormDialog({ banner, trigger }: BannerFormDialogProps) {
       }
     }
   }, [banner]);
+
 
   // Auto-play animation preview
   useEffect(() => {
@@ -200,12 +210,16 @@ export function BannerFormDialog({ banner, trigger }: BannerFormDialogProps) {
         transition_type: transitionType,
         scheduled_start: scheduledStart ? combineDateAndTime(scheduledStart, startTime) : null,
         scheduled_end: scheduledEnd ? combineDateAndTime(scheduledEnd, endTime) : null,
+        position,
+        eyebrow: eyebrow || null,
+        cta_label: ctaLabel || null,
+        cta_href: ctaHref || null,
       };
 
       if (banner) {
         await updateBanner.mutateAsync({ id: banner.id, ...bannerData });
       } else {
-        await createBanner.mutateAsync(bannerData);
+        await createBanner.mutateAsync(bannerData as any);
       }
 
       setOpen(false);
@@ -216,6 +230,7 @@ export function BannerFormDialog({ banner, trigger }: BannerFormDialogProps) {
       setUploading(false);
     }
   };
+
 
   const resetForm = () => {
     setTitle('');
@@ -235,7 +250,12 @@ export function BannerFormDialog({ banner, trigger }: BannerFormDialogProps) {
     setScheduledEnd(undefined);
     setStartTime('00:00');
     setEndTime('23:59');
+    setPosition('top');
+    setEyebrow('');
+    setCtaLabel('');
+    setCtaHref('');
   };
+
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
