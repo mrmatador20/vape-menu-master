@@ -76,7 +76,7 @@ export const PromoBannerCarousel = () => {
         {/* Content */}
         <div
           className={cn(
-            'relative h-full w-full flex flex-col justify-center px-6 sm:px-12 md:px-20 lg:px-28',
+            'absolute inset-0 flex flex-col justify-center px-6 sm:px-12 md:px-20 lg:px-28',
             alignClass
           )}
         >
