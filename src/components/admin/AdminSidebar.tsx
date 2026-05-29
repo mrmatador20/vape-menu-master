@@ -43,6 +43,7 @@ const groups: Group[] = [
   {
     title: "Configurações de Venda", icon: Wrench, items: [
       { title: "Descontos", url: "/546498@18/discounts", icon: Tag },
+      { title: "Desconto Loja", url: "/546498@18/store-discount", icon: Tag },
       { title: "Taxas de Entrega", url: "/546498@18/shipping-rates", icon: Truck },
       { title: "Indicações", url: "/546498@18/referrals", icon: Gift },
     ],
