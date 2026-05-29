@@ -736,6 +736,7 @@ export type Database = {
           rotation_seconds: number
           scheduled_end: string | null
           scheduled_start: string | null
+          show_button: boolean
           subtitle: string | null
           text_align: string
           title: string | null
@@ -757,6 +758,7 @@ export type Database = {
           rotation_seconds?: number
           scheduled_end?: string | null
           scheduled_start?: string | null
+          show_button?: boolean
           subtitle?: string | null
           text_align?: string
           title?: string | null
@@ -778,6 +780,7 @@ export type Database = {
           rotation_seconds?: number
           scheduled_end?: string | null
           scheduled_start?: string | null
+          show_button?: boolean
           subtitle?: string | null
           text_align?: string
           title?: string | null
