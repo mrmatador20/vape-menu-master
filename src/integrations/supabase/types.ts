@@ -704,6 +704,60 @@ export type Database = {
         }
         Relationships: []
       }
+      promo_banners: {
+        Row: {
+          button_label: string
+          button_link: string
+          coupon_code: string | null
+          created_at: string
+          description: string | null
+          display_order: number
+          id: string
+          image_url: string
+          is_active: boolean
+          rotation_seconds: number
+          scheduled_end: string | null
+          scheduled_start: string | null
+          subtitle: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          button_label?: string
+          button_link?: string
+          coupon_code?: string | null
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          id?: string
+          image_url: string
+          is_active?: boolean
+          rotation_seconds?: number
+          scheduled_end?: string | null
+          scheduled_start?: string | null
+          subtitle?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          button_label?: string
+          button_link?: string
+          coupon_code?: string | null
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          id?: string
+          image_url?: string
+          is_active?: boolean
+          rotation_seconds?: number
+          scheduled_end?: string | null
+          scheduled_start?: string | null
+          subtitle?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       rate_limit_tracking: {
         Row: {
           action_type: string
