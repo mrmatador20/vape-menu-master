@@ -13,6 +13,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useEffect, useState } from "react";
+import { useCategories } from "@/hooks/useCategories";
+import { useSubcategories } from "@/hooks/useSubcategories";
 
 interface DiscountFormDialogProps {
   open: boolean;
@@ -39,6 +41,9 @@ export function DiscountFormDialog({ open, onOpenChange, discount }: DiscountFor
       is_influencer_coupon: discount.is_influencer_coupon || false,
       influencer_user_id: discount.influencer_user_id || null,
       influencer_name: discount.influencer_name || '',
+      scope_type: discount.scope_type || 'all',
+      scope_category: discount.scope_category || '',
+      scope_subcategory: discount.scope_subcategory || '',
     } : {
       code: '',
       type: 'percent',
@@ -53,12 +58,24 @@ export function DiscountFormDialog({ open, onOpenChange, discount }: DiscountFor
       is_influencer_coupon: false,
       influencer_user_id: null as string | null,
       influencer_name: '',
+      scope_type: 'all',
+      scope_category: '',
+      scope_subcategory: '',
     },
   });
 
   const scheduleType = watch('schedule_type');
   const isInfluencerCoupon = watch('is_influencer_coupon');
   const influencerUserId = watch('influencer_user_id');
+  const scopeType = watch('scope_type');
+  const scopeCategoryName = watch('scope_category');
+
+  const { data: categories } = useCategories();
+  const selectedCategory = categories?.find((c) => c.name === scopeCategoryName);
+  const { data: subcategories } = useSubcategories(
+    selectedCategory?.id || null,
+    selectedCategory?.name || null
+  );
 
   const [userPickerOpen, setUserPickerOpen] = useState(false);
   const [userSearch, setUserSearch] = useState('');
@@ -95,6 +112,9 @@ export function DiscountFormDialog({ open, onOpenChange, discount }: DiscountFor
           is_influencer_coupon: discount.is_influencer_coupon || false,
           influencer_user_id: discount.influencer_user_id || null,
           influencer_name: discount.influencer_name || '',
+          scope_type: discount.scope_type || 'all',
+          scope_category: discount.scope_category || '',
+          scope_subcategory: discount.scope_subcategory || '',
         });
       } else {
         reset({
@@ -111,6 +131,9 @@ export function DiscountFormDialog({ open, onOpenChange, discount }: DiscountFor
           is_influencer_coupon: false,
           influencer_user_id: null,
           influencer_name: '',
+          scope_type: 'all',
+          scope_category: '',
+          scope_subcategory: '',
         });
       }
     }
@@ -142,6 +165,7 @@ export function DiscountFormDialog({ open, onOpenChange, discount }: DiscountFor
 
   const onSubmit = (data: any) => {
     // Clean up data - convert empty strings to null for optional fields
+    const scopeType = data.scope_type || 'all';
     const cleanedData = {
       code: data.code,
       type: data.type,
@@ -160,7 +184,19 @@ export function DiscountFormDialog({ open, onOpenChange, discount }: DiscountFor
       influencer_name: data.is_influencer_coupon && data.influencer_name?.trim()
         ? data.influencer_name.trim()
         : null,
+      scope_type: scopeType,
+      scope_category: scopeType !== 'all' && data.scope_category ? data.scope_category : null,
+      scope_subcategory: scopeType === 'subcategory' && data.scope_subcategory ? data.scope_subcategory : null,
     };
+
+    if (scopeType !== 'all' && !cleanedData.scope_category) {
+      toast.error('Selecione a categoria do cupom');
+      return;
+    }
+    if (scopeType === 'subcategory' && !cleanedData.scope_subcategory) {
+      toast.error('Selecione a subcategoria do cupom');
+      return;
+    }
 
     if (cleanedData.is_influencer_coupon && !cleanedData.influencer_user_id && !cleanedData.influencer_name) {
       toast.error('Vincule um parceiro ou informe o nome do responsável');
@@ -306,6 +342,87 @@ export function DiscountFormDialog({ open, onOpenChange, discount }: DiscountFor
             />
             <Label htmlFor="is_active">Ativo</Label>
           </div>
+
+          <div className="border rounded-lg p-4 space-y-3 bg-muted/30">
+            <Label className="font-medium">Abrangência do Cupom</Label>
+            <p className="text-xs text-muted-foreground">
+              Defina em quais produtos este cupom pode ser aplicado.
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div className="space-y-2">
+                <Label htmlFor="scope_type">Aplicar em</Label>
+                <Select
+                  value={scopeType}
+                  onValueChange={(v) => {
+                    setValue('scope_type', v);
+                    if (v === 'all') {
+                      setValue('scope_category', '');
+                      setValue('scope_subcategory', '');
+                    } else if (v === 'category') {
+                      setValue('scope_subcategory', '');
+                    }
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todo o site</SelectItem>
+                    <SelectItem value="category">Categoria específica</SelectItem>
+                    <SelectItem value="subcategory">Subcategoria específica</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {scopeType !== 'all' && (
+                <div className="space-y-2">
+                  <Label htmlFor="scope_category">Categoria</Label>
+                  <Select
+                    value={scopeCategoryName || ''}
+                    onValueChange={(v) => {
+                      setValue('scope_category', v);
+                      setValue('scope_subcategory', '');
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {(categories || []).map((c) => (
+                        <SelectItem key={c.id} value={c.name}>
+                          {c.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {scopeType === 'subcategory' && (
+                <div className="space-y-2">
+                  <Label htmlFor="scope_subcategory">Subcategoria</Label>
+                  <Select
+                    value={watch('scope_subcategory') || ''}
+                    onValueChange={(v) => setValue('scope_subcategory', v)}
+                    disabled={!selectedCategory}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={selectedCategory ? 'Selecione' : 'Escolha a categoria primeiro'} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {(subcategories || []).map((s) => (
+                        <SelectItem key={s.id} value={s.name}>
+                          {s.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+            </div>
+          </div>
+
+
 
           <div className="border rounded-lg p-4 space-y-3 bg-muted/30">
             <div className="flex items-center space-x-2">
