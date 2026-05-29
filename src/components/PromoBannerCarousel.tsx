@@ -51,7 +51,7 @@ export const PromoBannerCarousel = () => {
       <div
         className={cn(
           'relative w-full',
-          isMobile ? 'aspect-[4/5]' : 'aspect-[1920/500] min-h-[320px]'
+          isMobile ? 'aspect-[1080/1350]' : 'aspect-[1920/500]'
         )}
       >
         {/* Background image */}
