@@ -446,6 +446,54 @@ export function BannerFormDialog({ banner, trigger }: BannerFormDialogProps) {
             </TabsContent>
           </Tabs>
 
+          {/* Campos específicos do banner promocional da Home */}
+          {position === 'home_promo' && (
+            <div className="space-y-4 border rounded-lg p-4 bg-muted/30">
+              <div>
+                <h3 className="text-sm font-medium">Conteúdo sobre a imagem</h3>
+                <p className="text-xs text-muted-foreground">
+                  Aparece sobreposto à imagem do banner promocional.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="eyebrow">Texto pequeno (eyebrow)</Label>
+                <Input
+                  id="eyebrow"
+                  value={eyebrow}
+                  onChange={(e) => setEyebrow(e.target.value)}
+                  placeholder="COLEÇÃO CASUAL"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="ctaLabel">Texto do botão (CTA)</Label>
+                  <Input
+                    id="ctaLabel"
+                    value={ctaLabel}
+                    onChange={(e) => setCtaLabel(e.target.value)}
+                    placeholder="Ver Coleção"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="ctaHref">Link do botão</Label>
+                  <Input
+                    id="ctaHref"
+                    value={ctaHref}
+                    onChange={(e) => setCtaHref(e.target.value)}
+                    placeholder="/?category=perfumes"
+                  />
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Deixe o botão em branco para não exibi-lo. Use o campo "Título" como chamada principal e "Descrição" como subtítulo.
+              </p>
+            </div>
+          )}
+
+
+
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="displayOrder">Ordem de Exibição</Label>
