@@ -96,9 +96,11 @@ export const PromoBannerCarousel = () => {
                 {current.eyebrow}
               </p>
             )}
-            <h2 className="font-serif text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-light leading-[1.05] tracking-[0.04em] text-white uppercase">
-              {current.title}
-            </h2>
+            {current.title && (
+              <h2 className="font-serif text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-light leading-[1.05] tracking-[0.04em] text-white uppercase">
+                {current.title}
+              </h2>
+            )}
             {current.subtitle && (
               <p className="text-sm md:text-base font-light tracking-wide text-white/90 max-w-md">
                 {current.subtitle}

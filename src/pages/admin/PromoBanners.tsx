@@ -58,7 +58,7 @@ export default function PromoBanners() {
                   </span>
                 </div>
                 {b.eyebrow && <p className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground">{b.eyebrow}</p>}
-                <h3 className="text-lg font-semibold">{b.title}</h3>
+                <h3 className="text-lg font-semibold">{b.title || '(Sem título)'}</h3>
                 {b.subtitle && <p className="text-sm text-muted-foreground">{b.subtitle}</p>}
                 <p className="text-xs text-muted-foreground">
                   CTA: <span className="font-medium">{b.button_label}</span> → {b.button_link}
