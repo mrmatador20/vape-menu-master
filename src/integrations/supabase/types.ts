@@ -721,7 +721,7 @@ export type Database = {
       }
       promo_banners: {
         Row: {
-          button_label: string
+          button_label: string | null
           button_link: string
           coupon_code: string | null
           created_at: string
@@ -738,11 +738,11 @@ export type Database = {
           scheduled_start: string | null
           subtitle: string | null
           text_align: string
-          title: string
+          title: string | null
           updated_at: string
         }
         Insert: {
-          button_label?: string
+          button_label?: string | null
           button_link?: string
           coupon_code?: string | null
           created_at?: string
@@ -759,11 +759,11 @@ export type Database = {
           scheduled_start?: string | null
           subtitle?: string | null
           text_align?: string
-          title: string
+          title?: string | null
           updated_at?: string
         }
         Update: {
-          button_label?: string
+          button_label?: string | null
           button_link?: string
           coupon_code?: string | null
           created_at?: string
@@ -780,7 +780,7 @@ export type Database = {
           scheduled_start?: string | null
           subtitle?: string | null
           text_align?: string
-          title?: string
+          title?: string | null
           updated_at?: string
         }
         Relationships: []
