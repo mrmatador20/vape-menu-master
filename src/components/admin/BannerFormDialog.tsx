@@ -146,13 +146,14 @@ export function BannerFormDialog({ banner, trigger }: BannerFormDialogProps) {
   };
 
   const uploadImage = async (file: File, type: 'background' | 'full') => {
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${Math.random()}.${fileExt}`;
+    const { blob, filename, contentType } = await optimizeImage(file, { maxWidth: 1920, quality: 0.8 });
+    const ext = filename.split('.').pop();
+    const fileName = `${Math.random()}.${ext}`;
     const filePath = `${type}/${fileName}`;
 
     const { error: uploadError } = await supabase.storage
       .from('banners')
-      .upload(filePath, file);
+      .upload(filePath, blob, { contentType, upsert: false });
 
     if (uploadError) {
       throw uploadError;
