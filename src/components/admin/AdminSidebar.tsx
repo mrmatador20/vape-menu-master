@@ -37,6 +37,7 @@ const groups: Group[] = [
       { title: "Produtos", url: "/546498@18/products", icon: Package },
       { title: "Categorias", url: "/546498@18/categories", icon: FolderTree },
       { title: "Banners", url: "/546498@18/banners", icon: Megaphone },
+      { title: "Banners Promocionais", url: "/546498@18/promo-banners", icon: Megaphone },
     ],
   },
   {
