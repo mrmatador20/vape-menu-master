@@ -344,6 +344,87 @@ export function DiscountFormDialog({ open, onOpenChange, discount }: DiscountFor
           </div>
 
           <div className="border rounded-lg p-4 space-y-3 bg-muted/30">
+            <Label className="font-medium">Abrangência do Cupom</Label>
+            <p className="text-xs text-muted-foreground">
+              Defina em quais produtos este cupom pode ser aplicado.
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div className="space-y-2">
+                <Label htmlFor="scope_type">Aplicar em</Label>
+                <Select
+                  value={scopeType}
+                  onValueChange={(v) => {
+                    setValue('scope_type', v);
+                    if (v === 'all') {
+                      setValue('scope_category', '');
+                      setValue('scope_subcategory', '');
+                    } else if (v === 'category') {
+                      setValue('scope_subcategory', '');
+                    }
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todo o site</SelectItem>
+                    <SelectItem value="category">Categoria específica</SelectItem>
+                    <SelectItem value="subcategory">Subcategoria específica</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {scopeType !== 'all' && (
+                <div className="space-y-2">
+                  <Label htmlFor="scope_category">Categoria</Label>
+                  <Select
+                    value={scopeCategoryName || ''}
+                    onValueChange={(v) => {
+                      setValue('scope_category', v);
+                      setValue('scope_subcategory', '');
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {(categories || []).map((c) => (
+                        <SelectItem key={c.id} value={c.name}>
+                          {c.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {scopeType === 'subcategory' && (
+                <div className="space-y-2">
+                  <Label htmlFor="scope_subcategory">Subcategoria</Label>
+                  <Select
+                    value={watch('scope_subcategory') || ''}
+                    onValueChange={(v) => setValue('scope_subcategory', v)}
+                    disabled={!selectedCategory}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={selectedCategory ? 'Selecione' : 'Escolha a categoria primeiro'} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {(subcategories || []).map((s) => (
+                        <SelectItem key={s.id} value={s.name}>
+                          {s.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+            </div>
+          </div>
+
+
+
+          <div className="border rounded-lg p-4 space-y-3 bg-muted/30">
             <div className="flex items-center space-x-2">
               <Switch
                 id="is_influencer_coupon"
