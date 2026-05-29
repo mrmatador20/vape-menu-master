@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Plus, X, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { optimizeImage } from '@/lib/imageOptimizer';
 import {
   PromoBanner,
   useCreatePromoBanner,
