@@ -56,6 +56,7 @@ export function PromoBannerFormDialog({ banner, trigger }: Props) {
     setButtonLink(banner.button_link);
     setCouponCode(banner.coupon_code || '');
     setIsActive(banner.is_active);
+    setShowButton(banner.show_button ?? false);
     setDisplayOrder(banner.display_order);
     setRotationSeconds(banner.rotation_seconds);
     setOverlayOpacity(Number(banner.overlay_opacity ?? 0.35));
@@ -67,7 +68,7 @@ export function PromoBannerFormDialog({ banner, trigger }: Props) {
   const reset = () => {
     setTitle(''); setEyebrow(''); setSubtitle(''); setDescription('');
     setButtonLabel('Comprar Agora'); setButtonLink('/'); setCouponCode('');
-    setIsActive(true); setDisplayOrder(0); setRotationSeconds(6);
+    setIsActive(true); setShowButton(false); setDisplayOrder(0); setRotationSeconds(6);
     setOverlayOpacity(0.35); setTextAlign('left');
     setImageUrl(''); setMobileImageUrl(''); setDesktopFile(null); setMobileFile(null);
   };
@@ -108,6 +109,7 @@ export function PromoBannerFormDialog({ banner, trigger }: Props) {
         button_link: buttonLink || null,
         coupon_code: couponCode || null,
         is_active: isActive,
+        show_button: showButton,
         display_order: displayOrder,
         rotation_seconds: rotationSeconds,
         overlay_opacity: overlayOpacity,
