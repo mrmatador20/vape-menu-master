@@ -12,6 +12,7 @@ import { Plus, Loader2, Upload, X, CalendarIcon } from 'lucide-react';
 import { useCreateBanner, useUpdateBanner, Banner } from '@/hooks/useBanners';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { optimizeImage } from '@/lib/imageOptimizer';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -145,13 +146,14 @@ export function BannerFormDialog({ banner, trigger }: BannerFormDialogProps) {
   };
 
   const uploadImage = async (file: File, type: 'background' | 'full') => {
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${Math.random()}.${fileExt}`;
+    const { blob, filename, contentType } = await optimizeImage(file, { maxWidth: 1920, quality: 0.8 });
+    const ext = filename.split('.').pop();
+    const fileName = `${Math.random()}.${ext}`;
     const filePath = `${type}/${fileName}`;
 
     const { error: uploadError } = await supabase.storage
       .from('banners')
-      .upload(filePath, file);
+      .upload(filePath, blob, { contentType, upsert: false });
 
     if (uploadError) {
       throw uploadError;

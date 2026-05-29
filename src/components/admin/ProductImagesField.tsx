@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Loader2, Upload, X, ArrowUp, ArrowDown } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { optimizeImage } from '@/lib/imageOptimizer';
 
 const MAX_IMAGES = 12;
 
@@ -41,9 +42,12 @@ export function ProductImagesField({ value, onChange }: Props) {
     setUploading(true);
     const uploaded: string[] = [];
     for (const file of toUpload) {
-      const ext = file.name.split('.').pop();
+      const { blob, filename, contentType } = await optimizeImage(file, { maxWidth: 1200, quality: 0.8 });
+      const ext = filename.split('.').pop();
       const path = `products/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-      const { error } = await supabase.storage.from('product-images').upload(path, file);
+      const { error } = await supabase.storage
+        .from('product-images')
+        .upload(path, blob, { contentType, upsert: false });
       if (error) {
         toast({ title: 'Erro ao enviar', description: error.message, variant: 'destructive' });
         continue;

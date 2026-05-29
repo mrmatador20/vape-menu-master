@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Plus, X, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { optimizeImage } from '@/lib/imageOptimizer';
 import {
   PromoBanner,
   useCreatePromoBanner,
@@ -74,10 +75,11 @@ export function PromoBannerFormDialog({ banner, trigger }: Props) {
   };
 
   const uploadFile = async (file: File, prefix: string) => {
-    const ext = file.name.split('.').pop();
+    const { blob, filename, contentType } = await optimizeImage(file, { maxWidth: 1920, quality: 0.8 });
+    const ext = filename.split('.').pop();
     const name = `promo/${prefix}-${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-    const { error } = await supabase.storage.from('banners').upload(name, file, {
-      contentType: file.type,
+    const { error } = await supabase.storage.from('banners').upload(name, blob, {
+      contentType,
       upsert: false,
     });
     if (error) throw error;
