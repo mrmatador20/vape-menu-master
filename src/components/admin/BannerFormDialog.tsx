@@ -12,6 +12,7 @@ import { Plus, Loader2, Upload, X, CalendarIcon } from 'lucide-react';
 import { useCreateBanner, useUpdateBanner, Banner } from '@/hooks/useBanners';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { optimizeImage } from '@/lib/imageOptimizer';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
