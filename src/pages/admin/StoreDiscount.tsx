@@ -73,6 +73,8 @@ export default function AdminStoreDiscount() {
           if (error) throw error;
         }
       }
+    },
+
 
     onSuccess: () => {
       toast.success("Desconto da loja salvo com sucesso!");
