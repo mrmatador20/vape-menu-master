@@ -9,7 +9,6 @@ import ProductSearch from '@/components/ProductSearch';
 import { CategorySidebar } from '@/components/CategorySidebar';
 import { CategoryCarousel } from '@/components/CategoryCarousel';
 import { BannerCarousel } from '@/components/BannerCarousel';
-import { PromoBanner } from '@/components/PromoBanner';
 import { Loader2 } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { useSiteIdentity } from '@/hooks/useSiteIdentity';
@@ -147,9 +146,6 @@ const Index = () => {
           </p>
         </div>
       </section>
-
-      {/* Premium promo banner — between welcome and search/products */}
-      <PromoBanner />
 
       {/* Products */}
       <section className="pb-24">
