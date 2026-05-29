@@ -162,6 +162,7 @@ const App = () => (
                 <Route path="stats" element={<AdminStats />} />
                 <Route path="reports" element={<AdminReports />} />
                 <Route path="discounts" element={<AdminDiscounts />} />
+                <Route path="store-discount" element={<AdminStoreDiscount />} />
                 <Route path="shipping-rates" element={<AdminShippingRates />} />
                 <Route path="referrals" element={<AdminReferrals />} />
                 <Route path="referrals/metrics" element={<AdminReferralMetrics />} />
