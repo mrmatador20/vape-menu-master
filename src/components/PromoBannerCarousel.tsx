@@ -59,7 +59,7 @@ export const PromoBannerCarousel = () => {
           key={current.id + imageSrc}
           src={imageSrc}
           alt={current.title}
-          className="absolute inset-0 w-full h-full object-cover animate-[fade-in_0.8s_ease-in-out]"
+          className="absolute inset-0 w-full h-full object-contain animate-[fade-in_0.8s_ease-in-out]"
           loading="eager"
         />
 
