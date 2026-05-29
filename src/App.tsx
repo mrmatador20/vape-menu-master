@@ -27,6 +27,7 @@ import AdminCategories from "./pages/admin/Categories";
 import AdminOrders from "./pages/admin/Orders";
 import AdminStats from "./pages/admin/Stats";
 import AdminDiscounts from "./pages/admin/Discounts";
+import AdminStoreDiscount from "./pages/admin/StoreDiscount";
 import AdminReviews from "./pages/admin/Reviews";
 import AdminShippingRates from "./pages/admin/ShippingRates";
 import AdminSettings from "./pages/admin/Settings";
