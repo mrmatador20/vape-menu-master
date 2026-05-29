@@ -67,6 +67,15 @@ export function DiscountFormDialog({ open, onOpenChange, discount }: DiscountFor
   const scheduleType = watch('schedule_type');
   const isInfluencerCoupon = watch('is_influencer_coupon');
   const influencerUserId = watch('influencer_user_id');
+  const scopeType = watch('scope_type');
+  const scopeCategoryName = watch('scope_category');
+
+  const { data: categories } = useCategories();
+  const selectedCategory = categories?.find((c) => c.name === scopeCategoryName);
+  const { data: subcategories } = useSubcategories(
+    selectedCategory?.id || null,
+    selectedCategory?.name || null
+  );
 
   const [userPickerOpen, setUserPickerOpen] = useState(false);
   const [userSearch, setUserSearch] = useState('');
