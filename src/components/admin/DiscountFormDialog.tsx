@@ -112,6 +112,9 @@ export function DiscountFormDialog({ open, onOpenChange, discount }: DiscountFor
           is_influencer_coupon: discount.is_influencer_coupon || false,
           influencer_user_id: discount.influencer_user_id || null,
           influencer_name: discount.influencer_name || '',
+          scope_type: discount.scope_type || 'all',
+          scope_category: discount.scope_category || '',
+          scope_subcategory: discount.scope_subcategory || '',
         });
       } else {
         reset({
@@ -128,6 +131,9 @@ export function DiscountFormDialog({ open, onOpenChange, discount }: DiscountFor
           is_influencer_coupon: false,
           influencer_user_id: null,
           influencer_name: '',
+          scope_type: 'all',
+          scope_category: '',
+          scope_subcategory: '',
         });
       }
     }
