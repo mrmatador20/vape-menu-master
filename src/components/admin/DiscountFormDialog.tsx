@@ -165,6 +165,7 @@ export function DiscountFormDialog({ open, onOpenChange, discount }: DiscountFor
 
   const onSubmit = (data: any) => {
     // Clean up data - convert empty strings to null for optional fields
+    const scopeType = data.scope_type || 'all';
     const cleanedData = {
       code: data.code,
       type: data.type,
@@ -183,7 +184,19 @@ export function DiscountFormDialog({ open, onOpenChange, discount }: DiscountFor
       influencer_name: data.is_influencer_coupon && data.influencer_name?.trim()
         ? data.influencer_name.trim()
         : null,
+      scope_type: scopeType,
+      scope_category: scopeType !== 'all' && data.scope_category ? data.scope_category : null,
+      scope_subcategory: scopeType === 'subcategory' && data.scope_subcategory ? data.scope_subcategory : null,
     };
+
+    if (scopeType !== 'all' && !cleanedData.scope_category) {
+      toast.error('Selecione a categoria do cupom');
+      return;
+    }
+    if (scopeType === 'subcategory' && !cleanedData.scope_subcategory) {
+      toast.error('Selecione a subcategoria do cupom');
+      return;
+    }
 
     if (cleanedData.is_influencer_coupon && !cleanedData.influencer_user_id && !cleanedData.influencer_name) {
       toast.error('Vincule um parceiro ou informe o nome do responsável');
