@@ -48,18 +48,13 @@ export const PromoBannerCarousel = () => {
       aria-label="Banners promocionais"
       className="relative w-full overflow-hidden bg-background"
     >
-      <div
-        className={cn(
-          'relative w-full',
-          isMobile ? 'aspect-[1080/1350]' : 'aspect-[1920/500]'
-        )}
-      >
-        {/* Background image */}
+      <div className="relative w-full">
+        {/* Background image — defines the container height */}
         <img
           key={current.id + imageSrc}
           src={imageSrc}
           alt={current.title}
-          className="absolute inset-0 w-full h-full object-contain animate-[fade-in_0.8s_ease-in-out]"
+          className="block w-full h-auto animate-[fade-in_0.8s_ease-in-out]"
           loading="eager"
         />
 
