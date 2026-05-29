@@ -9,6 +9,7 @@ import ProductSearch from '@/components/ProductSearch';
 import { CategorySidebar } from '@/components/CategorySidebar';
 import { CategoryCarousel } from '@/components/CategoryCarousel';
 import { BannerCarousel } from '@/components/BannerCarousel';
+import HomePromoBanner from '@/components/HomePromoBanner';
 import { Loader2 } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { useSiteIdentity } from '@/hooks/useSiteIdentity';
@@ -146,6 +147,9 @@ const Index = () => {
           </p>
         </div>
       </section>
+
+      {/* Banner promocional full-width */}
+      <HomePromoBanner />
 
       {/* Products */}
       <section className="pb-24">
