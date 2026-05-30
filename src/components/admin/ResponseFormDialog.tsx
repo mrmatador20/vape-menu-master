@@ -9,6 +9,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { sanitizeUserText } from '@/lib/domPurify';
 
 interface ResponseFormDialogProps {
   open: boolean;
@@ -35,8 +36,9 @@ export default function ResponseFormDialog({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!responseText.trim()) return;
-    onSubmit(responseText);
+    const clean = sanitizeUserText(responseText);
+    if (!clean) return;
+    onSubmit(clean);
     setResponseText('');
   };
 
