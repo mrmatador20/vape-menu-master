@@ -20,6 +20,7 @@ import { validatePassword, getPasswordStrength, getStrengthColor, passwordRequir
 import { checkRateLimit, resetRateLimit } from '@/lib/rateLimit';
 import { checkPwnedPassword, formatPwnedCount } from '@/lib/pwnedPassword';
 import { usePageMeta } from '@/hooks/usePageMeta';
+import { LEGAL_DOC_VERSIONS } from '@/lib/legalDocVersions';
 
 const Auth = () => {
   usePageMeta({ title: 'Entrar ou Cadastrar - Fox Velour', description: 'Acesse sua conta Fox Velour ou crie uma nova para gerenciar pedidos e endereços.', path: '/auth' });
@@ -35,6 +36,7 @@ const Auth = () => {
   const [pwnedInfo, setPwnedInfo] = useState<{ isPwned: boolean; count: number } | null>(null);
   const [isCheckingPwned, setIsCheckingPwned] = useState(false);
   const [rememberDevice, setRememberDevice] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -96,7 +98,16 @@ const Auth = () => {
           return;
         }
 
-        const { error } = await supabase.auth.signUp({
+        // LGPD: require explicit acceptance of legal documents
+        if (!acceptedTerms) {
+          toast.error('Aceite obrigatório', {
+            description: 'Você precisa ler e aceitar os Termos de Uso e a Política de Privacidade para criar sua conta.',
+          });
+          setIsLoading(false);
+          return;
+        }
+
+        const { data: signUpData, error } = await supabase.auth.signUp({
           email: formData.email,
           password: formData.password,
           options: {
@@ -106,6 +117,27 @@ const Auth = () => {
 
         if (error) throw error;
 
+        // LGPD Art. 8: register explicit consent (immutable audit trail)
+        const newUserId = signUpData.user?.id;
+        if (newUserId) {
+          const consentRows = (['terms_of_use', 'privacy_policy'] as const).map((type) => ({
+            anonymous_id: newUserId, // anon-policy compliant; user_id linked via metadata until session exists
+            consent_type: type,
+            consent_version: LEGAL_DOC_VERSIONS[type],
+            granted: true,
+            user_agent: navigator.userAgent,
+            metadata: {
+              source: 'signup',
+              pending_user_id: newUserId,
+              accepted_at_url: window.location.pathname,
+            },
+          }));
+          const { error: consentError } = await supabase.from('user_consents').insert(consentRows);
+          if (consentError) {
+            console.error('[LGPD] Failed to record signup consent:', consentError);
+          }
+        }
+
         // Reset rate limit on successful signup
         await resetRateLimit('signup');
 
@@ -113,6 +145,7 @@ const Auth = () => {
           description: 'Você já pode fazer login.'
         });
         setIsSignUp(false);
+        setAcceptedTerms(false);
         setAuthState('IDLE');
       } else {
         // Check rate limit for login
@@ -453,6 +486,47 @@ const Auth = () => {
                   </Label>
                   <p className="text-xs text-muted-foreground">
                     ⓘ Não pediremos código 2FA neste dispositivo por 30 dias. Recomendado apenas para dispositivos pessoais.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* LGPD: explicit consent for Terms and Privacy Policy on signup */}
+            {isSignUp && (
+              <div className="flex items-start space-x-2 pt-2">
+                <Checkbox
+                  id="accept-terms"
+                  checked={acceptedTerms}
+                  onCheckedChange={(checked) => setAcceptedTerms(checked as boolean)}
+                  required
+                />
+                <div className="grid gap-1.5 leading-none">
+                  <Label
+                    htmlFor="accept-terms"
+                    className="text-sm font-medium leading-none cursor-pointer"
+                  >
+                    Li e aceito os{' '}
+                    <a
+                      href="/terms-of-use"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary underline hover:text-primary/80"
+                    >
+                      Termos de Uso
+                    </a>
+                    {' '}e a{' '}
+                    <a
+                      href="/privacy-policy"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary underline hover:text-primary/80"
+                    >
+                      Política de Privacidade
+                    </a>
+                    .
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Versões: Termos v{LEGAL_DOC_VERSIONS.terms_of_use} · Privacidade v{LEGAL_DOC_VERSIONS.privacy_policy}
                   </p>
                 </div>
               </div>
