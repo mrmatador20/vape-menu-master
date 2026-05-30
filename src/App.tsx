@@ -41,6 +41,10 @@ import AdminInfluencerMetrics from "./pages/admin/InfluencerMetrics";
 import AdminReports from "./pages/admin/Reports";
 import TrustedDevices from "./pages/TrustedDevices";
 import Affiliate from "./pages/Affiliate";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import TermsOfUse from "./pages/TermsOfUse";
+import DataRights from "./pages/DataRights";
+import CookieBanner from "./components/CookieBanner";
 
 const queryClient = new QueryClient();
 
@@ -172,6 +176,15 @@ const App = () => (
                 <Route path="audit-logs" element={<AdminAuditLogs />} />
                 <Route path="settings" element={<AdminSettings />} />
               </Route>
+              <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+              <Route path="/terms-of-use" element={<TermsOfUse />} />
+              <Route path="/data-rights" element={
+                <ResetFlowGuard>
+                  <ProtectedRoute>
+                    <DataRights />
+                  </ProtectedRoute>
+                </ResetFlowGuard>
+              } />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={
                 <ResetFlowGuard>
@@ -179,6 +192,7 @@ const App = () => (
                 </ResetFlowGuard>
               } />
               </Routes>
+              <CookieBanner />
               </SessionTimeoutProvider>
               </SiteThemeProvider>
               </SiteIdentityProvider>
