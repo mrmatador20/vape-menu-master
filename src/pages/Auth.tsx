@@ -20,6 +20,7 @@ import { validatePassword, getPasswordStrength, getStrengthColor, passwordRequir
 import { checkRateLimit, resetRateLimit } from '@/lib/rateLimit';
 import { checkPwnedPassword, formatPwnedCount } from '@/lib/pwnedPassword';
 import { usePageMeta } from '@/hooks/usePageMeta';
+import { LEGAL_DOC_VERSIONS } from '@/lib/legalDocVersions';
 
 const Auth = () => {
   usePageMeta({ title: 'Entrar ou Cadastrar - Fox Velour', description: 'Acesse sua conta Fox Velour ou crie uma nova para gerenciar pedidos e endereços.', path: '/auth' });
