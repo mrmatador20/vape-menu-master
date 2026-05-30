@@ -98,7 +98,16 @@ const Auth = () => {
           return;
         }
 
-        const { error } = await supabase.auth.signUp({
+        // LGPD: require explicit acceptance of legal documents
+        if (!acceptedTerms) {
+          toast.error('Aceite obrigatório', {
+            description: 'Você precisa ler e aceitar os Termos de Uso e a Política de Privacidade para criar sua conta.',
+          });
+          setIsLoading(false);
+          return;
+        }
+
+        const { data: signUpData, error } = await supabase.auth.signUp({
           email: formData.email,
           password: formData.password,
           options: {
@@ -108,12 +117,27 @@ const Auth = () => {
 
         if (error) throw error;
 
-        // Reset rate limit on successful signup
-        await resetRateLimit('signup');
+        // LGPD Art. 8: register explicit consent (immutable audit trail)
+        const newUserId = signUpData.user?.id;
+        if (newUserId) {
+          const consentRows = (['terms_of_use', 'privacy_policy'] as const).map((type) => ({
+            anonymous_id: newUserId, // anon-policy compliant; user_id linked via metadata until session exists
+            consent_type: type,
+            consent_version: LEGAL_DOC_VERSIONS[type],
+            granted: true,
+            user_agent: navigator.userAgent,
+            metadata: {
+              source: 'signup',
+              pending_user_id: newUserId,
+              accepted_at_url: window.location.pathname,
+            },
+          }));
+          const { error: consentError } = await supabase.from('user_consents').insert(consentRows);
+          if (consentError) {
+            console.error('[LGPD] Failed to record signup consent:', consentError);
+          }
+        }
 
-        toast.success('Conta criada com sucesso!', {
-          description: 'Você já pode fazer login.'
-        });
         setIsSignUp(false);
         setAuthState('IDLE');
       } else {
