@@ -9,6 +9,7 @@ import ProductSearch from '@/components/ProductSearch';
 import { CategorySidebar } from '@/components/CategorySidebar';
 import { CategoryCarousel } from '@/components/CategoryCarousel';
 import { BannerCarousel } from '@/components/BannerCarousel';
+import Footer from '@/components/Footer';
 import { PromoBannerCarousel } from '@/components/PromoBannerCarousel';
 import { Loader2 } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
