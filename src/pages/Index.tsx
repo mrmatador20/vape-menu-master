@@ -276,6 +276,8 @@ const Index = () => {
 
       </main>
 
+      <Footer />
+
       <QuickViewSheet
         product={quickViewProduct}
         open={!!quickViewProduct}

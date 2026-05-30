@@ -23,6 +23,7 @@ import { ReferralTierBadge } from '@/components/ReferralTierBadge';
 import { AvatarUpload } from '@/components/AvatarUpload';
 import { Badge } from '@/components/ui/badge';
 import { SavedAddressesManager } from '@/components/SavedAddressesManager';
+import { PrivacyDataCard } from '@/components/PrivacyDataCard';
 import { usePageMeta } from '@/hooks/usePageMeta';
 import {
   AlertDialog,
@@ -590,6 +591,9 @@ const Profile = () => {
 
           {/* Activity Logs */}
           <ActivityLogsCard />
+
+          {/* LGPD - Privacidade e Dados */}
+          <PrivacyDataCard />
 
           {/* Referral System */}
           <ReferralCard />
