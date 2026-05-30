@@ -491,6 +491,47 @@ const Auth = () => {
               </div>
             )}
 
+            {/* LGPD: explicit consent for Terms and Privacy Policy on signup */}
+            {isSignUp && (
+              <div className="flex items-start space-x-2 pt-2">
+                <Checkbox
+                  id="accept-terms"
+                  checked={acceptedTerms}
+                  onCheckedChange={(checked) => setAcceptedTerms(checked as boolean)}
+                  required
+                />
+                <div className="grid gap-1.5 leading-none">
+                  <Label
+                    htmlFor="accept-terms"
+                    className="text-sm font-medium leading-none cursor-pointer"
+                  >
+                    Li e aceito os{' '}
+                    <a
+                      href="/terms-of-use"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary underline hover:text-primary/80"
+                    >
+                      Termos de Uso
+                    </a>
+                    {' '}e a{' '}
+                    <a
+                      href="/privacy-policy"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary underline hover:text-primary/80"
+                    >
+                      Política de Privacidade
+                    </a>
+                    .
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Versões: Termos v{LEGAL_DOC_VERSIONS.terms_of_use} · Privacidade v{LEGAL_DOC_VERSIONS.privacy_policy}
+                  </p>
+                </div>
+              </div>
+            )}
+
             <Button
               type="submit"
               className="w-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-glow"
