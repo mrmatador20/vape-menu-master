@@ -138,7 +138,14 @@ const Auth = () => {
           }
         }
 
+        // Reset rate limit on successful signup
+        await resetRateLimit('signup');
+
+        toast.success('Conta criada com sucesso!', {
+          description: 'Você já pode fazer login.'
+        });
         setIsSignUp(false);
+        setAcceptedTerms(false);
         setAuthState('IDLE');
       } else {
         // Check rate limit for login
