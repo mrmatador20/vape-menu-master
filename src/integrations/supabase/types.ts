@@ -181,6 +181,42 @@ export type Database = {
         }
         Relationships: []
       }
+      data_subject_requests: {
+        Row: {
+          created_at: string
+          id: string
+          legal_deadline: string
+          notes: string | null
+          processed_at: string | null
+          processed_by: string | null
+          request_type: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          legal_deadline?: string
+          notes?: string | null
+          processed_at?: string | null
+          processed_by?: string | null
+          request_type: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          legal_deadline?: string
+          notes?: string | null
+          processed_at?: string | null
+          processed_by?: string | null
+          request_type?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       discount_usage: {
         Row: {
           discount_id: string
@@ -1397,6 +1433,48 @@ export type Database = {
         }
         Relationships: []
       }
+      user_consents: {
+        Row: {
+          anonymous_id: string | null
+          consent_type: string
+          consent_version: string
+          granted: boolean
+          granted_at: string
+          id: string
+          ip_address: string | null
+          metadata: Json | null
+          revoked_at: string | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          anonymous_id?: string | null
+          consent_type: string
+          consent_version?: string
+          granted: boolean
+          granted_at?: string
+          id?: string
+          ip_address?: string | null
+          metadata?: Json | null
+          revoked_at?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          anonymous_id?: string | null
+          consent_type?: string
+          consent_version?: string
+          granted?: boolean
+          granted_at?: string
+          id?: string
+          ip_address?: string | null
+          metadata?: Json | null
+          revoked_at?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string | null
@@ -1605,6 +1683,7 @@ export type Database = {
         Args: { retention_days?: number }
         Returns: undefined
       }
+      export_user_data: { Args: never; Returns: Json }
       generate_referral_code: { Args: never; Returns: string }
       generate_unique_coupon_code: { Args: never; Returns: string }
       get_product_availability: {
@@ -1630,6 +1709,7 @@ export type Database = {
           id: string
         }[]
       }
+      request_account_deletion: { Args: { p_reason?: string }; Returns: string }
       update_user_tier: { Args: { p_user_id: string }; Returns: undefined }
       user_purchased_product: {
         Args: { _product_id: string; _user_id: string }
