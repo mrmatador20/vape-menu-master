@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Star, Upload, Loader2, X, ShieldCheck, Check } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { sanitizeUserText } from '@/lib/domPurify';
 import {
   Dialog,
   DialogContent,
@@ -61,7 +62,8 @@ const ProductReviews = ({ productId }: ProductReviewsProps) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!comment.trim()) {
+    const cleanComment = sanitizeUserText(comment);
+    if (!cleanComment) {
       toast.error('Adicione um comentário');
       return;
     }
@@ -86,7 +88,7 @@ const ProductReviews = ({ productId }: ProductReviewsProps) => {
       await addReview.mutateAsync({
         productId,
         rating,
-        comment: comment.trim(),
+        comment: cleanComment,
         imageUrl,
       });
 
