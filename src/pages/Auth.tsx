@@ -36,6 +36,7 @@ const Auth = () => {
   const [pwnedInfo, setPwnedInfo] = useState<{ isPwned: boolean; count: number } | null>(null);
   const [isCheckingPwned, setIsCheckingPwned] = useState(false);
   const [rememberDevice, setRememberDevice] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
