@@ -45,7 +45,15 @@ export const getSecurityHeaders = (): Record<string, string> => {
  */
 export const CSP_POLICY = {
   'default-src': ["'self'"],
-  'script-src': ["'self'", "'unsafe-inline'", 'https://esm.sh', 'https://deno.land'],
+  'script-src': [
+    "'self'",
+    // SHA-256 hashes of inline <script type="application/ld+json"> blocks in index.html.
+    // Recompute via `node scripts/compute-csp-hashes.mjs` if those blocks change.
+    "'sha256-g2AVoFBe6zYIYitWMjii6WBzMBlDLulSJpWs2IOARd8='",
+    "'sha256-hydDU4YeNDqTxXmpepMSkOhVAjFNSHEr3P2AcFmspj0='",
+    'https://esm.sh',
+    'https://deno.land',
+  ],
   'style-src': ["'self'", "'unsafe-inline'"],
   'img-src': ["'self'", 'data:', 'https:', 'blob:'],
   'font-src': ["'self'", 'data:'],
