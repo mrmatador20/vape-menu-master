@@ -45,7 +45,7 @@ export const getSecurityHeaders = (): Record<string, string> => {
  */
 export const CSP_POLICY = {
   'default-src': ["'self'"],
-  'script-src': ["'self'", "'unsafe-inline'", "'unsafe-eval'", 'https://esm.sh', 'https://deno.land'],
+  'script-src': ["'self'", "'unsafe-inline'", 'https://esm.sh', 'https://deno.land'],
   'style-src': ["'self'", "'unsafe-inline'"],
   'img-src': ["'self'", 'data:', 'https:', 'blob:'],
   'font-src': ["'self'", 'data:'],
