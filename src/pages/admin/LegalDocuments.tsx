@@ -256,13 +256,15 @@ function DocEditor({ docType }: { docType: LegalDocType }) {
 
       {challenge && pendingAction && (
         <MFAVerificationGate
-          challenge={challenge}
-          operationName={
+          open
+          operation={`publish_legal_${docType}`}
+          operationLabel={
             pendingAction.kind === 'publish'
               ? `publicar ${DOC_LABELS[docType]}`
-              : `rollback de ${DOC_LABELS[docType]}`
+              : `realizar rollback de ${DOC_LABELS[docType]}`
           }
-          onSuccess={async () => {
+          challengeData={challenge}
+          onVerified={async () => {
             const action = pendingAction;
             setChallenge(null);
             setPendingAction(null);
