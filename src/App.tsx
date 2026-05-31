@@ -44,7 +44,9 @@ import Affiliate from "./pages/Affiliate";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfUse from "./pages/TermsOfUse";
 import DataRights from "./pages/DataRights";
+import AdminLegalDocuments from "./pages/admin/LegalDocuments";
 import CookieBanner from "./components/CookieBanner";
+import LegalReacceptDialog from "./components/LegalReacceptDialog";
 
 const queryClient = new QueryClient();
 
@@ -175,6 +177,7 @@ const App = () => (
                 <Route path="promo-banners" element={<AdminPromoBanners />} />
                 <Route path="audit-logs" element={<AdminAuditLogs />} />
                 <Route path="settings" element={<AdminSettings />} />
+                <Route path="legal-documents" element={<AdminLegalDocuments />} />
               </Route>
               <Route path="/privacy-policy" element={<PrivacyPolicy />} />
               <Route path="/terms-of-use" element={<TermsOfUse />} />
@@ -193,6 +196,7 @@ const App = () => (
               } />
               </Routes>
               <CookieBanner />
+              <LegalReacceptDialog />
               </SessionTimeoutProvider>
               </SiteThemeProvider>
               </SiteIdentityProvider>
