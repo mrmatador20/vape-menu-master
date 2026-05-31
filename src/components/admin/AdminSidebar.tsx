@@ -2,7 +2,7 @@ import { useState } from "react";
 import {
   LayoutDashboard, Package, ShoppingCart, BarChart3, Tag, Star, Truck,
   Settings, Megaphone, Shield, Gift, FolderTree, ChevronDown, Boxes,
-  ClipboardList, LineChart, ShieldCheck, Wrench, Trophy,
+  ClipboardList, LineChart, ShieldCheck, Wrench, Trophy, FileText,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
@@ -52,6 +52,7 @@ const groups: Group[] = [
     title: "Sistema", icon: ShieldCheck, items: [
       { title: "Segurança", url: "/546498@18/security", icon: Shield },
       { title: "Auditoria", url: "/546498@18/audit-logs", icon: Shield },
+      { title: "Documentos Legais", url: "/546498@18/legal-documents", icon: FileText },
       { title: "Configurações", url: "/546498@18/settings", icon: Settings },
     ],
   },

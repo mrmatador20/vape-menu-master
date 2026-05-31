@@ -439,6 +439,42 @@ export type Database = {
           },
         ]
       }
+      legal_documents: {
+        Row: {
+          change_summary: string | null
+          content: string
+          created_at: string
+          doc_type: string
+          id: string
+          is_current: boolean
+          published_at: string
+          published_by: string
+          version: string
+        }
+        Insert: {
+          change_summary?: string | null
+          content: string
+          created_at?: string
+          doc_type: string
+          id?: string
+          is_current?: boolean
+          published_at?: string
+          published_by: string
+          version: string
+        }
+        Update: {
+          change_summary?: string | null
+          content?: string
+          created_at?: string
+          doc_type?: string
+          id?: string
+          is_current?: boolean
+          published_at?: string
+          published_by?: string
+          version?: string
+        }
+        Relationships: []
+      }
       mfa_backup_codes: {
         Row: {
           code_hash: string
@@ -1709,8 +1745,28 @@ export type Database = {
           id: string
         }[]
       }
+      publish_legal_document: {
+        Args: {
+          p_change_summary?: string
+          p_content: string
+          p_doc_type: string
+          p_version: string
+        }
+        Returns: string
+      }
       request_account_deletion: { Args: { p_reason?: string }; Returns: string }
+      rollback_legal_document: {
+        Args: { p_new_version: string; p_version_id: string }
+        Returns: string
+      }
       update_user_tier: { Args: { p_user_id: string }; Returns: undefined }
+      user_needs_legal_reaccept: {
+        Args: never
+        Returns: {
+          current_version: string
+          doc_type: string
+        }[]
+      }
       user_purchased_product: {
         Args: { _product_id: string; _user_id: string }
         Returns: boolean
