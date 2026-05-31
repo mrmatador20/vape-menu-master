@@ -570,6 +570,12 @@ const Auth = () => {
           </div>
         </Card>
       </div>
+
+      <LegalDocumentDialog
+        open={openLegalDoc !== null}
+        onOpenChange={(o) => !o && setOpenLegalDoc(null)}
+        docType={openLegalDoc ?? 'terms_of_use'}
+      />
     </>
   );
 };
