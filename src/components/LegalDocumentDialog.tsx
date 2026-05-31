@@ -1,5 +1,5 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { ScrollArea } from '@/components/ui/scroll-area';
+
 import { Loader2 } from 'lucide-react';
 import { useCurrentLegalDocument, type LegalDocType } from '@/hooks/useLegalDocuments';
 
@@ -49,7 +49,7 @@ export const LegalDocumentDialog = ({ open, onOpenChange, docType }: LegalDocume
               .
             </p>
           )}
-        </ScrollArea>
+        </div>
       </DialogContent>
     </Dialog>
   );
