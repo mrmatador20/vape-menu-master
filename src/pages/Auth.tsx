@@ -21,6 +21,7 @@ import { checkRateLimit, resetRateLimit } from '@/lib/rateLimit';
 import { checkPwnedPassword, formatPwnedCount } from '@/lib/pwnedPassword';
 import { usePageMeta } from '@/hooks/usePageMeta';
 import { LEGAL_DOC_VERSIONS } from '@/lib/legalDocVersions';
+import { LegalDocumentDialog } from '@/components/LegalDocumentDialog';
 
 const Auth = () => {
   usePageMeta({ title: 'Entrar ou Cadastrar - Fox Velour', description: 'Acesse sua conta Fox Velour ou crie uma nova para gerenciar pedidos e endereços.', path: '/auth' });
@@ -37,6 +38,7 @@ const Auth = () => {
   const [isCheckingPwned, setIsCheckingPwned] = useState(false);
   const [rememberDevice, setRememberDevice] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [openLegalDoc, setOpenLegalDoc] = useState<null | 'terms_of_use' | 'privacy_policy'>(null);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -506,23 +508,21 @@ const Auth = () => {
                     className="text-sm font-medium leading-none cursor-pointer"
                   >
                     Li e aceito os{' '}
-                    <a
-                      href="/terms-of-use"
-                      target="_blank"
-                      rel="noopener noreferrer"
+                    <button
+                      type="button"
+                      onClick={() => setOpenLegalDoc('terms_of_use')}
                       className="text-primary underline hover:text-primary/80"
                     >
                       Termos de Uso
-                    </a>
+                    </button>
                     {' '}e a{' '}
-                    <a
-                      href="/privacy-policy"
-                      target="_blank"
-                      rel="noopener noreferrer"
+                    <button
+                      type="button"
+                      onClick={() => setOpenLegalDoc('privacy_policy')}
                       className="text-primary underline hover:text-primary/80"
                     >
                       Política de Privacidade
-                    </a>
+                    </button>
                     .
                   </Label>
                   <p className="text-xs text-muted-foreground">
@@ -570,6 +570,12 @@ const Auth = () => {
           </div>
         </Card>
       </div>
+
+      <LegalDocumentDialog
+        open={openLegalDoc !== null}
+        onOpenChange={(o) => !o && setOpenLegalDoc(null)}
+        docType={openLegalDoc ?? 'terms_of_use'}
+      />
     </>
   );
 };
