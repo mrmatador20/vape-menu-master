@@ -20,8 +20,8 @@ export const LegalDocumentDialog = ({ open, onOpenChange, docType }: LegalDocume
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col">
-        <DialogHeader>
+      <DialogContent className="max-w-2xl flex flex-col max-h-[85vh] p-0 gap-0">
+        <DialogHeader className="p-6 pb-4 border-b shrink-0">
           <DialogTitle>{title}</DialogTitle>
           {doc && (
             <DialogDescription>
@@ -31,7 +31,7 @@ export const LegalDocumentDialog = ({ open, onOpenChange, docType }: LegalDocume
           )}
         </DialogHeader>
 
-        <ScrollArea className="flex-1 pr-4 -mr-4">
+        <div className="flex-1 overflow-y-auto p-6">
           {isLoading ? (
             <div className="flex justify-center py-12">
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
