@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { Cookie } from 'lucide-react';
+import { LegalDocumentDialog } from '@/components/LegalDocumentDialog';
 
 const STORAGE_KEY = 'cookie_consent_v1';
 const ANON_KEY = 'anon_consent_id';
@@ -18,6 +18,7 @@ const getAnonId = (): string => {
 
 const CookieBanner = () => {
   const [visible, setVisible] = useState(false);
+  const [showPrivacy, setShowPrivacy] = useState(false);
 
   useEffect(() => {
     if (!localStorage.getItem(STORAGE_KEY)) {
@@ -48,6 +49,7 @@ const CookieBanner = () => {
   if (!visible) return null;
 
   return (
+    <>
     <div
       role="dialog"
       aria-live="polite"
@@ -60,11 +62,20 @@ const CookieBanner = () => {
           Usamos apenas <strong>cookies essenciais</strong> para autenticar você, manter o carrinho e
           garantir a segurança do site. Não usamos cookies de analytics ou marketing. Saiba mais em
           nossa{' '}
-          <Link to="/privacy-policy" className="underline font-medium">Política de Privacidade</Link>.
+          <button
+            type="button"
+            onClick={() => setShowPrivacy(true)}
+            className="underline font-medium text-primary hover:opacity-80"
+          >
+            Política de Privacidade
+          </button>
+          .
         </p>
         <Button onClick={accept} size="sm" className="shrink-0">Entendi</Button>
       </div>
     </div>
+    <LegalDocumentDialog open={showPrivacy} onOpenChange={setShowPrivacy} docType="privacy_policy" />
+    </>
   );
 };
 
