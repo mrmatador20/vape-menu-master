@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { Cookie } from 'lucide-react';
+import { LegalDocumentDialog } from '@/components/LegalDocumentDialog';
 
 const STORAGE_KEY = 'cookie_consent_v1';
 const ANON_KEY = 'anon_consent_id';
