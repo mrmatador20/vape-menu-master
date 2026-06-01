@@ -18,6 +18,7 @@ const getAnonId = (): string => {
 
 const CookieBanner = () => {
   const [visible, setVisible] = useState(false);
+  const [showPrivacy, setShowPrivacy] = useState(false);
 
   useEffect(() => {
     if (!localStorage.getItem(STORAGE_KEY)) {
