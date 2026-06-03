@@ -232,6 +232,14 @@ export function PromoBannerFormDialog({ banner, trigger }: Props) {
             </Label>
           </div>
 
+          {/* Clickable toggle */}
+          <div className="flex items-center gap-2 rounded border p-3 bg-muted/30">
+            <Switch checked={isClickable} onCheckedChange={setIsClickable} id="pb-clickable" />
+            <Label htmlFor="pb-clickable" className="cursor-pointer">
+              Banner clicável (a imagem inteira redireciona para o link)
+            </Label>
+          </div>
+
           {/* CTA */}
           <div className="grid md:grid-cols-3 gap-4">
             <div className="space-y-2">
