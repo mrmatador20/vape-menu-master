@@ -194,6 +194,7 @@ export function BannerFormDialog({ banner, trigger }: BannerFormDialogProps) {
       const bannerData = {
         title,
         description,
+        link_url: linkUrl || null,
         background_color: backgroundColor,
         text_color: textColor,
         background_image_url: bannerType === 'color' ? backgroundImageUrl : null,
