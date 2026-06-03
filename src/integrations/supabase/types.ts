@@ -1737,6 +1737,35 @@ export type Database = {
       export_user_data: { Args: never; Returns: Json }
       generate_referral_code: { Args: never; Returns: string }
       generate_unique_coupon_code: { Args: never; Returns: string }
+      get_active_general_discounts: {
+        Args: never
+        Returns: {
+          day_of_week: number
+          end_time: string
+          id: string
+          is_active: boolean
+          schedule_type: string
+          scope_category: string
+          scope_subcategory: string
+          scope_type: string
+          start_time: string
+          type: string
+          valid_until: string
+          value: number
+        }[]
+      }
+      get_active_referral_rewards: {
+        Args: never
+        Returns: {
+          created_at: string
+          description: string
+          id: string
+          is_active: boolean
+          name: string
+          points_required: number
+          updated_at: string
+        }[]
+      }
       get_product_availability: {
         Args: { stock_value: number }
         Returns: string

@@ -47,15 +47,15 @@ export const useDiscounts = () => {
   return useQuery({
     queryKey: ['discounts'],
     queryFn: async () => {
+      // Use a SECURITY DEFINER RPC that returns only safe pricing fields
+      // (no `code` column) so authenticated users can't harvest coupon codes.
       const { data, error } = await supabase
-        .from('discounts')
-        .select('*')
-        .eq('is_active', true);
-      
+        .rpc('get_active_general_discounts' as any);
+
       if (error) throw error;
-      
+
       // Filter active discounts based on schedule
-      return (data as Discount[]).filter(isDiscountActive);
+      return ((data as unknown) as Discount[]).filter(isDiscountActive);
     },
     refetchInterval: 60000, // Refetch every minute to update time-based discounts
   });
