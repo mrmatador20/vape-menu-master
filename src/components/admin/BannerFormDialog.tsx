@@ -53,6 +53,7 @@ export function BannerFormDialog({ banner, trigger }: BannerFormDialogProps) {
     if (banner) {
       setTitle(banner.title);
       setDescription(banner.description || '');
+      setLinkUrl(banner.link_url || '');
       setBackgroundColor(banner.background_color);
       setTextColor(banner.text_color);
       setIsActive(banner.is_active);
