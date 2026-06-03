@@ -17,14 +17,13 @@ export const useReferralRewards = () => {
   return useQuery({
     queryKey: ['referral-rewards'],
     queryFn: async (): Promise<ReferralReward[]> => {
+      // Use a SECURITY DEFINER RPC that excludes the `discount_code`
+      // column so authenticated users can't harvest reward codes.
       const { data, error } = await supabase
-        .from('referral_rewards')
-        .select('*')
-        .eq('is_active', true)
-        .order('points_required', { ascending: true });
+        .rpc('get_active_referral_rewards' as any);
 
       if (error) throw error;
-      return data || [];
+      return ((data as unknown) as ReferralReward[]) || [];
     },
   });
 };
