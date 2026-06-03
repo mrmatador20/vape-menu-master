@@ -59,6 +59,7 @@ export function PromoBannerFormDialog({ banner, trigger }: Props) {
     setCouponCode(banner.coupon_code || '');
     setIsActive(banner.is_active);
     setShowButton(banner.show_button ?? false);
+    setIsClickable(banner.is_clickable ?? true);
     setDisplayOrder(banner.display_order);
     setRotationSeconds(banner.rotation_seconds);
     setOverlayOpacity(Number(banner.overlay_opacity ?? 0.35));
