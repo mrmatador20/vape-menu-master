@@ -58,13 +58,15 @@ export const PromoBannerCarousel = () => {
     >
       <div className="relative w-full">
         {/* Background image — defines the container height */}
-        <img
-          key={current.id + imageSrc}
-          src={imageSrc}
-          alt={current.title}
-          className="block w-full h-auto animate-[fade-in_0.8s_ease-in-out]"
-          loading="eager"
-        />
+        <PromoBannerLink href={current.button_link} className="block cursor-pointer">
+          <img
+            key={current.id + imageSrc}
+            src={imageSrc}
+            alt={current.title}
+            className="block w-full h-auto animate-[fade-in_0.8s_ease-in-out]"
+            loading="eager"
+          />
+        </PromoBannerLink>
 
         {/* Overlay (gradient for readability) */}
         <div
