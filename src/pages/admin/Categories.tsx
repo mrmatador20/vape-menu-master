@@ -133,8 +133,9 @@ export default function AdminCategories() {
         <>
           <div className="flex-1 min-w-0">
             <p className="font-medium truncate">{c.name}</p>
-            <p className="text-xs text-muted-foreground flex items-center gap-1">
-              <Package className="h-3 w-3" /> {c.product_count} produto{c.product_count === 1 ? '' : 's'}
+            <p className="text-xs text-muted-foreground flex items-center gap-2 flex-wrap">
+              <span className="flex items-center gap-1"><Package className="h-3 w-3" /> {c.product_count}</span>
+              <code className="text-[10px] bg-muted px-1.5 py-0.5 rounded">/c/{c.slug}</code>
             </p>
           </div>
           <Button size="icon" variant="ghost" className="opacity-0 group-hover:opacity-100"
