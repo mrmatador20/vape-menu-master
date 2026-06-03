@@ -254,6 +254,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "discount_usage_discount_id_fkey"
+            columns: ["discount_id"]
+            isOneToOne: false
+            referencedRelation: "public_active_discounts"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "discount_usage_order_id_fkey"
             columns: ["order_id"]
             isOneToOne: false
@@ -1549,6 +1556,51 @@ export type Database = {
       }
     }
     Views: {
+      public_active_discounts: {
+        Row: {
+          day_of_week: number | null
+          end_time: string | null
+          id: string | null
+          is_active: boolean | null
+          schedule_type: string | null
+          scope_category: string | null
+          scope_subcategory: string | null
+          scope_type: string | null
+          start_time: string | null
+          type: string | null
+          valid_until: string | null
+          value: number | null
+        }
+        Insert: {
+          day_of_week?: number | null
+          end_time?: string | null
+          id?: string | null
+          is_active?: boolean | null
+          schedule_type?: string | null
+          scope_category?: string | null
+          scope_subcategory?: string | null
+          scope_type?: string | null
+          start_time?: string | null
+          type?: string | null
+          valid_until?: string | null
+          value?: number | null
+        }
+        Update: {
+          day_of_week?: number | null
+          end_time?: string | null
+          id?: string | null
+          is_active?: boolean | null
+          schedule_type?: string | null
+          scope_category?: string | null
+          scope_subcategory?: string | null
+          scope_type?: string | null
+          start_time?: string | null
+          type?: string | null
+          valid_until?: string | null
+          value?: number | null
+        }
+        Relationships: []
+      }
       public_flavors: {
         Row: {
           availability_status: string | null
