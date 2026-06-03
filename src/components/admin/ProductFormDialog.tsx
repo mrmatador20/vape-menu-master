@@ -115,7 +115,7 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
   }, [product, open, form]);
 
   const onSubmit = async (values: ProductFormValues) => {
-    const productData = {
+    const productData: any = {
       name: values.name,
       category: values.category,
       subcategory: values.subcategory || null,
@@ -129,6 +129,7 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
       image: (values.images && values.images[0]) || values.image || null,
       images: values.images ?? [],
       description: values.description || null,
+      // slug é gerado automaticamente pelo trigger no banco a partir do nome
     };
 
     if (product) {
