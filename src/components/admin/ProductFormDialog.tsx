@@ -39,6 +39,7 @@ import { CategoryCombobox } from "./CategoryCombobox";
 import { SubcategoryCombobox } from "./SubcategoryCombobox";
 import { VariantsTable } from "./VariantsTable";
 import { Info, FolderTree, Image as ImageIcon, Package, Layers, BadgePercent, Lock } from "lucide-react";
+import { slugify as slugifyClient } from "@/lib/slugify";
 
 const productSchema = z.object({
   name: z.string().min(1, "Nome é obrigatório"),
