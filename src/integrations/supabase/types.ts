@@ -131,7 +131,7 @@ export type Database = {
           id?: string
           name: string
           parent_id?: string | null
-          slug: string
+          slug?: string
         }
         Update: {
           created_at?: string
@@ -730,7 +730,7 @@ export type Database = {
           min_stock?: number | null
           name: string
           price: number
-          slug: string
+          slug?: string
           stock?: number
           subcategory?: string | null
           visible_in_all?: boolean
@@ -1377,7 +1377,7 @@ export type Database = {
           display_order?: number
           id?: string
           name: string
-          slug: string
+          slug?: string
         }
         Update: {
           category_id?: string
