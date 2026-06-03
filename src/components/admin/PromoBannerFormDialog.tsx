@@ -71,7 +71,7 @@ export function PromoBannerFormDialog({ banner, trigger }: Props) {
   const reset = () => {
     setTitle(''); setEyebrow(''); setSubtitle(''); setDescription('');
     setButtonLabel('Comprar Agora'); setButtonLink('/'); setCouponCode('');
-    setIsActive(true); setShowButton(false); setDisplayOrder(0); setRotationSeconds(6);
+    setIsActive(true); setShowButton(false); setIsClickable(true); setDisplayOrder(0); setRotationSeconds(6);
     setOverlayOpacity(0.35); setTextAlign('left');
     setImageUrl(''); setMobileImageUrl(''); setDesktopFile(null); setMobileFile(null);
   };
