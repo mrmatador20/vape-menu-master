@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 export interface Category {
   id: string;
   name: string;
+  slug: string;
   display_order: number;
   created_at: string;
   product_count?: number;
