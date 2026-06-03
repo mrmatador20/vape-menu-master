@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import { useActiveBanners } from '@/hooks/useBanners';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -112,6 +113,22 @@ export const BannerCarousel = () => {
     }, 400);
   };
 
+  const BannerLink = ({ children, className }: { children: React.ReactNode; className?: string }) => {
+    if (!currentBanner.link_url) return <div className={className}>{children}</div>;
+    if (currentBanner.link_url.startsWith('/')) {
+      return (
+        <Link to={currentBanner.link_url} className={className} onClick={(e) => e.stopPropagation()}>
+          {children}
+        </Link>
+      );
+    }
+    return (
+      <a href={currentBanner.link_url} className={className} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>
+        {children}
+      </a>
+    );
+  };
+
   // Banner completo (imagem)
   if (currentBanner.full_banner_image_url) {
     return (
@@ -143,12 +160,14 @@ export const BannerCarousel = () => {
           )}
         </div>
 
-        <img
-          key={currentBanner.id}
-          src={currentBanner.full_banner_image_url}
-          alt={currentBanner.title}
-          className={`w-full h-auto ${transitionClass}`}
-        />
+        <BannerLink className="block cursor-pointer">
+          <img
+            key={currentBanner.id}
+            src={currentBanner.full_banner_image_url}
+            alt={currentBanner.title}
+            className={`w-full h-auto ${transitionClass}`}
+          />
+        </BannerLink>
 
         {banners.length > 1 && (
           <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex justify-center gap-2 z-10">
@@ -198,13 +217,15 @@ export const BannerCarousel = () => {
           </button>
         )}
 
-        <p
-          key={currentBanner.id}
-          className={`flex-1 text-center text-[10.5px] md:text-[11px] uppercase tracking-[0.32em] font-medium truncate text-primary ${transitionClass}`}
-          style={{ textShadow: '0 0 1px hsl(var(--primary) / 0.15)' }}
-        >
-          {message}
-        </p>
+        <BannerLink className="flex-1 cursor-pointer">
+          <p
+            key={currentBanner.id}
+            className={`text-center text-[10.5px] md:text-[11px] uppercase tracking-[0.32em] font-medium truncate text-primary ${transitionClass}`}
+            style={{ textShadow: '0 0 1px hsl(var(--primary) / 0.15)' }}
+          >
+            {message}
+          </p>
+        </BannerLink>
 
         {banners.length > 1 && (
           <button

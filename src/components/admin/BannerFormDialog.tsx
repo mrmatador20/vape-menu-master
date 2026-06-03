@@ -26,6 +26,7 @@ export function BannerFormDialog({ banner, trigger }: BannerFormDialogProps) {
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [linkUrl, setLinkUrl] = useState('');
   const [backgroundColor, setBackgroundColor] = useState('#8B5CF6');
   const [textColor, setTextColor] = useState('#FFFFFF');
   const [isActive, setIsActive] = useState(true);
@@ -52,6 +53,7 @@ export function BannerFormDialog({ banner, trigger }: BannerFormDialogProps) {
     if (banner) {
       setTitle(banner.title);
       setDescription(banner.description || '');
+      setLinkUrl(banner.link_url || '');
       setBackgroundColor(banner.background_color);
       setTextColor(banner.text_color);
       setIsActive(banner.is_active);
@@ -192,6 +194,7 @@ export function BannerFormDialog({ banner, trigger }: BannerFormDialogProps) {
       const bannerData = {
         title,
         description,
+        link_url: linkUrl || null,
         background_color: backgroundColor,
         text_color: textColor,
         background_image_url: bannerType === 'color' ? backgroundImageUrl : null,
@@ -222,6 +225,7 @@ export function BannerFormDialog({ banner, trigger }: BannerFormDialogProps) {
   const resetForm = () => {
     setTitle('');
     setDescription('');
+    setLinkUrl('');
     setBackgroundColor('#8B5CF6');
     setTextColor('#FFFFFF');
     setIsActive(true);
@@ -254,6 +258,17 @@ export function BannerFormDialog({ banner, trigger }: BannerFormDialogProps) {
           <DialogTitle>{banner ? 'Editar Banner' : 'Criar Novo Banner'}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="linkUrl">Link de Redirecionamento (opcional)</Label>
+            <Input
+              id="linkUrl"
+              type="url"
+              value={linkUrl}
+              onChange={(e) => setLinkUrl(e.target.value)}
+              placeholder="https://exemplo.com/promocao"
+            />
+          </div>
+
           <Tabs value={bannerType} onValueChange={(v) => setBannerType(v as 'color' | 'full')}>
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="color">Banner com Cor/Imagem de Fundo</TabsTrigger>

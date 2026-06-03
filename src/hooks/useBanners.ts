@@ -14,6 +14,7 @@ export interface Banner {
   display_order: number;
   rotation_seconds: number;
   transition_type: string;
+  link_url: string | null;
   scheduled_start: string | null;
   scheduled_end: string | null;
   created_at: string;
