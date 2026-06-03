@@ -113,6 +113,22 @@ export const BannerCarousel = () => {
     }, 400);
   };
 
+  const BannerLink = ({ children, className }: { children: React.ReactNode; className?: string }) => {
+    if (!currentBanner.link_url) return <div className={className}>{children}</div>;
+    if (currentBanner.link_url.startsWith('/')) {
+      return (
+        <Link to={currentBanner.link_url} className={className} onClick={(e) => e.stopPropagation()}>
+          {children}
+        </Link>
+      );
+    }
+    return (
+      <a href={currentBanner.link_url} className={className} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>
+        {children}
+      </a>
+    );
+  };
+
   // Banner completo (imagem)
   if (currentBanner.full_banner_image_url) {
     return (
@@ -144,12 +160,14 @@ export const BannerCarousel = () => {
           )}
         </div>
 
-        <img
-          key={currentBanner.id}
-          src={currentBanner.full_banner_image_url}
-          alt={currentBanner.title}
-          className={`w-full h-auto ${transitionClass}`}
-        />
+        <BannerLink className="block cursor-pointer">
+          <img
+            key={currentBanner.id}
+            src={currentBanner.full_banner_image_url}
+            alt={currentBanner.title}
+            className={`w-full h-auto ${transitionClass}`}
+          />
+        </BannerLink>
 
         {banners.length > 1 && (
           <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex justify-center gap-2 z-10">
