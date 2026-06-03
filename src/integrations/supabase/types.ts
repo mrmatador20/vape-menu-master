@@ -270,7 +270,7 @@ export type Database = {
           influencer_user_id: string | null
           is_active: boolean
           is_influencer_coupon: boolean
-          is_referral_reward: boolean | null
+          is_referral_reward: boolean
           max_uses: number | null
           reward_id: string | null
           schedule_type: string
@@ -294,7 +294,7 @@ export type Database = {
           influencer_user_id?: string | null
           is_active?: boolean
           is_influencer_coupon?: boolean
-          is_referral_reward?: boolean | null
+          is_referral_reward?: boolean
           max_uses?: number | null
           reward_id?: string | null
           schedule_type: string
@@ -318,7 +318,7 @@ export type Database = {
           influencer_user_id?: string | null
           is_active?: boolean
           is_influencer_coupon?: boolean
-          is_referral_reward?: boolean | null
+          is_referral_reward?: boolean
           max_uses?: number | null
           reward_id?: string | null
           schedule_type?: string
