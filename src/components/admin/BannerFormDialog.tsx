@@ -258,6 +258,17 @@ export function BannerFormDialog({ banner, trigger }: BannerFormDialogProps) {
           <DialogTitle>{banner ? 'Editar Banner' : 'Criar Novo Banner'}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="linkUrl">Link de Redirecionamento (opcional)</Label>
+            <Input
+              id="linkUrl"
+              type="url"
+              value={linkUrl}
+              onChange={(e) => setLinkUrl(e.target.value)}
+              placeholder="https://exemplo.com/promocao"
+            />
+          </div>
+
           <Tabs value={bannerType} onValueChange={(v) => setBannerType(v as 'color' | 'full')}>
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="color">Banner com Cor/Imagem de Fundo</TabsTrigger>
