@@ -45,6 +45,8 @@ import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfUse from "./pages/TermsOfUse";
 import DataRights from "./pages/DataRights";
 import AdminLegalDocuments from "./pages/admin/LegalDocuments";
+import CategoryPage from "./pages/CategoryPage";
+import ProductPage from "./pages/ProductPage";
 import CookieBanner from "./components/CookieBanner";
 import LegalReacceptDialog from "./components/LegalReacceptDialog";
 
@@ -187,6 +189,16 @@ const App = () => (
                     <DataRights />
                   </ProtectedRoute>
                 </ResetFlowGuard>
+              } />
+              {/* Slug-based public routes (prefixed to avoid colliding with static pages) */}
+              <Route path="/p/:productSlug" element={
+                <ResetFlowGuard><ProductPage /></ResetFlowGuard>
+              } />
+              <Route path="/c/:categorySlug" element={
+                <ResetFlowGuard><CategoryPage /></ResetFlowGuard>
+              } />
+              <Route path="/c/:categorySlug/:subcategorySlug" element={
+                <ResetFlowGuard><CategoryPage /></ResetFlowGuard>
               } />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={

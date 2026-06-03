@@ -23,6 +23,7 @@ export const useProducts = () => {
         return {
           id: product.id,
           name: product.name,
+          slug: (product as any).slug || undefined,
           category: product.category,
           subcategory: product.subcategory || undefined,
           price: Number(product.price),

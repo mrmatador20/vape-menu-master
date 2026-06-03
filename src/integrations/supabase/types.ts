@@ -123,6 +123,7 @@ export type Database = {
           id: string
           name: string
           parent_id: string | null
+          slug: string
         }
         Insert: {
           created_at?: string
@@ -130,6 +131,7 @@ export type Database = {
           id?: string
           name: string
           parent_id?: string | null
+          slug?: string
         }
         Update: {
           created_at?: string
@@ -137,6 +139,7 @@ export type Database = {
           id?: string
           name?: string
           parent_id?: string | null
+          slug?: string
         }
         Relationships: [
           {
@@ -709,6 +712,7 @@ export type Database = {
           min_stock: number | null
           name: string
           price: number
+          slug: string
           stock: number
           subcategory: string | null
           visible_in_all: boolean
@@ -726,6 +730,7 @@ export type Database = {
           min_stock?: number | null
           name: string
           price: number
+          slug?: string
           stock?: number
           subcategory?: string | null
           visible_in_all?: boolean
@@ -743,6 +748,7 @@ export type Database = {
           min_stock?: number | null
           name?: string
           price?: number
+          slug?: string
           stock?: number
           subcategory?: string | null
           visible_in_all?: boolean
@@ -1363,6 +1369,7 @@ export type Database = {
           display_order: number
           id: string
           name: string
+          slug: string
         }
         Insert: {
           category_id: string
@@ -1370,6 +1377,7 @@ export type Database = {
           display_order?: number
           id?: string
           name: string
+          slug?: string
         }
         Update: {
           category_id?: string
@@ -1377,6 +1385,7 @@ export type Database = {
           display_order?: number
           id?: string
           name?: string
+          slug?: string
         }
         Relationships: [
           {
@@ -1765,6 +1774,7 @@ export type Database = {
         Args: { p_new_version: string; p_version_id: string }
         Returns: string
       }
+      slugify: { Args: { v: string }; Returns: string }
       update_user_tier: { Args: { p_user_id: string }; Returns: undefined }
       user_needs_legal_reaccept: {
         Args: never

@@ -39,6 +39,7 @@ import { CategoryCombobox } from "./CategoryCombobox";
 import { SubcategoryCombobox } from "./SubcategoryCombobox";
 import { VariantsTable } from "./VariantsTable";
 import { Info, FolderTree, Image as ImageIcon, Package, Layers, BadgePercent, Lock } from "lucide-react";
+import { slugify as slugifyClient } from "@/lib/slugify";
 
 const productSchema = z.object({
   name: z.string().min(1, "Nome é obrigatório"),
@@ -115,7 +116,7 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
   }, [product, open, form]);
 
   const onSubmit = async (values: ProductFormValues) => {
-    const productData = {
+    const productData: any = {
       name: values.name,
       category: values.category,
       subcategory: values.subcategory || null,
@@ -129,6 +130,7 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
       image: (values.images && values.images[0]) || values.image || null,
       images: values.images ?? [],
       description: values.description || null,
+      // slug é gerado automaticamente pelo trigger no banco a partir do nome
     };
 
     if (product) {
@@ -187,6 +189,11 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
                     <FormItem>
                       <FormLabel>Nome do produto</FormLabel>
                       <FormControl><Input placeholder="Ex: Legging Premium Fox Velour" {...field} /></FormControl>
+                      {field.value && (
+                        <p className="text-xs text-muted-foreground">
+                          URL: <code className="text-foreground">/p/{slugifyClient(field.value)}</code>
+                        </p>
+                      )}
                       <FormMessage />
                     </FormItem>
                   )} />

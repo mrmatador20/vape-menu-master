@@ -5,6 +5,7 @@ export interface Subcategory {
   id: string;
   category_id: string;
   name: string;
+  slug: string;
   display_order: number;
   created_at: string;
   product_count?: number;
