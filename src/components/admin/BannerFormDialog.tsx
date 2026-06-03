@@ -225,6 +225,7 @@ export function BannerFormDialog({ banner, trigger }: BannerFormDialogProps) {
   const resetForm = () => {
     setTitle('');
     setDescription('');
+    setLinkUrl('');
     setBackgroundColor('#8B5CF6');
     setTextColor('#FFFFFF');
     setIsActive(true);
