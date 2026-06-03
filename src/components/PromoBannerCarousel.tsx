@@ -87,7 +87,8 @@ export const PromoBannerCarousel = () => {
         <div
           className={cn(
             'absolute inset-0 flex flex-col justify-center px-6 sm:px-12 md:px-20 lg:px-28',
-            alignClass
+            alignClass,
+            current.button_link && 'pointer-events-none'
           )}
         >
           <div
@@ -125,7 +126,7 @@ export const PromoBannerCarousel = () => {
               <div className={cn('pt-2', current.text_align === 'center' && 'flex justify-center')}>
                 <Link
                   to={current.button_link}
-                  className="inline-block text-[11px] md:text-xs uppercase tracking-[0.3em] font-light text-white border border-white px-8 py-3.5 hover:bg-white hover:text-foreground transition-colors duration-300"
+                  className="inline-block pointer-events-auto text-[11px] md:text-xs uppercase tracking-[0.3em] font-light text-white border border-white px-8 py-3.5 hover:bg-white hover:text-foreground transition-colors duration-300"
                 >
                   {current.button_label}
                 </Link>
