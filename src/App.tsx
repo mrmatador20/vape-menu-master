@@ -190,6 +190,16 @@ const App = () => (
                   </ProtectedRoute>
                 </ResetFlowGuard>
               } />
+              {/* Slug-based public routes (prefixed to avoid colliding with static pages) */}
+              <Route path="/p/:productSlug" element={
+                <ResetFlowGuard><ProductPage /></ResetFlowGuard>
+              } />
+              <Route path="/c/:categorySlug" element={
+                <ResetFlowGuard><CategoryPage /></ResetFlowGuard>
+              } />
+              <Route path="/c/:categorySlug/:subcategorySlug" element={
+                <ResetFlowGuard><CategoryPage /></ResetFlowGuard>
+              } />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={
                 <ResetFlowGuard>
