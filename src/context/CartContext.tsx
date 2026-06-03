@@ -8,6 +8,7 @@ import { fetchStoreDiscount, resolveEffectiveDiscount } from '@/hooks/useStoreDi
 export interface Product {
   id: string;
   name: string;
+  slug?: string;
   category: string;
   subcategory?: string;
   price: number;
