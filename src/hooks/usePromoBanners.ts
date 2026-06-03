@@ -15,6 +15,7 @@ export interface PromoBanner {
   coupon_code: string | null;
   is_active: boolean;
   show_button: boolean;
+  is_clickable: boolean;
   display_order: number;
   rotation_seconds: number;
   overlay_opacity: number;

@@ -34,6 +34,7 @@ export function PromoBannerFormDialog({ banner, trigger }: Props) {
   const [couponCode, setCouponCode] = useState('');
   const [isActive, setIsActive] = useState(true);
   const [showButton, setShowButton] = useState(false);
+  const [isClickable, setIsClickable] = useState(true);
   const [displayOrder, setDisplayOrder] = useState(0);
   const [rotationSeconds, setRotationSeconds] = useState(6);
   const [overlayOpacity, setOverlayOpacity] = useState(0.35);
@@ -58,6 +59,7 @@ export function PromoBannerFormDialog({ banner, trigger }: Props) {
     setCouponCode(banner.coupon_code || '');
     setIsActive(banner.is_active);
     setShowButton(banner.show_button ?? false);
+    setIsClickable(banner.is_clickable ?? true);
     setDisplayOrder(banner.display_order);
     setRotationSeconds(banner.rotation_seconds);
     setOverlayOpacity(Number(banner.overlay_opacity ?? 0.35));
@@ -69,7 +71,7 @@ export function PromoBannerFormDialog({ banner, trigger }: Props) {
   const reset = () => {
     setTitle(''); setEyebrow(''); setSubtitle(''); setDescription('');
     setButtonLabel('Comprar Agora'); setButtonLink('/'); setCouponCode('');
-    setIsActive(true); setShowButton(false); setDisplayOrder(0); setRotationSeconds(6);
+    setIsActive(true); setShowButton(false); setIsClickable(true); setDisplayOrder(0); setRotationSeconds(6);
     setOverlayOpacity(0.35); setTextAlign('left');
     setImageUrl(''); setMobileImageUrl(''); setDesktopFile(null); setMobileFile(null);
   };
@@ -112,6 +114,7 @@ export function PromoBannerFormDialog({ banner, trigger }: Props) {
         coupon_code: couponCode || null,
         is_active: isActive,
         show_button: showButton,
+        is_clickable: isClickable,
         display_order: displayOrder,
         rotation_seconds: rotationSeconds,
         overlay_opacity: overlayOpacity,
@@ -226,6 +229,14 @@ export function PromoBannerFormDialog({ banner, trigger }: Props) {
             <Switch checked={showButton} onCheckedChange={setShowButton} id="pb-show-btn" />
             <Label htmlFor="pb-show-btn" className="cursor-pointer">
               Exibir botão "Comprar Agora" neste banner
+            </Label>
+          </div>
+
+          {/* Clickable toggle */}
+          <div className="flex items-center gap-2 rounded border p-3 bg-muted/30">
+            <Switch checked={isClickable} onCheckedChange={setIsClickable} id="pb-clickable" />
+            <Label htmlFor="pb-clickable" className="cursor-pointer">
+              Banner clicável (a imagem inteira redireciona para o link)
             </Label>
           </div>
 

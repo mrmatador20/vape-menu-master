@@ -1,0 +1,1 @@
+ALTER TABLE public.promo_banners ADD COLUMN IF NOT EXISTS is_clickable boolean NOT NULL DEFAULT true;
