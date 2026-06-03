@@ -4,6 +4,14 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useActivePromoBanners } from '@/hooks/usePromoBanners';
 import { cn } from '@/lib/utils';
 
+const PromoBannerLink = ({ href, children, className }: { href?: string | null; children: React.ReactNode; className?: string }) => {
+  if (!href) return <div className={className}>{children}</div>;
+  if (href.startsWith('/')) {
+    return <Link to={href} className={className}>{children}</Link>;
+  }
+  return <a href={href} className={className} target="_blank" rel="noopener noreferrer">{children}</a>;
+};
+
 export const PromoBannerCarousel = () => {
   const { data: banners, isLoading } = useActivePromoBanners();
   const [index, setIndex] = useState(0);
