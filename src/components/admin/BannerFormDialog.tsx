@@ -26,6 +26,7 @@ export function BannerFormDialog({ banner, trigger }: BannerFormDialogProps) {
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [linkUrl, setLinkUrl] = useState('');
   const [backgroundColor, setBackgroundColor] = useState('#8B5CF6');
   const [textColor, setTextColor] = useState('#FFFFFF');
   const [isActive, setIsActive] = useState(true);
