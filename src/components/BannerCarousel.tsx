@@ -217,13 +217,15 @@ export const BannerCarousel = () => {
           </button>
         )}
 
-        <p
-          key={currentBanner.id}
-          className={`flex-1 text-center text-[10.5px] md:text-[11px] uppercase tracking-[0.32em] font-medium truncate text-primary ${transitionClass}`}
-          style={{ textShadow: '0 0 1px hsl(var(--primary) / 0.15)' }}
-        >
-          {message}
-        </p>
+        <BannerLink className="flex-1 cursor-pointer">
+          <p
+            key={currentBanner.id}
+            className={`text-center text-[10.5px] md:text-[11px] uppercase tracking-[0.32em] font-medium truncate text-primary ${transitionClass}`}
+            style={{ textShadow: '0 0 1px hsl(var(--primary) / 0.15)' }}
+          >
+            {message}
+          </p>
+        </BannerLink>
 
         {banners.length > 1 && (
           <button
