@@ -58,7 +58,7 @@ export const PromoBannerCarousel = () => {
     >
       <div className="relative w-full">
         {/* Background image — defines the container height */}
-        <PromoBannerLink href={current.button_link} className="block cursor-pointer">
+        <PromoBannerLink href={current.is_clickable ? current.button_link : null} className="block cursor-pointer">
           <img
             key={current.id + imageSrc}
             src={imageSrc}
