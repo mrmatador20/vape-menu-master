@@ -188,6 +188,11 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
                     <FormItem>
                       <FormLabel>Nome do produto</FormLabel>
                       <FormControl><Input placeholder="Ex: Legging Premium Fox Velour" {...field} /></FormControl>
+                      {field.value && (
+                        <p className="text-xs text-muted-foreground">
+                          URL: <code className="text-foreground">/p/{slugifyClient(field.value)}</code>
+                        </p>
+                      )}
                       <FormMessage />
                     </FormItem>
                   )} />
