@@ -248,7 +248,7 @@ export function PromoBannerFormDialog({ banner, trigger }: Props) {
             </div>
             <div className="space-y-2">
               <Label>Link do botão</Label>
-              <Input value={buttonLink} onChange={(e) => setButtonLink(e.target.value)} placeholder="/?category=Moda" />
+              <Input value={buttonLink} onChange={(e) => setButtonLink(e.target.value)} placeholder="/c/moda" />
             </div>
             <div className="space-y-2">
               <Label>Cupom (opcional)</Label>

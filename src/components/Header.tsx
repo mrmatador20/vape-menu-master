@@ -26,6 +26,7 @@ import {
 } from '@/components/ui/sheet';
 import { useProducts } from '@/hooks/useProducts';
 import { useCategories } from '@/hooks/useCategories';
+import { slugify } from '@/lib/slugify';
 import { useSiteIdentity } from '@/hooks/useSiteIdentity';
 import {
   Popover,
@@ -223,7 +224,7 @@ const Header = () => {
                             onClick={() =>
                               subs.length > 0
                                 ? setActiveCategoryView(category)
-                                : handleNavigate(`/?category=${category}`)
+                                : handleNavigate(`/c/${slugify(category)}`)
                             }
                             className="group w-full flex items-center justify-between px-4 py-4 text-left border-b border-border/30 last:border-0 hover:text-primary transition-colors"
                           >
@@ -252,7 +253,7 @@ const Header = () => {
                     </button>
                     <button
                       type="button"
-                      onClick={() => handleNavigate(`/?category=${activeCategoryView}`)}
+                      onClick={() => handleNavigate(`/c/${slugify(activeCategoryView)}`)}
                       className="text-[10px] uppercase tracking-[0.25em] text-foreground hover:text-primary transition-colors border-b border-foreground/40 hover:border-primary pb-0.5"
                     >
                       Ver tudo
@@ -268,7 +269,7 @@ const Header = () => {
                         <li key={sub}>
                           <button
                             type="button"
-                            onClick={() => handleNavigate(`/?category=${activeCategoryView}&subcategory=${sub}`)}
+                            onClick={() => handleNavigate(`/c/${slugify(activeCategoryView)}/${slugify(sub)}`)}
                             className="text-sm font-light tracking-wide capitalize text-foreground/80 hover:text-primary transition-colors"
                           >
                             {sub}
@@ -412,7 +413,7 @@ const Header = () => {
                               onClick={() =>
                                 subs.length > 0
                                   ? setMobileCategoryView(category)
-                                  : handleNavigate(`/?category=${category}`)
+                                  : handleNavigate(`/c/${slugify(category)}`)
                               }
                               className="w-full flex items-center justify-between py-3.5 text-left text-sm font-medium tracking-wide capitalize text-foreground hover:text-primary transition-colors"
                             >
@@ -442,7 +443,7 @@ const Header = () => {
                       </h3>
                       <button
                         type="button"
-                        onClick={() => handleNavigate(`/?category=${mobileCategoryView}`)}
+                        onClick={() => handleNavigate(`/c/${slugify(mobileCategoryView)}`)}
                         className="text-[10px] uppercase tracking-[0.25em] text-foreground hover:text-primary transition-colors border-b border-foreground/40 hover:border-primary pb-0.5"
                       >
                         Ver tudo
@@ -453,7 +454,7 @@ const Header = () => {
                         <li key={sub}>
                           <button
                             type="button"
-                            onClick={() => handleNavigate(`/?category=${mobileCategoryView}&subcategory=${sub}`)}
+                            onClick={() => handleNavigate(`/c/${slugify(mobileCategoryView)}/${slugify(sub)}`)}
                             className="text-sm font-light tracking-wide capitalize text-foreground/80 hover:text-primary transition-colors"
                           >
                             {sub}
