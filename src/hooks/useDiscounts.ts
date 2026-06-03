@@ -47,15 +47,16 @@ export const useDiscounts = () => {
   return useQuery({
     queryKey: ['discounts'],
     queryFn: async () => {
+      // Use the safe public view that excludes the raw `code` column
+      // to prevent coupon code harvesting by authenticated users.
       const { data, error } = await supabase
-        .from('discounts')
-        .select('*')
-        .eq('is_active', true);
-      
+        .from('public_active_discounts' as any)
+        .select('*');
+
       if (error) throw error;
-      
+
       // Filter active discounts based on schedule
-      return (data as Discount[]).filter(isDiscountActive);
+      return ((data as unknown) as Discount[]).filter(isDiscountActive);
     },
     refetchInterval: 60000, // Refetch every minute to update time-based discounts
   });
