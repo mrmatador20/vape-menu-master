@@ -45,6 +45,8 @@ import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfUse from "./pages/TermsOfUse";
 import DataRights from "./pages/DataRights";
 import AdminLegalDocuments from "./pages/admin/LegalDocuments";
+import CategoryPage from "./pages/CategoryPage";
+import ProductPage from "./pages/ProductPage";
 import CookieBanner from "./components/CookieBanner";
 import LegalReacceptDialog from "./components/LegalReacceptDialog";
 
