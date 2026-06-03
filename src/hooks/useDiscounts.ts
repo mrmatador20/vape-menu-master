@@ -47,11 +47,10 @@ export const useDiscounts = () => {
   return useQuery({
     queryKey: ['discounts'],
     queryFn: async () => {
-      // Use the safe public view that excludes the raw `code` column
-      // to prevent coupon code harvesting by authenticated users.
+      // Use a SECURITY DEFINER RPC that returns only safe pricing fields
+      // (no `code` column) so authenticated users can't harvest coupon codes.
       const { data, error } = await supabase
-        .from('public_active_discounts' as any)
-        .select('*');
+        .rpc('get_active_general_discounts' as any);
 
       if (error) throw error;
 
