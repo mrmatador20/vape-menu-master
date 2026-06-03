@@ -87,7 +87,8 @@ export const PromoBannerCarousel = () => {
         <div
           className={cn(
             'absolute inset-0 flex flex-col justify-center px-6 sm:px-12 md:px-20 lg:px-28',
-            alignClass
+            alignClass,
+            current.button_link && 'pointer-events-none'
           )}
         >
           <div
