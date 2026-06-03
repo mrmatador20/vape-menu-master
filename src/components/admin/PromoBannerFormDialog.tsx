@@ -114,6 +114,7 @@ export function PromoBannerFormDialog({ banner, trigger }: Props) {
         coupon_code: couponCode || null,
         is_active: isActive,
         show_button: showButton,
+        is_clickable: isClickable,
         display_order: displayOrder,
         rotation_seconds: rotationSeconds,
         overlay_opacity: overlayOpacity,
