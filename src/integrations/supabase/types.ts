@@ -58,6 +58,7 @@ export type Database = {
           height_vh: number
           id: string
           is_active: boolean
+          link_url: string | null
           position: string
           rotation_seconds: number
           scheduled_end: string | null
@@ -80,6 +81,7 @@ export type Database = {
           height_vh?: number
           id?: string
           is_active?: boolean
+          link_url?: string | null
           position?: string
           rotation_seconds?: number
           scheduled_end?: string | null
@@ -102,6 +104,7 @@ export type Database = {
           height_vh?: number
           id?: string
           is_active?: boolean
+          link_url?: string | null
           position?: string
           rotation_seconds?: number
           scheduled_end?: string | null
