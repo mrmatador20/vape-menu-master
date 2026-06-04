@@ -26,7 +26,10 @@ import {
 } from '@/components/ui/sheet';
 import { useProducts } from '@/hooks/useProducts';
 import { useCategories } from '@/hooks/useCategories';
+import { useDepartments } from '@/hooks/useDepartments';
+import { useSubcategories } from '@/hooks/useSubcategories';
 import { slugify } from '@/lib/slugify';
+
 import { useSiteIdentity } from '@/hooks/useSiteIdentity';
 import {
   Popover,
