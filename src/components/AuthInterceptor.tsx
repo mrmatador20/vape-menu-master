@@ -24,9 +24,12 @@ export const AuthInterceptor = ({ children }: AuthInterceptorProps) => {
   
   const isCheckingRef = useRef(false);
 
-  // Public routes that don't require authentication
-  const publicRoutes = ['/', '/auth', '/forgot-password', '/reset-password', '/cart'];
-  const isPublicRoute = publicRoutes.includes(location.pathname);
+  // Public routes that don't require authentication (browsing + cart are open to guests)
+  const publicExact = ['/', '/auth', '/forgot-password', '/reset-password', '/cart', '/privacy-policy', '/terms-of-use'];
+  const publicPrefixes = ['/c/', '/p/'];
+  const isPublicRoute =
+    publicExact.includes(location.pathname) ||
+    publicPrefixes.some((p) => location.pathname.startsWith(p));
 
   useEffect(() => {
     let isMounted = true;
