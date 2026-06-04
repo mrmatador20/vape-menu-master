@@ -194,12 +194,16 @@ const App = () => (
               <Route path="/p/:productSlug" element={
                 <ResetFlowGuard><ProductPage /></ResetFlowGuard>
               } />
-              <Route path="/c/:categorySlug" element={
+              <Route path="/c/:departmentSlug" element={
                 <ResetFlowGuard><CategoryPage /></ResetFlowGuard>
               } />
-              <Route path="/c/:categorySlug/:subcategorySlug" element={
+              <Route path="/c/:departmentSlug/:categorySlug" element={
                 <ResetFlowGuard><CategoryPage /></ResetFlowGuard>
               } />
+              <Route path="/c/:departmentSlug/:categorySlug/:subcategorySlug" element={
+                <ResetFlowGuard><CategoryPage /></ResetFlowGuard>
+              } />
+
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={
                 <ResetFlowGuard>
