@@ -1,30 +1,14 @@
-import { useState, type CSSProperties, type ReactNode } from 'react';
+import { useState, useMemo } from 'react';
 import { Navigate } from 'react-router-dom';
-import { Loader2, Plus, Pencil, Trash2, Tags, Save, X, Search, FolderTree, Package, GripVertical } from 'lucide-react';
-import {
-  DndContext,
-  closestCenter,
-  PointerSensor,
-  KeyboardSensor,
-  useSensor,
-  useSensors,
-  type DragEndEvent,
-} from '@dnd-kit/core';
-import {
-  SortableContext,
-  arrayMove,
-  sortableKeyboardCoordinates,
-  useSortable,
-  verticalListSortingStrategy,
-} from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
+import { Loader2, Plus, Pencil, Trash2, Tags, Save, X, Search, FolderTree, Package, Building2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useUserRole } from '@/hooks/useUserRole';
-import { useCategories } from '@/hooks/useCategories';
+import { useCategories, type Category } from '@/hooks/useCategories';
 import { useSubcategories } from '@/hooks/useSubcategories';
+import { useDepartments, type Department } from '@/hooks/useDepartments';
 import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
@@ -43,21 +27,42 @@ import { cn } from '@/lib/utils';
 export default function AdminCategories() {
   const { data: role, isLoading: roleLoading } = useUserRole();
   const qc = useQueryClient();
-  const { data: categories = [], isLoading } = useCategories();
 
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [search, setSearch] = useState('');
+  const { data: departments = [], isLoading: depsLoading } = useDepartments();
+  const { data: allCategories = [], isLoading: catsLoading } = useCategories();
+
+  const [selectedDeptId, setSelectedDeptId] = useState<string | null>(null);
+  const [selectedCatId, setSelectedCatId] = useState<string | null>(null);
+
+  // search
+  const [searchDept, setSearchDept] = useState('');
+  const [searchCat, setSearchCat] = useState('');
   const [searchSub, setSearchSub] = useState('');
+
+  // new
+  const [newDept, setNewDept] = useState('');
   const [newCat, setNewCat] = useState('');
   const [newSub, setNewSub] = useState('');
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editName, setEditName] = useState('');
+
+  // edit
+  const [editingDeptId, setEditingDeptId] = useState<string | null>(null);
+  const [editDeptName, setEditDeptName] = useState('');
+  const [editingCatId, setEditingCatId] = useState<string | null>(null);
+  const [editCatName, setEditCatName] = useState('');
   const [editingSubId, setEditingSubId] = useState<string | null>(null);
   const [editSubName, setEditSubName] = useState('');
+
+  // delete confirmations
+  const [deleteDept, setDeleteDept] = useState<{ id: string; name: string; count: number } | null>(null);
   const [deleteCat, setDeleteCat] = useState<{ id: string; name: string; count: number } | null>(null);
   const [deleteSub, setDeleteSub] = useState<{ id: string; name: string; count: number } | null>(null);
 
-  const selectedCat = categories.find((c) => c.id === selectedId) || null;
+  const selectedDept = departments.find((d) => d.id === selectedDeptId) || null;
+  const deptCategories = useMemo(
+    () => (selectedDept ? allCategories.filter((c) => c.department_id === selectedDept.id) : []),
+    [allCategories, selectedDept],
+  );
+  const selectedCat = deptCategories.find((c) => c.id === selectedCatId) || null;
   const { data: subs = [] } = useSubcategories(selectedCat?.id, selectedCat?.name);
 
   if (roleLoading) {
@@ -65,113 +70,76 @@ export default function AdminCategories() {
   }
   if (role !== 'admin') return <Navigate to="/" replace />;
 
-  const filtered = categories.filter((c) => c.name.toLowerCase().includes(search.toLowerCase()));
+  const filteredDepts = departments.filter((d) => d.name.toLowerCase().includes(searchDept.toLowerCase()));
+  const filteredCats = deptCategories.filter((c) => c.name.toLowerCase().includes(searchCat.toLowerCase()));
   const filteredSubs = subs.filter((s) => s.name.toLowerCase().includes(searchSub.toLowerCase()));
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
-  );
+  const deptCategoryCount = (id: string) => allCategories.filter((c) => c.department_id === id).length;
 
-  const handleDragEnd = async (event: DragEndEvent) => {
-    const { active, over } = event;
-    if (!over || active.id === over.id) return;
-    const oldIndex = categories.findIndex((c) => c.id === active.id);
-    const newIndex = categories.findIndex((c) => c.id === over.id);
-    if (oldIndex < 0 || newIndex < 0) return;
-    const reordered = arrayMove(categories, oldIndex, newIndex);
+  /* ---------------- Departments ---------------- */
+  const createDept = async () => {
+    const name = newDept.trim();
+    if (!name) return;
+    const { error } = await (supabase.from('departments' as any).insert({ name } as any));
+    if (error) return toast.error('Erro: ' + error.message);
+    toast.success('Departamento criado');
+    setNewDept('');
+    qc.invalidateQueries({ queryKey: ['departments'] });
+  };
 
-    // Optimistic update
-    qc.setQueryData(['categories'], reordered.map((c, i) => ({ ...c, display_order: i })));
-
-    const updates = reordered.map((c, i) =>
-      supabase.from('categories').update({ display_order: i } as any).eq('id', c.id)
-    );
-    const results = await Promise.all(updates);
-    const failed = results.find((r) => r.error);
-    if (failed?.error) {
-      toast.error('Erro ao salvar ordem: ' + failed.error.message);
-      qc.invalidateQueries({ queryKey: ['categories'] });
+  const saveRenameDept = async (id: string, oldName: string) => {
+    const name = editDeptName.trim();
+    if (!name || name === oldName) {
+      setEditingDeptId(null);
       return;
     }
-    toast.success('Ordem salva');
+    const { error } = await (supabase.from('departments' as any).update({ name } as any).eq('id', id));
+    if (error) return toast.error('Erro: ' + error.message);
+    toast.success('Departamento renomeado');
+    setEditingDeptId(null);
+    qc.invalidateQueries({ queryKey: ['departments'] });
     qc.invalidateQueries({ queryKey: ['categories'] });
   };
 
-  const renderCategoryRow = (
-    c: typeof categories[number],
-    draggable: boolean,
-    listeners?: ReturnType<typeof useSortable>['listeners'],
-  ) => (
-    <div
-      className={cn(
-        'group flex items-center gap-2 rounded-lg border p-3 transition-all cursor-pointer',
-        selectedId === c.id ? 'border-primary bg-accent/50 shadow-sm' : 'hover:bg-accent/30'
-      )}
-      onClick={() => editingId !== c.id && setSelectedId(c.id)}
-    >
-      {draggable && editingId !== c.id && (
-        <button
-          type="button"
-          {...(listeners || {})}
-          onClick={(e) => e.stopPropagation()}
-          className="touch-none cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground p-1 -ml-1"
-          aria-label="Arrastar para reordenar"
-        >
-          <GripVertical className="h-4 w-4" />
-        </button>
-      )}
-      {editingId === c.id ? (
-        <>
-          <Input value={editName} onChange={(e) => setEditName(e.target.value)} autoFocus
-            onKeyDown={(e) => { if (e.key === 'Enter') saveRename(c.id, c.name); if (e.key === 'Escape') setEditingId(null); }}
-            onClick={(e) => e.stopPropagation()} />
-          <Button size="icon" variant="ghost" onClick={(e) => { e.stopPropagation(); saveRename(c.id, c.name); }}><Save className="h-4 w-4" /></Button>
-          <Button size="icon" variant="ghost" onClick={(e) => { e.stopPropagation(); setEditingId(null); }}><X className="h-4 w-4" /></Button>
-        </>
-      ) : (
-        <>
-          <div className="flex-1 min-w-0">
-            <p className="font-medium truncate">{c.name}</p>
-            <p className="text-xs text-muted-foreground flex items-center gap-2 flex-wrap">
-              <span className="flex items-center gap-1"><Package className="h-3 w-3" /> {c.product_count}</span>
-              <code className="text-[10px] bg-muted px-1.5 py-0.5 rounded">/c/{c.slug}</code>
-            </p>
-          </div>
-          <Button size="icon" variant="ghost" className="opacity-0 group-hover:opacity-100"
-            onClick={(e) => { e.stopPropagation(); setEditingId(c.id); setEditName(c.name); }}>
-            <Pencil className="h-4 w-4" />
-          </Button>
-          <Button size="icon" variant="ghost" className="opacity-0 group-hover:opacity-100 text-destructive"
-            onClick={(e) => { e.stopPropagation(); setDeleteCat({ id: c.id, name: c.name, count: c.product_count || 0 }); }}>
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </>
-      )}
-    </div>
-  );
+  const handleDeleteDept = async () => {
+    if (!deleteDept) return;
+    const { error } = await (supabase.from('departments' as any).delete().eq('id', deleteDept.id));
+    if (error) return toast.error('Erro: ' + error.message);
+    toast.success('Departamento removido');
+    if (selectedDeptId === deleteDept.id) {
+      setSelectedDeptId(null);
+      setSelectedCatId(null);
+    }
+    setDeleteDept(null);
+    qc.invalidateQueries({ queryKey: ['departments'] });
+    qc.invalidateQueries({ queryKey: ['categories'] });
+  };
 
+  /* ---------------- Categories ---------------- */
   const createCat = async () => {
     const name = newCat.trim();
-    if (!name) return;
-    const { error } = await supabase.from('categories').insert({ name } as any);
+    if (!name || !selectedDept) return;
+    const { error } = await supabase.from('categories').insert({
+      name,
+      department_id: selectedDept.id,
+    } as any);
     if (error) return toast.error('Erro: ' + error.message);
     toast.success('Categoria criada');
     setNewCat('');
     qc.invalidateQueries({ queryKey: ['categories'] });
   };
 
-  const saveRename = async (id: string, oldName: string) => {
-    const name = editName.trim();
+  const saveRenameCat = async (id: string, oldName: string) => {
+    const name = editCatName.trim();
     if (!name || name === oldName) {
-      setEditingId(null);
+      setEditingCatId(null);
       return;
     }
     const { error: e1 } = await supabase.from('categories').update({ name } as any).eq('id', id);
     if (e1) return toast.error('Erro: ' + e1.message);
     await supabase.from('products').update({ category: name }).eq('category', oldName);
     toast.success('Categoria renomeada');
-    setEditingId(null);
+    setEditingCatId(null);
     qc.invalidateQueries({ queryKey: ['categories'] });
     qc.invalidateQueries({ queryKey: ['products'] });
   };
@@ -181,15 +149,19 @@ export default function AdminCategories() {
     const { error } = await supabase.from('categories').delete().eq('id', deleteCat.id);
     if (error) return toast.error('Erro: ' + error.message);
     toast.success('Categoria removida');
-    if (selectedId === deleteCat.id) setSelectedId(null);
+    if (selectedCatId === deleteCat.id) setSelectedCatId(null);
     setDeleteCat(null);
     qc.invalidateQueries({ queryKey: ['categories'] });
   };
 
+  /* ---------------- Subcategories ---------------- */
   const createSub = async () => {
     const name = newSub.trim();
     if (!name || !selectedCat) return;
-    const { error } = await supabase.from('subcategories' as any).insert({ name, category_id: selectedCat.id } as any);
+    const { error } = await supabase.from('subcategories' as any).insert({
+      name,
+      category_id: selectedCat.id,
+    } as any);
     if (error) return toast.error('Erro: ' + error.message);
     toast.success('Subcategoria criada');
     setNewSub('');
@@ -204,7 +176,8 @@ export default function AdminCategories() {
     }
     const { error: e1 } = await supabase.from('subcategories' as any).update({ name } as any).eq('id', id);
     if (e1) return toast.error('Erro: ' + e1.message);
-    await supabase.from('products').update({ subcategory: name }).eq('category', selectedCat.name).eq('subcategory', oldName);
+    await supabase.from('products').update({ subcategory: name })
+      .eq('category', selectedCat.name).eq('subcategory', oldName);
     toast.success('Subcategoria renomeada');
     setEditingSubId(null);
     qc.invalidateQueries({ queryKey: ['subcategories', selectedCat.id] });
@@ -225,54 +198,158 @@ export default function AdminCategories() {
       <div>
         <h1 className="text-3xl font-bold flex items-center gap-2">
           <FolderTree className="h-7 w-7 text-primary" />
-          Categorias & Subcategorias
+          Departamentos, Categorias & Subcategorias
         </h1>
-        <p className="text-muted-foreground">Gerencie a estrutura de categorização do catálogo.</p>
+        <p className="text-muted-foreground">Estrutura de três níveis do catálogo. Clique para navegar entre os níveis.</p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Categorias */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* ----------- DEPARTMENTS ----------- */}
         <Card className="border-border/60 shadow-sm">
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2"><Tags className="h-5 w-5 text-primary" /> Categorias</CardTitle>
-              <Badge variant="outline">{categories.length}</Badge>
+              <CardTitle className="flex items-center gap-2"><Building2 className="h-5 w-5 text-primary" /> Departamentos</CardTitle>
+              <Badge variant="outline">{departments.length}</Badge>
             </div>
-            <CardDescription>Clique em uma categoria para gerenciar suas subcategorias.</CardDescription>
+            <CardDescription>Ex: Masculino, Feminino, Unissex.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="flex gap-2">
-              <Input placeholder="Nova categoria..." value={newCat} onChange={(e) => setNewCat(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && createCat()} />
-              <Button onClick={createCat} disabled={!newCat.trim()}><Plus className="h-4 w-4" /></Button>
+              <Input placeholder="Novo departamento..." value={newDept}
+                onChange={(e) => setNewDept(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && createDept()} />
+              <Button onClick={createDept} disabled={!newDept.trim()}><Plus className="h-4 w-4" /></Button>
             </div>
             <div className="relative">
               <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-              <Input className="pl-10" placeholder="Buscar..." value={search} onChange={(e) => setSearch(e.target.value)} />
+              <Input className="pl-10" placeholder="Buscar..." value={searchDept} onChange={(e) => setSearchDept(e.target.value)} />
             </div>
             <div className="space-y-2 max-h-[60vh] overflow-y-auto pr-1">
-              {isLoading && <Loader2 className="h-5 w-5 animate-spin mx-auto" />}
-              {!isLoading && filtered.length === 0 && (
-                <p className="text-sm text-muted-foreground text-center py-6">Nenhuma categoria encontrada.</p>
+              {depsLoading && <Loader2 className="h-5 w-5 animate-spin mx-auto" />}
+              {!depsLoading && filteredDepts.length === 0 && (
+                <p className="text-sm text-muted-foreground text-center py-6">Nenhum departamento.</p>
               )}
-              {search.trim() ? (
-                filtered.map((c) => renderCategoryRow(c, false))
-              ) : (
-                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                  <SortableContext items={filtered.map((c) => c.id)} strategy={verticalListSortingStrategy}>
-                    {filtered.map((c) => (
-                      <SortableCategoryRow key={c.id} id={c.id}>
-                        {(listeners) => renderCategoryRow(c, true, listeners)}
-                      </SortableCategoryRow>
-                    ))}
-                  </SortableContext>
-                </DndContext>
-              )}
+              {filteredDepts.map((d) => (
+                <div
+                  key={d.id}
+                  className={cn(
+                    'group flex items-center gap-2 rounded-lg border p-3 transition-all cursor-pointer',
+                    selectedDeptId === d.id ? 'border-primary bg-accent/50 shadow-sm' : 'hover:bg-accent/30',
+                  )}
+                  onClick={() => editingDeptId !== d.id && (setSelectedDeptId(d.id), setSelectedCatId(null))}
+                >
+                  {editingDeptId === d.id ? (
+                    <>
+                      <Input value={editDeptName} onChange={(e) => setEditDeptName(e.target.value)} autoFocus
+                        onKeyDown={(e) => { if (e.key === 'Enter') saveRenameDept(d.id, d.name); if (e.key === 'Escape') setEditingDeptId(null); }}
+                        onClick={(e) => e.stopPropagation()} />
+                      <Button size="icon" variant="ghost" onClick={(e) => { e.stopPropagation(); saveRenameDept(d.id, d.name); }}><Save className="h-4 w-4" /></Button>
+                      <Button size="icon" variant="ghost" onClick={(e) => { e.stopPropagation(); setEditingDeptId(null); }}><X className="h-4 w-4" /></Button>
+                    </>
+                  ) : (
+                    <>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium truncate">{d.name}</p>
+                        <p className="text-xs text-muted-foreground flex items-center gap-2 flex-wrap">
+                          <span className="flex items-center gap-1"><Tags className="h-3 w-3" /> {deptCategoryCount(d.id)} categorias</span>
+                          <code className="text-[10px] bg-muted px-1.5 py-0.5 rounded">/c/{d.slug}</code>
+                        </p>
+                      </div>
+                      <Button size="icon" variant="ghost" className="opacity-0 group-hover:opacity-100"
+                        onClick={(e) => { e.stopPropagation(); setEditingDeptId(d.id); setEditDeptName(d.name); }}>
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button size="icon" variant="ghost" className="opacity-0 group-hover:opacity-100 text-destructive"
+                        onClick={(e) => { e.stopPropagation(); setDeleteDept({ id: d.id, name: d.name, count: deptCategoryCount(d.id) }); }}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </>
+                  )}
+                </div>
+              ))}
             </div>
           </CardContent>
         </Card>
 
-        {/* Subcategorias */}
+        {/* ----------- CATEGORIES ----------- */}
+        <Card className="border-border/60 shadow-sm">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2"><Tags className="h-5 w-5 text-primary" /> Categorias</CardTitle>
+              {selectedDept && <Badge variant="outline">{deptCategories.length}</Badge>}
+            </div>
+            <CardDescription>
+              {selectedDept ? <>Categorias de <strong>{selectedDept.name}</strong></> : 'Selecione um departamento à esquerda.'}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {!selectedDept ? (
+              <div className="text-center py-12 text-muted-foreground">
+                <Building2 className="h-10 w-10 mx-auto mb-2 opacity-30" />
+                <p className="text-sm">Selecione um departamento.</p>
+              </div>
+            ) : (
+              <>
+                <div className="flex gap-2">
+                  <Input placeholder="Nova categoria..." value={newCat}
+                    onChange={(e) => setNewCat(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && createCat()} />
+                  <Button onClick={createCat} disabled={!newCat.trim()}><Plus className="h-4 w-4" /></Button>
+                </div>
+                <div className="relative">
+                  <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input className="pl-10" placeholder="Buscar..." value={searchCat} onChange={(e) => setSearchCat(e.target.value)} />
+                </div>
+                <div className="space-y-2 max-h-[60vh] overflow-y-auto pr-1">
+                  {catsLoading && <Loader2 className="h-5 w-5 animate-spin mx-auto" />}
+                  {!catsLoading && filteredCats.length === 0 && (
+                    <p className="text-sm text-muted-foreground text-center py-6">Nenhuma categoria.</p>
+                  )}
+                  {filteredCats.map((c) => (
+                    <div
+                      key={c.id}
+                      className={cn(
+                        'group flex items-center gap-2 rounded-lg border p-3 transition-all cursor-pointer',
+                        selectedCatId === c.id ? 'border-primary bg-accent/50 shadow-sm' : 'hover:bg-accent/30',
+                      )}
+                      onClick={() => editingCatId !== c.id && setSelectedCatId(c.id)}
+                    >
+                      {editingCatId === c.id ? (
+                        <>
+                          <Input value={editCatName} onChange={(e) => setEditCatName(e.target.value)} autoFocus
+                            onKeyDown={(e) => { if (e.key === 'Enter') saveRenameCat(c.id, c.name); if (e.key === 'Escape') setEditingCatId(null); }}
+                            onClick={(e) => e.stopPropagation()} />
+                          <Button size="icon" variant="ghost" onClick={(e) => { e.stopPropagation(); saveRenameCat(c.id, c.name); }}><Save className="h-4 w-4" /></Button>
+                          <Button size="icon" variant="ghost" onClick={(e) => { e.stopPropagation(); setEditingCatId(null); }}><X className="h-4 w-4" /></Button>
+                        </>
+                      ) : (
+                        <>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium truncate">{c.name}</p>
+                            <p className="text-xs text-muted-foreground flex items-center gap-2 flex-wrap">
+                              <span className="flex items-center gap-1"><Package className="h-3 w-3" /> {c.product_count}</span>
+                              <code className="text-[10px] bg-muted px-1.5 py-0.5 rounded">/c/{selectedDept.slug}/{c.slug}</code>
+                            </p>
+                          </div>
+                          <Button size="icon" variant="ghost" className="opacity-0 group-hover:opacity-100"
+                            onClick={(e) => { e.stopPropagation(); setEditingCatId(c.id); setEditCatName(c.name); }}>
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button size="icon" variant="ghost" className="opacity-0 group-hover:opacity-100 text-destructive"
+                            onClick={(e) => { e.stopPropagation(); setDeleteCat({ id: c.id, name: c.name, count: c.product_count || 0 }); }}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* ----------- SUBCATEGORIES ----------- */}
         <Card className="border-border/60 shadow-sm">
           <CardHeader>
             <div className="flex items-center justify-between">
@@ -280,19 +357,20 @@ export default function AdminCategories() {
               {selectedCat && <Badge variant="outline">{subs.length}</Badge>}
             </div>
             <CardDescription>
-              {selectedCat ? <>Gerenciando subcategorias de <strong>{selectedCat.name}</strong></> : 'Selecione uma categoria à esquerda.'}
+              {selectedCat ? <>Subcategorias de <strong>{selectedCat.name}</strong></> : 'Selecione uma categoria.'}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             {!selectedCat ? (
               <div className="text-center py-12 text-muted-foreground">
                 <FolderTree className="h-10 w-10 mx-auto mb-2 opacity-30" />
-                <p className="text-sm">Selecione uma categoria para ver suas subcategorias.</p>
+                <p className="text-sm">Selecione uma categoria.</p>
               </div>
             ) : (
               <>
                 <div className="flex gap-2">
-                  <Input placeholder="Nova subcategoria..." value={newSub} onChange={(e) => setNewSub(e.target.value)}
+                  <Input placeholder="Nova subcategoria..." value={newSub}
+                    onChange={(e) => setNewSub(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && createSub()} />
                   <Button onClick={createSub} disabled={!newSub.trim()}><Plus className="h-4 w-4" /></Button>
                 </div>
@@ -317,8 +395,9 @@ export default function AdminCategories() {
                         <>
                           <div className="flex-1 min-w-0">
                             <p className="font-medium truncate">{s.name}</p>
-                            <p className="text-xs text-muted-foreground flex items-center gap-1">
-                              <Package className="h-3 w-3" /> {s.product_count} produto{s.product_count === 1 ? '' : 's'}
+                            <p className="text-xs text-muted-foreground flex items-center gap-2 flex-wrap">
+                              <span className="flex items-center gap-1"><Package className="h-3 w-3" /> {s.product_count}</span>
+                              <code className="text-[10px] bg-muted px-1.5 py-0.5 rounded">/{s.slug}</code>
                             </p>
                           </div>
                           <Button size="icon" variant="ghost" className="opacity-0 group-hover:opacity-100"
@@ -340,13 +419,30 @@ export default function AdminCategories() {
         </Card>
       </div>
 
+      <AlertDialog open={!!deleteDept} onOpenChange={(o) => !o && setDeleteDept(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir departamento "{deleteDept?.name}"?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {deleteDept && deleteDept.count > 0
+                ? `Este departamento possui ${deleteDept.count} categoria(s). As categorias permanecerão, mas ficarão sem departamento vinculado.`
+                : 'Esta ação não pode ser desfeita.'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteDept} className="bg-destructive hover:bg-destructive/90">Excluir</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <AlertDialog open={!!deleteCat} onOpenChange={(o) => !o && setDeleteCat(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Excluir categoria "{deleteCat?.name}"?</AlertDialogTitle>
             <AlertDialogDescription>
               {deleteCat && deleteCat.count > 0
-                ? `Esta categoria possui ${deleteCat.count} produto(s). A categoria será removida, mas os produtos continuarão existindo (recomenda-se reorganizá-los antes).`
+                ? `Esta categoria possui ${deleteCat.count} produto(s). Eles permanecerão no catálogo.`
                 : 'Esta ação não pode ser desfeita.'}
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -373,27 +469,6 @@ export default function AdminCategories() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
-  );
-}
-
-function SortableCategoryRow({
-  id,
-  children,
-}: {
-  id: string;
-  children: (listeners: ReturnType<typeof useSortable>['listeners']) => ReactNode;
-}) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
-  const style: CSSProperties = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
-    zIndex: isDragging ? 50 : 'auto',
-  };
-  return (
-    <div ref={setNodeRef} style={style} {...attributes}>
-      {children(listeners)}
     </div>
   );
 }
