@@ -104,7 +104,14 @@ export default function ProductPage() {
     : [product.image];
   const primary = gallery[activeImage] || product.image;
 
-  const categorySlug = categories.find(c => c.name === product.category)?.slug;
+  const productCategory = categories.find(c => c.name === product.category);
+  const categorySlug = productCategory?.slug;
+  const departmentSlug = productCategory?.department_slug;
+  const categoryHref = departmentSlug && categorySlug
+    ? `/c/${departmentSlug}/${categorySlug}`
+    : categorySlug
+      ? `/c/${categorySlug}`
+      : null;
 
   return (
     <div className="min-h-screen bg-background">
@@ -113,11 +120,18 @@ export default function ProductPage() {
         <nav className="text-xs text-muted-foreground mb-6 flex items-center gap-2 flex-wrap">
           <Link to="/" className="hover:text-foreground">Início</Link>
           <span>/</span>
-          {categorySlug ? (
-            <Link to={`/c/${categorySlug}`} className="hover:text-foreground capitalize">{product.category}</Link>
+          {departmentSlug && productCategory?.department_name && (
+            <>
+              <Link to={`/c/${departmentSlug}`} className="hover:text-foreground capitalize">{productCategory.department_name}</Link>
+              <span>/</span>
+            </>
+          )}
+          {categoryHref ? (
+            <Link to={categoryHref} className="hover:text-foreground capitalize">{product.category}</Link>
           ) : (
             <span className="capitalize">{product.category}</span>
           )}
+
           <span>/</span>
           <span className="text-foreground truncate">{product.name}</span>
         </nav>
