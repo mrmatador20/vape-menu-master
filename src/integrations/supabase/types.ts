@@ -119,6 +119,7 @@ export type Database = {
       categories: {
         Row: {
           created_at: string
+          department_id: string | null
           display_order: number
           id: string
           name: string
@@ -127,6 +128,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          department_id?: string | null
           display_order?: number
           id?: string
           name: string
@@ -135,6 +137,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          department_id?: string | null
           display_order?: number
           id?: string
           name?: string
@@ -142,6 +145,13 @@ export type Database = {
           slug?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "categories_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "categories_parent_id_fkey"
             columns: ["parent_id"]
@@ -220,6 +230,33 @@ export type Database = {
           request_type?: string
           status?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      departments: {
+        Row: {
+          created_at: string
+          display_order: number
+          id: string
+          name: string
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          name: string
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          name?: string
+          slug?: string
+          updated_at?: string
         }
         Relationships: []
       }
