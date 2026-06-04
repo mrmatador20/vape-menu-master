@@ -1,10 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useCart, Product } from '@/context/CartContext';
 import { useProducts } from '@/hooks/useProducts';
 import { useCategories } from '@/hooks/useCategories';
 import { useSubcategories } from '@/hooks/useSubcategories';
-import { useDepartments } from '@/hooks/useDepartments';
 import ProductCard from '@/components/ProductCard';
 import QuickViewSheet from '@/components/QuickViewSheet';
 import Header from '@/components/Header';
@@ -12,48 +11,16 @@ import Footer from '@/components/Footer';
 import ProductSearch from '@/components/ProductSearch';
 import { Loader2, ArrowLeft } from 'lucide-react';
 import { usePageMeta } from '@/hooks/usePageMeta';
+import { Link } from 'react-router-dom';
 
 export default function CategoryPage() {
-  const { departmentSlug, categorySlug, subcategorySlug } = useParams<{
-    departmentSlug: string;
-    categorySlug?: string;
-    subcategorySlug?: string;
-  }>();
+  const { categorySlug, subcategorySlug } = useParams<{ categorySlug: string; subcategorySlug?: string }>();
   const navigate = useNavigate();
   const { addToCart } = useCart();
   const { data: products, isLoading } = useProducts();
-  const { data: departments = [] } = useDepartments();
-  const { data: allCategories = [] } = useCategories();
+  const { data: categories = [] } = useCategories();
 
-  // Resolve department (or fallback: treat slug as legacy category slug)
-  const department = departments.find((d) => d.slug === departmentSlug);
-  const legacyCategory = !department
-    ? allCategories.find((c) => c.slug === departmentSlug)
-    : undefined;
-
-  // Redirect legacy URLs (/c/<category>) → /c/<dept>/<category>
-  useEffect(() => {
-    if (!department && legacyCategory && legacyCategory.department_slug) {
-      const sub = categorySlug ? `/${categorySlug}` : '';
-      navigate(`/c/${legacyCategory.department_slug}/${legacyCategory.slug}${sub}`, {
-        replace: true,
-      });
-    }
-  }, [department, legacyCategory, categorySlug, navigate]);
-
-  // 404 if neither resolves once data is loaded
-  useEffect(() => {
-    if (departments.length > 0 && allCategories.length > 0 && !department && !legacyCategory) {
-      navigate('/', { replace: true });
-    }
-  }, [departments, allCategories, department, legacyCategory, navigate]);
-
-  // Categories scoped to this department
-  const deptCategories = useMemo(
-    () => (department ? allCategories.filter((c) => c.department_id === department.id) : []),
-    [allCategories, department],
-  );
-  const category = categorySlug ? deptCategories.find((c) => c.slug === categorySlug) : undefined;
+  const category = categories.find((c) => c.slug === categorySlug);
   const { data: subcategories = [] } = useSubcategories(category?.id, category?.name);
   const subcategory = subcategorySlug
     ? subcategories.find((s) => s.slug === subcategorySlug)
@@ -62,25 +29,29 @@ export default function CategoryPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
 
-  const title = subcategory?.name || category?.name || department?.name || 'Catálogo';
-  const path = [departmentSlug, categorySlug, subcategorySlug].filter(Boolean).join('/');
   usePageMeta({
-    title: `${title} | Fox Velour`,
-    description: `Explore ${title} na Fox Velour.`,
-    path: `/c/${path}`,
+    title: category
+      ? `${subcategory?.name ? subcategory.name + ' - ' : ''}${category.name} | Fox Velour`
+      : 'Categoria | Fox Velour',
+    description: category
+      ? `Explore ${subcategory?.name ?? category.name} na Fox Velour.`
+      : 'Catálogo Fox Velour',
+    path: subcategorySlug ? `/c/${categorySlug}/${subcategorySlug}` : `/c/${categorySlug}`,
   });
 
-  const filtered = useMemo(() => {
-    if (!products) return [];
-    let list = products.filter((p) => p.visible_in_all !== false);
-
-    if (category) {
-      list = list.filter((p) => p.category === category.name);
-    } else if (department) {
-      // department-only: show products from all categories in the department
-      const catNames = new Set(deptCategories.map((c) => c.name));
-      list = list.filter((p) => catNames.has(p.category));
+  // 404 once categories load and slug doesn't match
+  useEffect(() => {
+    if (categories.length > 0 && !category) {
+      // unknown category -> redirect home
+      navigate('/', { replace: true });
     }
+  }, [categories, category, navigate]);
+
+  const filtered = useMemo(() => {
+    if (!products || !category) return [];
+    let list = products.filter(
+      (p) => p.visible_in_all !== false && p.category === category.name,
+    );
     if (subcategory) {
       list = list.filter((p) => p.subcategory === subcategory.name);
     }
@@ -95,9 +66,7 @@ export default function CategoryPage() {
       if (a.stock === 0 && b.stock > 0) return 1;
       return (a.display_order || 0) - (b.display_order || 0);
     });
-  }, [products, department, deptCategories, category, subcategory, searchQuery]);
-
-  const basePath = department ? `/c/${department.slug}` : '/';
+  }, [products, category, subcategory, searchQuery]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -105,35 +74,17 @@ export default function CategoryPage() {
       <main className="container max-w-7xl px-4 sm:px-6 md:px-10 py-10">
         <nav className="text-xs text-muted-foreground mb-6 flex items-center gap-2 flex-wrap">
           <Link to="/" className="hover:text-foreground">Início</Link>
-          {department && (
+          <span>/</span>
+          {subcategory ? (
             <>
-              <span>/</span>
-              {category || subcategory ? (
-                <Link to={basePath} className="hover:text-foreground capitalize">
-                  {department.name}
-                </Link>
-              ) : (
-                <span className="text-foreground capitalize">{department.name}</span>
-              )}
-            </>
-          )}
-          {category && (
-            <>
-              <span>/</span>
-              {subcategory ? (
-                <Link to={`${basePath}/${category.slug}`} className="hover:text-foreground capitalize">
-                  {category.name}
-                </Link>
-              ) : (
-                <span className="text-foreground capitalize">{category.name}</span>
-              )}
-            </>
-          )}
-          {subcategory && (
-            <>
+              <Link to={`/c/${categorySlug}`} className="hover:text-foreground capitalize">
+                {category?.name}
+              </Link>
               <span>/</span>
               <span className="text-foreground capitalize">{subcategory.name}</span>
             </>
+          ) : (
+            <span className="text-foreground capitalize">{category?.name}</span>
           )}
         </nav>
 
@@ -146,31 +97,15 @@ export default function CategoryPage() {
 
         <header className="mb-10">
           <h1 className="font-serif text-3xl md:text-4xl font-normal capitalize tracking-wide">
-            {title}
+            {subcategory ? subcategory.name : category?.name}
           </h1>
           <div className="mt-3 h-px w-16 bg-primary/70" />
         </header>
 
-        {/* Category chips (when viewing department) */}
-        {department && !category && deptCategories.length > 0 && (
-          <div className="flex flex-wrap gap-2 mb-8">
-            {deptCategories.map((c) => (
-              <Link
-                key={c.id}
-                to={`${basePath}/${c.slug}`}
-                className="text-[11px] uppercase tracking-[0.2em] px-4 py-2 rounded-sm border border-border hover:border-foreground transition-colors capitalize"
-              >
-                {c.name}
-              </Link>
-            ))}
-          </div>
-        )}
-
-        {/* Subcategory chips (when viewing category) */}
         {category && subcategories.length > 0 && (
           <div className="flex flex-wrap gap-2 mb-8">
             <Link
-              to={`${basePath}/${category.slug}`}
+              to={`/c/${category.slug}`}
               className={`text-[11px] uppercase tracking-[0.2em] px-4 py-2 rounded-sm border transition-colors ${
                 !subcategory
                   ? 'bg-foreground text-background border-foreground'
@@ -182,7 +117,7 @@ export default function CategoryPage() {
             {subcategories.map((s) => (
               <Link
                 key={s.id}
-                to={`${basePath}/${category.slug}/${s.slug}`}
+                to={`/c/${category.slug}/${s.slug}`}
                 className={`text-[11px] uppercase tracking-[0.2em] px-4 py-2 rounded-sm border transition-colors capitalize ${
                   subcategory?.id === s.id
                     ? 'bg-foreground text-background border-foreground'
