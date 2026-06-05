@@ -317,6 +317,53 @@ const Header = () => {
             </Popover>
           ))}
 
+          {/* Fallback: orphan categories not yet assigned to a department */}
+          {orphanCategories.length > 0 && (
+            <Popover
+              open={openDeptMenu === '__orphans__'}
+              onOpenChange={(o) => setOpenDeptMenu(o ? '__orphans__' : null)}
+            >
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  className={cn(
+                    'px-4 py-2 text-[11px] uppercase tracking-[0.25em] transition-colors',
+                    openDeptMenu === '__orphans__' ? 'text-primary' : 'text-foreground/80 hover:text-primary',
+                  )}
+                >
+                  Categorias
+                </button>
+              </PopoverTrigger>
+              <PopoverContent
+                align="start"
+                sideOffset={12}
+                className="w-[420px] max-w-[94vw] p-0 border-0 rounded-md bg-card shadow-[0_20px_60px_-15px_hsl(30_10%_12%_/_0.18)] overflow-hidden"
+              >
+                <div className="px-10 pt-8 pb-2">
+                  <p className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground">
+                    Todas as categorias
+                  </p>
+                </div>
+                <ul className="px-6 pb-6">
+                  {orphanCategories.map((cat) => (
+                    <li key={cat.id}>
+                      <button
+                        type="button"
+                        onClick={() => handleNavigate(`/c/${cat.slug}`)}
+                        className="group w-full flex items-center justify-between px-4 py-4 text-left border-b border-border/30 last:border-0 hover:text-primary transition-colors"
+                      >
+                        <span className="text-sm font-medium tracking-wide capitalize">
+                          {cat.name}
+                        </span>
+                        <ChevronRight className="h-4 w-4 text-muted-foreground/60 group-hover:text-primary group-hover:translate-x-0.5 transition-all" {...ICON_PROPS} />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </PopoverContent>
+            </Popover>
+          )}
+
           <div className="mx-2 h-4 w-px bg-border/60" />
 
           {/* Cart */}
