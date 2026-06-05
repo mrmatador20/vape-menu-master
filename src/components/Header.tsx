@@ -105,6 +105,12 @@ const Header = () => {
     [departments, categoriesByDept],
   );
 
+  // Orphan categories (no department assigned) — shown in a fallback "Categorias" menu
+  const orphanCategories = useMemo(
+    () => visibleCategories.filter((c) => !c.department_id),
+    [visibleCategories],
+  );
+
   useEffect(() => {
     if (!isMenuOpen) {
       setMobileDeptView(null);
