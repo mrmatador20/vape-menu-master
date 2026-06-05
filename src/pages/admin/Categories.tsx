@@ -62,6 +62,10 @@ export default function AdminCategories() {
     () => (selectedDept ? allCategories.filter((c) => c.department_id === selectedDept.id) : []),
     [allCategories, selectedDept],
   );
+  const orphanCategories = useMemo(
+    () => allCategories.filter((c) => !c.department_id),
+    [allCategories],
+  );
   const selectedCat = deptCategories.find((c) => c.id === selectedCatId) || null;
   const { data: subs = [] } = useSubcategories(selectedCat?.id, selectedCat?.name);
 
