@@ -53,10 +53,15 @@ export default function CategoryPage() {
     () => (department ? allCategories.filter((c) => c.department_id === department.id) : []),
     [allCategories, department],
   );
-  const category = categorySlug ? deptCategories.find((c) => c.slug === categorySlug) : undefined;
+  // When no department, use the legacy category itself (orphan) as the effective category
+  const category = department
+    ? (categorySlug ? deptCategories.find((c) => c.slug === categorySlug) : undefined)
+    : legacyCategory;
+  // For orphan flow, the second slug (categorySlug) is actually the subcategory
+  const effectiveSubcategorySlug = department ? subcategorySlug : categorySlug;
   const { data: subcategories = [] } = useSubcategories(category?.id, category?.name);
-  const subcategory = subcategorySlug
-    ? subcategories.find((s) => s.slug === subcategorySlug)
+  const subcategory = effectiveSubcategorySlug
+    ? subcategories.find((s) => s.slug === effectiveSubcategorySlug)
     : undefined;
 
   const [searchQuery, setSearchQuery] = useState('');
