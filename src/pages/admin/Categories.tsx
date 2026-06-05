@@ -158,6 +158,16 @@ export default function AdminCategories() {
     qc.invalidateQueries({ queryKey: ['categories'] });
   };
 
+  const moveCategoryToDept = async (catId: string, deptId: string) => {
+    const { error } = await supabase
+      .from('categories')
+      .update({ department_id: deptId } as any)
+      .eq('id', catId);
+    if (error) return toast.error('Erro ao mover: ' + error.message);
+    toast.success('Categoria movida');
+    qc.invalidateQueries({ queryKey: ['categories'] });
+  };
+
   /* ---------------- Subcategories ---------------- */
   const createSub = async () => {
     const name = newSub.trim();
