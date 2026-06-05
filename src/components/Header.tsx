@@ -466,9 +466,9 @@ const Header = () => {
                       Coleção
                     </p>
                     <ul>
-                      {visibleDepartments.length === 0 && (
+                      {visibleDepartments.length === 0 && orphanCategories.length === 0 && (
                         <li className="py-3 text-xs text-muted-foreground tracking-wide">
-                          Nenhum departamento disponível.
+                          Nenhuma categoria disponível.
                         </li>
                       )}
                       {visibleDepartments.map((dept) => (
@@ -479,6 +479,18 @@ const Header = () => {
                             className="w-full flex items-center justify-between py-3.5 text-left text-sm font-medium tracking-wide capitalize text-foreground hover:text-primary transition-colors"
                           >
                             <span>{dept.name}</span>
+                            <ChevronRight className="h-4 w-4 text-muted-foreground/60" {...ICON_PROPS} />
+                          </button>
+                        </li>
+                      ))}
+                      {orphanCategories.map((cat) => (
+                        <li key={cat.id} className="border-b border-border/30 last:border-0">
+                          <button
+                            type="button"
+                            onClick={() => handleNavigate(`/c/${cat.slug}`)}
+                            className="w-full flex items-center justify-between py-3.5 text-left text-sm font-medium tracking-wide capitalize text-foreground hover:text-primary transition-colors"
+                          >
+                            <span>{cat.name}</span>
                             <ChevronRight className="h-4 w-4 text-muted-foreground/60" {...ICON_PROPS} />
                           </button>
                         </li>
