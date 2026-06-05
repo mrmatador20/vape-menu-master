@@ -31,7 +31,7 @@ export default function CategoryPage() {
     ? allCategories.find((c) => c.slug === departmentSlug)
     : undefined;
 
-  // Redirect legacy URLs (/c/<category>) → /c/<dept>/<category>
+  // Redirect legacy URLs (/c/<category>) → /c/<dept>/<category> when category has a department
   useEffect(() => {
     if (!department && legacyCategory && legacyCategory.department_slug) {
       const sub = categorySlug ? `/${categorySlug}` : '';
@@ -41,7 +41,7 @@ export default function CategoryPage() {
     }
   }, [department, legacyCategory, categorySlug, navigate]);
 
-  // 404 if neither resolves once data is loaded
+  // 404 only if neither department nor any matching category exists
   useEffect(() => {
     if (departments.length > 0 && allCategories.length > 0 && !department && !legacyCategory) {
       navigate('/', { replace: true });
