@@ -50,6 +50,7 @@ export const BannerCarousel = () => {
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const messageViewportRef = useRef<HTMLDivElement | null>(null);
   const messageTextRef = useRef<HTMLSpanElement | null>(null);
+  const currentBanner = banners?.[currentIndex];
 
   const clearRotationInterval = () => {
     if (intervalRef.current) {
@@ -103,11 +104,9 @@ export const BannerCarousel = () => {
       resizeObserver.disconnect();
       window.removeEventListener('resize', updateOverflowState);
     };
-  }, [message, currentIndex]);
+  }, [currentBanner?.id, currentBanner?.title, currentBanner?.description, currentIndex]);
 
-  if (isLoading || !banners || banners.length === 0) return null;
-
-  const currentBanner = banners[currentIndex];
+  if (isLoading || !banners || banners.length === 0 || !currentBanner) return null;
   const transitionClass = getTransitionClasses(
     currentBanner.transition_type || 'fade',
     isTransitioning
@@ -250,14 +249,14 @@ export const BannerCarousel = () => {
         <BannerLink className="block min-w-0 flex-1 cursor-pointer overflow-hidden">
           <div
             ref={messageViewportRef}
-            className="relative flex h-full w-full min-w-0 items-center overflow-hidden"
+            className={`relative flex h-full w-full min-w-0 items-center overflow-hidden ${transitionClass}`}
           >
             <div className="flex w-full min-w-0 overflow-hidden">
               {shouldMarquee ? (
                 <span
                   key={`${currentBanner.id}-marquee`}
                   ref={messageTextRef}
-                  className={`inline-block whitespace-nowrap text-[10.5px] font-medium uppercase tracking-[0.32em] text-primary motion-safe:animate-[banner-marquee_16s_linear_infinite] md:text-[11px] ${transitionClass}`}
+                  className="inline-block whitespace-nowrap text-[10.5px] font-medium uppercase tracking-[0.32em] text-primary motion-safe:animate-[banner-marquee_16s_linear_infinite] md:text-[11px]"
                   style={{ textShadow: '0 0 1px hsl(var(--primary) / 0.15)' }}
                 >
                   {message}
@@ -268,7 +267,7 @@ export const BannerCarousel = () => {
                 <span
                   key={`${currentBanner.id}-static`}
                   ref={messageTextRef}
-                  className={`block w-full truncate text-center text-[10.5px] font-medium uppercase tracking-[0.32em] text-primary md:text-[11px] ${transitionClass}`}
+                  className="block w-full truncate text-center text-[10.5px] font-medium uppercase tracking-[0.32em] text-primary md:text-[11px]"
                   style={{ textShadow: '0 0 1px hsl(var(--primary) / 0.15)' }}
                 >
                   {message}
