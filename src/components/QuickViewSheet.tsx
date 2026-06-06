@@ -294,9 +294,9 @@ export default function QuickViewSheet({
                       disabled={out}
                       onClick={() => setSelectedColor(variant.color || undefined)}
                       className={cn(
-                        'relative h-9 w-9 rounded-full border-2 transition-all',
+                        'relative h-9 w-9 rounded-full border-2 transition-colors',
                         isSelected
-                          ? 'border-primary ring-2 ring-primary/30 scale-110'
+                          ? 'border-primary ring-2 ring-primary/30'
                           : 'border-border hover:border-primary/60',
                         out && 'opacity-40 cursor-not-allowed'
                       )}
