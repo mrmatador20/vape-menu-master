@@ -203,8 +203,8 @@ export const BannerCarousel = () => {
   const message = [title, desc].filter(Boolean).join(' — ');
 
   return (
-    <div className="relative w-full bg-card border-b border-border/60">
-      <div className="container max-w-7xl mx-auto h-8 md:h-9 px-4 flex items-center justify-center gap-3">
+    <div className="relative w-full overflow-x-hidden bg-card border-b border-border/60">
+      <div className="container max-w-7xl mx-auto h-8 md:h-9 px-4 flex items-center justify-center gap-3 min-w-0">
         {banners.length > 1 && (
           <button
             type="button"
