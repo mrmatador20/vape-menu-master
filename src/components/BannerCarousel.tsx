@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useActiveBanners } from '@/hooks/useBanners';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
@@ -46,7 +46,10 @@ export const BannerCarousel = () => {
   const { data: banners, isLoading } = useActiveBanners();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [shouldMarquee, setShouldMarquee] = useState(false);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const messageViewportRef = useRef<HTMLDivElement | null>(null);
+  const messageTextRef = useRef<HTMLSpanElement | null>(null);
 
   const clearRotationInterval = () => {
     if (intervalRef.current) {
@@ -74,6 +77,33 @@ export const BannerCarousel = () => {
     startRotationInterval();
     return () => clearRotationInterval();
   }, [banners, currentIndex]);
+
+  useLayoutEffect(() => {
+    const viewport = messageViewportRef.current;
+    const text = messageTextRef.current;
+
+    if (!viewport || !text) {
+      setShouldMarquee(false);
+      return;
+    }
+
+    const updateOverflowState = () => {
+      setShouldMarquee(text.scrollWidth > viewport.clientWidth);
+    };
+
+    updateOverflowState();
+
+    const resizeObserver = new ResizeObserver(updateOverflowState);
+    resizeObserver.observe(viewport);
+    resizeObserver.observe(text);
+
+    window.addEventListener('resize', updateOverflowState);
+
+    return () => {
+      resizeObserver.disconnect();
+      window.removeEventListener('resize', updateOverflowState);
+    };
+  }, [message, currentIndex]);
 
   if (isLoading || !banners || banners.length === 0) return null;
 
@@ -203,8 +233,8 @@ export const BannerCarousel = () => {
   const message = [title, desc].filter(Boolean).join(' — ');
 
   return (
-    <div className="relative w-full overflow-x-hidden bg-card border-b border-border/60">
-      <div className="container max-w-7xl mx-auto h-8 md:h-9 px-4 flex items-center justify-center gap-3 min-w-0">
+    <div className="relative block w-full max-w-[100vw] overflow-x-hidden bg-card border-b border-border/60">
+      <div className="container mx-auto flex h-8 min-w-0 max-w-full items-center justify-center gap-3 overflow-hidden px-4 md:h-9">
         {banners.length > 1 && (
           <button
             type="button"
@@ -217,14 +247,35 @@ export const BannerCarousel = () => {
           </button>
         )}
 
-        <BannerLink className="flex-1 cursor-pointer">
-          <p
-            key={currentBanner.id}
-            className={`text-center text-[10.5px] md:text-[11px] uppercase tracking-[0.32em] font-medium truncate text-primary ${transitionClass}`}
-            style={{ textShadow: '0 0 1px hsl(var(--primary) / 0.15)' }}
+        <BannerLink className="block min-w-0 flex-1 cursor-pointer overflow-hidden">
+          <div
+            ref={messageViewportRef}
+            className="relative flex h-full w-full min-w-0 items-center overflow-hidden"
           >
-            {message}
-          </p>
+            <div className="flex w-full min-w-0 overflow-hidden">
+              {shouldMarquee ? (
+                <span
+                  key={`${currentBanner.id}-marquee`}
+                  ref={messageTextRef}
+                  className={`inline-block whitespace-nowrap text-[10.5px] font-medium uppercase tracking-[0.32em] text-primary motion-safe:animate-[banner-marquee_16s_linear_infinite] md:text-[11px] ${transitionClass}`}
+                  style={{ textShadow: '0 0 1px hsl(var(--primary) / 0.15)' }}
+                >
+                  {message}
+                  <span aria-hidden="true" className="inline-block px-8">—</span>
+                  {message}
+                </span>
+              ) : (
+                <span
+                  key={`${currentBanner.id}-static`}
+                  ref={messageTextRef}
+                  className={`block w-full truncate text-center text-[10.5px] font-medium uppercase tracking-[0.32em] text-primary md:text-[11px] ${transitionClass}`}
+                  style={{ textShadow: '0 0 1px hsl(var(--primary) / 0.15)' }}
+                >
+                  {message}
+                </span>
+              )}
+            </div>
+          </div>
         </BannerLink>
 
         {banners.length > 1 && (
