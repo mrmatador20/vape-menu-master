@@ -80,8 +80,9 @@ const ResetFlowGuard = ({ children }: { children: React.ReactNode }) => {
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <CartProvider>
+    <div className="w-full max-w-full overflow-x-hidden">
+      <TooltipProvider>
+        <CartProvider>
         <Toaster />
         <Sonner />
         <BrowserRouter>
@@ -219,8 +220,9 @@ const App = () => (
             </AuthInterceptor>
           </AuthStateProvider>
         </BrowserRouter>
-      </CartProvider>
-    </TooltipProvider>
+        </CartProvider>
+      </TooltipProvider>
+    </div>
   </QueryClientProvider>
 );
 
