@@ -39,6 +39,7 @@ const PAGE_SIZE = 20;
 export default function AdminProducts() {
   const { data: role, isLoading: roleLoading } = useUserRole();
   const [search, setSearch] = useState("");
+  const [deptFilter, setDeptFilter] = useState<string>("all");
   const [catFilter, setCatFilter] = useState<string>("all");
   const [subFilter, setSubFilter] = useState<string>("all");
   const [stockFilter, setStockFilter] = useState<string>("all");
