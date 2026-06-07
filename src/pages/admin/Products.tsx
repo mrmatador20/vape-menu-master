@@ -172,12 +172,19 @@ export default function AdminProducts() {
             <Input className="pl-10" placeholder="Buscar por nome ou categoria..."
               value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} />
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+          <div className="grid grid-cols-2 md:grid-cols-6 gap-2">
+            <Select value={deptFilter} onValueChange={(v) => { setDeptFilter(v); setCatFilter("all"); setSubFilter("all"); setPage(1); }}>
+              <SelectTrigger><SelectValue placeholder="Departamento" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos departamentos</SelectItem>
+                {departments.map((d) => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
             <Select value={catFilter} onValueChange={(v) => { setCatFilter(v); setSubFilter("all"); setPage(1); }}>
               <SelectTrigger><SelectValue placeholder="Categoria" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todas categorias</SelectItem>
-                {categories.map((c) => <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>)}
+                {visibleCategories.map((c) => <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>)}
               </SelectContent>
             </Select>
             <Select value={subFilter} onValueChange={(v) => { setSubFilter(v); setPage(1); }} disabled={catFilter === "all"}>
