@@ -20,12 +20,14 @@ import { useCategories } from '@/hooks/useCategories';
 interface Props {
   value: string;
   onChange: (name: string) => void;
+  departmentId?: string | null;
+  disabled?: boolean;
 }
 
-export function CategoryCombobox({ value, onChange }: Props) {
+export function CategoryCombobox({ value, onChange, departmentId, disabled }: Props) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
-  const { data: categories = [], isLoading } = useCategories();
+  const { data: categories = [], isLoading } = useCategories(departmentId ?? undefined);
   const qc = useQueryClient();
 
   const handleCreate = async () => {
