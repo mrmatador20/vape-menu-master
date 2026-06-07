@@ -67,6 +67,7 @@ export default function AdminProducts() {
     const q = search.toLowerCase();
     return products.filter((p) => {
       if (q && !p.name.toLowerCase().includes(q) && !p.category.toLowerCase().includes(q)) return false;
+      if (deptFilter !== "all" && !categoryNamesInDept.has(p.category)) return false;
       if (catFilter !== "all" && p.category !== catFilter) return false;
       if (subFilter !== "all" && (p as any).subcategory !== subFilter) return false;
       if (stockFilter === "in" && p.stock <= 0) return false;
@@ -80,7 +81,7 @@ export default function AdminProducts() {
       if (visFilter === "hidden" && visible) return false;
       return true;
     });
-  }, [products, search, catFilter, subFilter, stockFilter, promoFilter, visFilter]);
+  }, [products, search, deptFilter, catFilter, subFilter, stockFilter, promoFilter, visFilter, categoryNamesInDept]);
 
   const stats = useMemo(() => {
     const list = products || [];
