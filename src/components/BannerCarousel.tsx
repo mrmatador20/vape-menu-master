@@ -229,7 +229,6 @@ export const BannerCarousel = () => {
 
   const title = stripEmoji(currentBanner.title);
   const desc = stripEmoji(currentBanner.description);
-  const message = [title, desc].filter(Boolean).join(' — ');
 
   return (
     <div className="relative block w-full max-w-[100vw] overflow-x-hidden bg-card border-b border-border/60">
