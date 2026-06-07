@@ -49,7 +49,7 @@ export const BannerCarousel = () => {
   const [shouldMarquee, setShouldMarquee] = useState(false);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const messageViewportRef = useRef<HTMLDivElement | null>(null);
-  const messageTextRef = useRef<HTMLSpanElement | null>(null);
+  const messageTextRef = useRef<HTMLDivElement | null>(null);
   const currentBanner = banners?.[currentIndex];
 
   const clearRotationInterval = () => {
