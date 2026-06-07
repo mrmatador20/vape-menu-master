@@ -126,7 +126,7 @@ export default function AdminProducts() {
   };
 
   const resetFilters = () => {
-    setSearch(""); setCatFilter("all"); setSubFilter("all");
+    setSearch(""); setDeptFilter("all"); setCatFilter("all"); setSubFilter("all");
     setStockFilter("all"); setPromoFilter("all"); setVisFilter("all"); setPage(1);
   };
 
