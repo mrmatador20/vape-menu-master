@@ -51,7 +51,12 @@ export default function AdminProducts() {
   const [isFormOpen, setIsFormOpen] = useState(false);
 
   const { data: products, isLoading } = useProducts();
+  const { data: departments = [] } = useDepartments();
   const { data: categories = [] } = useCategories();
+  const visibleCategories = deptFilter === "all"
+    ? categories
+    : categories.filter((c) => c.department_id === deptFilter);
+  const categoryNamesInDept = new Set(visibleCategories.map((c) => c.name));
   const selectedCat = categories.find((c) => c.name === catFilter);
   const { data: subs = [] } = useSubcategories(selectedCat?.id, selectedCat?.name);
   const { toast } = useToast();
