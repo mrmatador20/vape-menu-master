@@ -20,18 +20,22 @@ import { useCategories } from '@/hooks/useCategories';
 interface Props {
   value: string;
   onChange: (name: string) => void;
+  departmentId?: string | null;
+  disabled?: boolean;
 }
 
-export function CategoryCombobox({ value, onChange }: Props) {
+export function CategoryCombobox({ value, onChange, departmentId, disabled }: Props) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
-  const { data: categories = [], isLoading } = useCategories();
+  const { data: categories = [], isLoading } = useCategories(departmentId ?? undefined);
   const qc = useQueryClient();
 
   const handleCreate = async () => {
     const name = search.trim();
     if (!name) return;
-    const { error } = await supabase.from('categories').insert({ name } as any);
+    const payload: any = { name };
+    if (departmentId) payload.department_id = departmentId;
+    const { error } = await supabase.from('categories').insert(payload);
     if (error) {
       toast.error('Erro ao criar categoria: ' + error.message);
       return;
@@ -53,9 +57,10 @@ export function CategoryCombobox({ value, onChange }: Props) {
           variant="outline"
           role="combobox"
           aria-expanded={open}
+          disabled={disabled}
           className="w-full justify-between"
         >
-          {value || <span className="text-muted-foreground">Selecione uma categoria...</span>}
+          {value || <span className="text-muted-foreground">{disabled ? 'Selecione um departamento primeiro' : 'Selecione uma categoria...'}</span>}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>

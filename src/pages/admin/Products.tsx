@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useProducts } from "@/hooks/useProducts";
 import { useCategories } from "@/hooks/useCategories";
+import { useDepartments } from "@/hooks/useDepartments";
 import { useSubcategories } from "@/hooks/useSubcategories";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,6 +39,7 @@ const PAGE_SIZE = 20;
 export default function AdminProducts() {
   const { data: role, isLoading: roleLoading } = useUserRole();
   const [search, setSearch] = useState("");
+  const [deptFilter, setDeptFilter] = useState<string>("all");
   const [catFilter, setCatFilter] = useState<string>("all");
   const [subFilter, setSubFilter] = useState<string>("all");
   const [stockFilter, setStockFilter] = useState<string>("all");
@@ -49,7 +51,12 @@ export default function AdminProducts() {
   const [isFormOpen, setIsFormOpen] = useState(false);
 
   const { data: products, isLoading } = useProducts();
+  const { data: departments = [] } = useDepartments();
   const { data: categories = [] } = useCategories();
+  const visibleCategories = deptFilter === "all"
+    ? categories
+    : categories.filter((c) => c.department_id === deptFilter);
+  const categoryNamesInDept = new Set(visibleCategories.map((c) => c.name));
   const selectedCat = categories.find((c) => c.name === catFilter);
   const { data: subs = [] } = useSubcategories(selectedCat?.id, selectedCat?.name);
   const { toast } = useToast();
@@ -60,6 +67,7 @@ export default function AdminProducts() {
     const q = search.toLowerCase();
     return products.filter((p) => {
       if (q && !p.name.toLowerCase().includes(q) && !p.category.toLowerCase().includes(q)) return false;
+      if (deptFilter !== "all" && !categoryNamesInDept.has(p.category)) return false;
       if (catFilter !== "all" && p.category !== catFilter) return false;
       if (subFilter !== "all" && (p as any).subcategory !== subFilter) return false;
       if (stockFilter === "in" && p.stock <= 0) return false;
@@ -73,7 +81,7 @@ export default function AdminProducts() {
       if (visFilter === "hidden" && visible) return false;
       return true;
     });
-  }, [products, search, catFilter, subFilter, stockFilter, promoFilter, visFilter]);
+  }, [products, search, deptFilter, catFilter, subFilter, stockFilter, promoFilter, visFilter, categoryNamesInDept]);
 
   const stats = useMemo(() => {
     const list = products || [];
@@ -118,7 +126,7 @@ export default function AdminProducts() {
   };
 
   const resetFilters = () => {
-    setSearch(""); setCatFilter("all"); setSubFilter("all");
+    setSearch(""); setDeptFilter("all"); setCatFilter("all"); setSubFilter("all");
     setStockFilter("all"); setPromoFilter("all"); setVisFilter("all"); setPage(1);
   };
 
@@ -164,12 +172,19 @@ export default function AdminProducts() {
             <Input className="pl-10" placeholder="Buscar por nome ou categoria..."
               value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} />
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+          <div className="grid grid-cols-2 md:grid-cols-6 gap-2">
+            <Select value={deptFilter} onValueChange={(v) => { setDeptFilter(v); setCatFilter("all"); setSubFilter("all"); setPage(1); }}>
+              <SelectTrigger><SelectValue placeholder="Departamento" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos departamentos</SelectItem>
+                {departments.map((d) => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
             <Select value={catFilter} onValueChange={(v) => { setCatFilter(v); setSubFilter("all"); setPage(1); }}>
               <SelectTrigger><SelectValue placeholder="Categoria" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todas categorias</SelectItem>
-                {categories.map((c) => <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>)}
+                {visibleCategories.map((c) => <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>)}
               </SelectContent>
             </Select>
             <Select value={subFilter} onValueChange={(v) => { setSubFilter(v); setPage(1); }} disabled={catFilter === "all"}>
