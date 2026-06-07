@@ -49,7 +49,7 @@ export const BannerCarousel = () => {
   const [shouldMarquee, setShouldMarquee] = useState(false);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const messageViewportRef = useRef<HTMLDivElement | null>(null);
-  const messageTextRef = useRef<HTMLSpanElement | null>(null);
+  const messageTextRef = useRef<HTMLDivElement | null>(null);
   const currentBanner = banners?.[currentIndex];
 
   const clearRotationInterval = () => {
@@ -229,7 +229,6 @@ export const BannerCarousel = () => {
 
   const title = stripEmoji(currentBanner.title);
   const desc = stripEmoji(currentBanner.description);
-  const message = [title, desc].filter(Boolean).join(' — ');
 
   return (
     <div className="relative block w-full max-w-[100vw] overflow-x-hidden bg-card border-b border-border/60">
@@ -253,25 +252,65 @@ export const BannerCarousel = () => {
           >
             <div className="flex w-full min-w-0 overflow-hidden">
               {shouldMarquee ? (
-                <span
-                  key={`${currentBanner.id}-marquee`}
-                  ref={messageTextRef}
-                  className="inline-block whitespace-nowrap text-[10.5px] font-medium uppercase tracking-[0.32em] text-primary motion-safe:animate-[banner-marquee_16s_linear_infinite] md:text-[11px]"
-                  style={{ textShadow: '0 0 1px hsl(var(--primary) / 0.15)' }}
-                >
-                  {message}
-                  <span aria-hidden="true" className="inline-block px-8">—</span>
-                  {message}
-                </span>
+                <div className="flex motion-safe:animate-[banner-marquee_16s_linear_infinite]">
+                  <div
+                    key={`${currentBanner.id}-marquee`}
+                    ref={messageTextRef}
+                    className="flex flex-col items-center justify-center text-center shrink-0 px-4"
+                  >
+                    <span
+                      className="inline-block whitespace-nowrap text-[10.5px] font-medium uppercase tracking-[0.32em] text-primary md:text-[11px]"
+                      style={{ textShadow: '0 0 1px hsl(var(--primary) / 0.15)' }}
+                    >
+                      {title}
+                    </span>
+                    {desc && (
+                      <span
+                        className="inline-block whitespace-nowrap text-[10.5px] font-medium uppercase tracking-[0.32em] text-primary md:text-[11px]"
+                        style={{ textShadow: '0 0 1px hsl(var(--primary) / 0.15)' }}
+                      >
+                        {desc}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex flex-col items-center justify-center text-center shrink-0 px-4">
+                    <span
+                      className="inline-block whitespace-nowrap text-[10.5px] font-medium uppercase tracking-[0.32em] text-primary md:text-[11px]"
+                      style={{ textShadow: '0 0 1px hsl(var(--primary) / 0.15)' }}
+                    >
+                      {title}
+                    </span>
+                    {desc && (
+                      <span
+                        className="inline-block whitespace-nowrap text-[10.5px] font-medium uppercase tracking-[0.32em] text-primary md:text-[11px]"
+                        style={{ textShadow: '0 0 1px hsl(var(--primary) / 0.15)' }}
+                      >
+                        {desc}
+                      </span>
+                    )}
+                  </div>
+                </div>
               ) : (
-                <span
+                <div
                   key={`${currentBanner.id}-static`}
                   ref={messageTextRef}
-                  className="block w-full truncate text-center text-[10.5px] font-medium uppercase tracking-[0.32em] text-primary md:text-[11px]"
-                  style={{ textShadow: '0 0 1px hsl(var(--primary) / 0.15)' }}
+                  className="flex flex-col items-center justify-center text-center w-full"
                 >
-                  {message}
-                </span>
+                  <span
+                    className="block w-full truncate text-center text-[10.5px] font-medium uppercase tracking-[0.32em] text-primary md:text-[11px]"
+                    style={{ textShadow: '0 0 1px hsl(var(--primary) / 0.15)' }}
+                  >
+                    {title}
+                  </span>
+                  {desc && (
+                    <span
+                      className="block w-full truncate text-center text-[10.5px] font-medium uppercase tracking-[0.32em] text-primary md:text-[11px]"
+                      style={{ textShadow: '0 0 1px hsl(var(--primary) / 0.15)' }}
+                    >
+                      {desc}
+                    </span>
+                  )}
+                </div>
               )}
             </div>
           </div>
