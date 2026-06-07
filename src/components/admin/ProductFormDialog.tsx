@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -38,11 +38,14 @@ import { ProductImagesField } from "./ProductImagesField";
 import { CategoryCombobox } from "./CategoryCombobox";
 import { SubcategoryCombobox } from "./SubcategoryCombobox";
 import { VariantsTable } from "./VariantsTable";
-import { Info, FolderTree, Image as ImageIcon, Package, Layers, BadgePercent, Lock } from "lucide-react";
+import { Info, FolderTree, Image as ImageIcon, Package, Layers, BadgePercent } from "lucide-react";
 import { slugify as slugifyClient } from "@/lib/slugify";
+import { useDepartments } from "@/hooks/useDepartments";
+import { useCategories } from "@/hooks/useCategories";
 
 const productSchema = z.object({
   name: z.string().min(1, "Nome é obrigatório"),
+  department_id: z.string().min(1, "Departamento é obrigatório"),
   category: z.string().min(1, "Categoria é obrigatória"),
   subcategory: z.string().optional(),
   price: z.string().min(1, "Preço é obrigatório"),
@@ -67,6 +70,7 @@ interface ProductFormDialogProps {
 
 const defaults: ProductFormValues = {
   name: "",
+  department_id: "",
   category: "",
   subcategory: "",
   price: "",
@@ -84,17 +88,31 @@ const defaults: ProductFormValues = {
 export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDialogProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { data: departments = [] } = useDepartments();
+  const { data: allCategories = [] } = useCategories();
+
+  // Internal "editing" product: when a new product is created, switch to edit mode
+  // without closing the dialog so the user can keep refining (images, variants, etc.).
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [activeTab, setActiveTab] = useState("info");
+
+  const currentProduct = editingProduct ?? product ?? null;
 
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productSchema),
     defaultValues: defaults,
   });
 
+  // Reset when dialog opens
   useEffect(() => {
     if (!open) return;
+    setEditingProduct(null);
+    setActiveTab("info");
     if (product) {
+      const cat = allCategories.find((c) => c.name === product.category);
       form.reset({
         name: product.name,
+        department_id: cat?.department_id || "",
         category: product.category,
         subcategory: (product as any).subcategory || "",
         price: product.price.toString(),
@@ -113,7 +131,36 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
     } else {
       form.reset(defaults);
     }
-  }, [product, open, form]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [product, open, allCategories.length]);
+
+  const departmentId = form.watch('department_id');
+  const categoryName = form.watch('category');
+
+  // When editingProduct is set after creation, update form to edit-mode values
+  useEffect(() => {
+    if (!editingProduct) return;
+    const cat = allCategories.find((c) => c.name === editingProduct.category);
+    form.reset({
+      name: editingProduct.name,
+      department_id: cat?.department_id || form.getValues('department_id'),
+      category: editingProduct.category,
+      subcategory: (editingProduct as any).subcategory || "",
+      price: editingProduct.price.toString(),
+      stock: editingProduct.stock.toString(),
+      min_stock: editingProduct.min_stock?.toString() || "10",
+      display_order: ((editingProduct as any).display_order || 0).toString(),
+      discount_type: ((editingProduct as any).discount_type || 'percent') as 'percent' | 'fixed',
+      discount_value: ((editingProduct as any).discount_value || 0).toString(),
+      visible_in_all: (editingProduct as any).visible_in_all !== false,
+      image: editingProduct.image || "",
+      images: (editingProduct as any).images && (editingProduct as any).images.length
+        ? (editingProduct as any).images
+        : (editingProduct.image ? [editingProduct.image] : []),
+      description: editingProduct.description || "",
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editingProduct?.id]);
 
   const onSubmit = async (values: ProductFormValues) => {
     const productData: any = {
@@ -130,54 +177,59 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
       image: (values.images && values.images[0]) || values.image || null,
       images: values.images ?? [],
       description: values.description || null,
-      // slug é gerado automaticamente pelo trigger no banco a partir do nome
     };
 
-    if (product) {
-      const { error } = await supabase.from('products').update(productData).eq('id', product.id);
+    if (currentProduct) {
+      const { error } = await supabase.from('products').update(productData).eq('id', currentProduct.id);
       if (error) {
         toast({ title: "Erro ao atualizar", description: error.message, variant: "destructive" });
         return;
       }
       toast({ title: "Produto atualizado", description: "Alterações salvas com sucesso." });
+      queryClient.invalidateQueries({ queryKey: ['products'] });
     } else {
-      const { error } = await supabase.from('products').insert([productData]);
+      const { data, error } = await supabase
+        .from('products')
+        .insert([productData])
+        .select()
+        .single();
       if (error) {
         toast({ title: "Erro ao criar", description: error.message, variant: "destructive" });
         return;
       }
-      toast({ title: "Produto criado", description: "Adicionado ao catálogo." });
+      toast({ title: "Produto criado", description: "Continue editando para adicionar variantes e detalhes." });
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+      // Switch to edit mode in-place instead of closing
+      setEditingProduct(data as unknown as Product);
+      return;
     }
-
-    queryClient.invalidateQueries({ queryKey: ['products'] });
-    onOpenChange(false);
-    form.reset(defaults);
   };
 
-  const variantsDisabled = !product;
+  const filteredCategories = departmentId
+    ? allCategories.filter((c) => c.department_id === departmentId)
+    : allCategories;
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="w-full sm:max-w-3xl p-0 flex flex-col gap-0">
         <SheetHeader className="p-6 pb-4 border-b text-left">
-          <SheetTitle className="text-2xl">{product ? "Editar produto" : "Novo produto"}</SheetTitle>
+          <SheetTitle className="text-2xl">{currentProduct ? "Editar produto" : "Novo produto"}</SheetTitle>
           <SheetDescription>
-            {product ? "Atualize as informações, imagens e variantes do produto." : "Preencha as informações para adicionar um novo produto ao catálogo."}
+            {currentProduct ? "Atualize as informações, imagens e variantes do produto." : "Preencha as informações para adicionar um novo produto ao catálogo."}
           </SheetDescription>
         </SheetHeader>
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="flex-1 flex flex-col overflow-hidden">
-            <Tabs defaultValue="info" className="flex-1 flex flex-col overflow-hidden">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
               <div className="px-6 pt-4 border-b">
                 <TabsList className="bg-transparent p-0 h-auto gap-1 flex-wrap justify-start">
                   <TabsTrigger value="info" className="data-[state=active]:bg-accent gap-2"><Info className="h-4 w-4" />Básico</TabsTrigger>
                   <TabsTrigger value="cat" className="data-[state=active]:bg-accent gap-2"><FolderTree className="h-4 w-4" />Categorização</TabsTrigger>
                   <TabsTrigger value="img" className="data-[state=active]:bg-accent gap-2"><ImageIcon className="h-4 w-4" />Imagens</TabsTrigger>
                   <TabsTrigger value="stock" className="data-[state=active]:bg-accent gap-2"><Package className="h-4 w-4" />Estoque</TabsTrigger>
-                  <TabsTrigger value="variants" className="data-[state=active]:bg-accent gap-2" disabled={variantsDisabled}>
-                    {variantsDisabled ? <Lock className="h-4 w-4" /> : <Layers className="h-4 w-4" />}
-                    Variantes
+                  <TabsTrigger value="variants" className="data-[state=active]:bg-accent gap-2">
+                    <Layers className="h-4 w-4" />Variantes
                   </TabsTrigger>
                   <TabsTrigger value="discount" className="data-[state=active]:bg-accent gap-2"><BadgePercent className="h-4 w-4" />Desconto</TabsTrigger>
                 </TabsList>
@@ -224,16 +276,49 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
                 </TabsContent>
 
                 <TabsContent value="cat" className="space-y-4 mt-0">
+                  <FormField control={form.control} name="department_id" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Departamento</FormLabel>
+                      <Select
+                        value={field.value}
+                        onValueChange={(v) => {
+                          field.onChange(v);
+                          form.setValue('category', '');
+                          form.setValue('subcategory', '');
+                        }}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione um departamento..." />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {departments.map((d) => (
+                            <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground">Primeiro nível da hierarquia (ex: Feminino, Masculino, Unissex).</p>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
                   <FormField control={form.control} name="category" render={({ field }) => (
                     <FormItem>
                       <FormLabel>Categoria</FormLabel>
                       <FormControl>
-                        <CategoryCombobox value={field.value} onChange={(name) => {
-                          field.onChange(name);
-                          form.setValue('subcategory', '');
-                        }} />
+                        <CategoryCombobox
+                          value={field.value}
+                          onChange={(name) => {
+                            field.onChange(name);
+                            form.setValue('subcategory', '');
+                          }}
+                          departmentId={departmentId || null}
+                          disabled={!departmentId}
+                        />
                       </FormControl>
-                      <p className="text-xs text-muted-foreground">Pesquise ou crie uma categoria sem sair desta tela.</p>
+                      <p className="text-xs text-muted-foreground">
+                        {departmentId ? 'Apenas categorias do departamento selecionado.' : 'Selecione um departamento primeiro.'}
+                      </p>
                       <FormMessage />
                     </FormItem>
                   )} />
@@ -241,9 +326,11 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
                     <FormItem>
                       <FormLabel>Subcategoria</FormLabel>
                       <FormControl>
-                        <SubcategoryCombobox categoryName={form.watch('category')} value={field.value || ''} onChange={field.onChange} />
+                        <SubcategoryCombobox categoryName={categoryName} value={field.value || ''} onChange={field.onChange} />
                       </FormControl>
-                      <p className="text-xs text-muted-foreground">Filtra automaticamente pelas subcategorias da categoria selecionada.</p>
+                      <p className="text-xs text-muted-foreground">
+                        {categoryName ? 'Subcategorias da categoria selecionada.' : 'Selecione uma categoria primeiro.'}
+                      </p>
                       <FormMessage />
                     </FormItem>
                   )} />
@@ -295,12 +382,29 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
                 </TabsContent>
 
                 <TabsContent value="variants" className="mt-0">
-                  {product ? (
-                    <VariantsTable productId={product.id} productName={product.name} />
+                  {currentProduct ? (
+                    <VariantsTable productId={currentProduct.id} productName={currentProduct.name} />
                   ) : (
-                    <div className="text-center py-12 text-muted-foreground">
-                      <Lock className="h-10 w-10 mx-auto mb-2 opacity-30" />
-                      <p>Salve o produto primeiro para gerenciar variantes.</p>
+                    <div className="rounded-lg border border-dashed p-6 text-center space-y-3">
+                      <Layers className="h-10 w-10 mx-auto opacity-40" />
+                      <p className="text-sm text-muted-foreground">
+                        Para adicionar variantes (tamanhos, cores, estoques) é preciso salvar o produto primeiro.
+                        Preencha as abas Básico e Categorização e clique em <strong>Criar produto</strong> — o cadastro continuará aberto nesta mesma tela.
+                      </p>
+                      <Button
+                        type="button"
+                        onClick={async () => {
+                          const ok = await form.trigger();
+                          if (!ok) {
+                            toast({ title: 'Preencha os campos obrigatórios', description: 'Nome, departamento, categoria e preço são necessários.', variant: 'destructive' });
+                            return;
+                          }
+                          await form.handleSubmit(onSubmit)();
+                          setActiveTab('variants');
+                        }}
+                      >
+                        Salvar produto e abrir variantes
+                      </Button>
                     </div>
                   )}
                 </TabsContent>
@@ -342,8 +446,10 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
             </Tabs>
 
             <SheetFooter className="p-6 border-t bg-muted/20 flex-row sm:justify-end gap-2">
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-              <Button type="submit">{product ? 'Salvar alterações' : 'Criar produto'}</Button>
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                {currentProduct ? 'Fechar' : 'Cancelar'}
+              </Button>
+              <Button type="submit">{currentProduct ? 'Salvar alterações' : 'Criar produto'}</Button>
             </SheetFooter>
           </form>
         </Form>
