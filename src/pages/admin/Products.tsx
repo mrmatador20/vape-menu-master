@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useProducts } from "@/hooks/useProducts";
 import { useCategories } from "@/hooks/useCategories";
+import { useDepartments } from "@/hooks/useDepartments";
 import { useSubcategories } from "@/hooks/useSubcategories";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
