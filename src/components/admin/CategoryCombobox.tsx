@@ -33,7 +33,9 @@ export function CategoryCombobox({ value, onChange, departmentId, disabled }: Pr
   const handleCreate = async () => {
     const name = search.trim();
     if (!name) return;
-    const { error } = await supabase.from('categories').insert({ name } as any);
+    const payload: any = { name };
+    if (departmentId) payload.department_id = departmentId;
+    const { error } = await supabase.from('categories').insert(payload);
     if (error) {
       toast.error('Erro ao criar categoria: ' + error.message);
       return;
