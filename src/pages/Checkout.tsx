@@ -334,15 +334,16 @@ const Checkout = () => {
 
       const discount = data[0];
 
-      // Verify self-referral usage using ownership info returned by the RPC
-      if (discount.is_referral_reward && discount.user_id === userId) {
+      // Verify self-referral usage using boolean ownership flags returned by the RPC
+      // (internal user UUIDs are intentionally not exposed to the client).
+      if (discount.is_own_referral_reward) {
         toast.error('Você não pode usar seu próprio cupom de indicação');
         setAppliedDiscount(null);
         return;
       }
 
       // Anti-fraude: bloquear auto-uso de cupom de parceiro/influencer
-      if ((discount as any).is_influencer_coupon && (discount as any).influencer_user_id === userId) {
+      if (discount.is_own_influencer_coupon) {
         toast.error('Você não pode usar seu próprio cupom de parceiro.');
         setAppliedDiscount(null);
         return;
