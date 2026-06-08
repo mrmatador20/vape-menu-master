@@ -1860,9 +1860,10 @@ export type Database = {
           day_of_week: number
           end_time: string
           id: string
-          influencer_user_id: string
           is_active: boolean
           is_influencer_coupon: boolean
+          is_own_influencer_coupon: boolean
+          is_own_referral_reward: boolean
           is_referral_reward: boolean
           max_uses: number
           schedule_type: string
@@ -1871,7 +1872,6 @@ export type Database = {
           scope_type: string
           start_time: string
           type: string
-          user_id: string
           valid_until: string
           value: number
         }[]
