@@ -63,69 +63,71 @@ export const AuthInterceptor = ({ children }: AuthInterceptorProps) => {
           return;
         }
 
-        // Session exists - check if 2FA verification was completed on login screen
-        let verified2FA = sessionStorage.getItem('2fa_verified') === 'true';
+        // Session exists - always derive 2FA verification from server-side state
+        // (AAL level or trusted device). NEVER trust sessionStorage as a gate, since
+        // it can be set via DevTools to bypass 2FA enforcement.
+        let verified2FA = false;
+        try {
+          const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+          const isAAL2 = aalData?.currentLevel === 'aal2';
 
-        // Persist across browser restarts: derive verification from real auth state.
-        // If the session is already AAL2 (TOTP verified) or this device is trusted (≤30d),
-        // restore the flag so the user does not need to log in again after closing the tab.
-        if (!verified2FA) {
-          try {
-            const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-            const isAAL2 = aalData?.currentLevel === 'aal2';
+          let isTrustedDevice = false;
+          if (!isAAL2) {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+              // Inline trusted-device check (mirrors useTrustedDevices fingerprint)
+              const fp = (() => {
+                const s = [
+                  navigator.userAgent,
+                  navigator.language,
+                  window.screen.colorDepth,
+                  window.screen.width + 'x' + window.screen.height,
+                  new Date().getTimezoneOffset(),
+                  !!window.sessionStorage,
+                  !!window.localStorage,
+                ].join('|');
+                let h = 0;
+                for (let i = 0; i < s.length; i++) {
+                  h = ((h << 5) - h) + s.charCodeAt(i);
+                  h = h & h;
+                }
+                return Math.abs(h).toString(36);
+              })();
 
-            let isTrustedDevice = false;
-            if (!isAAL2) {
-              const { data: { user } } = await supabase.auth.getUser();
-              if (user) {
-                // Inline trusted-device check (mirrors useTrustedDevices fingerprint)
-                const fp = (() => {
-                  const s = [
-                    navigator.userAgent,
-                    navigator.language,
-                    window.screen.colorDepth,
-                    window.screen.width + 'x' + window.screen.height,
-                    new Date().getTimezoneOffset(),
-                    !!window.sessionStorage,
-                    !!window.localStorage,
-                  ].join('|');
-                  let h = 0;
-                  for (let i = 0; i < s.length; i++) {
-                    h = ((h << 5) - h) + s.charCodeAt(i);
-                    h = h & h;
-                  }
-                  return Math.abs(h).toString(36);
-                })();
+              const { data: device } = await supabase
+                .from('trusted_devices')
+                .select('id, last_used_at')
+                .eq('user_id', user.id)
+                .eq('device_fingerprint', fp)
+                .eq('is_trusted', true)
+                .maybeSingle();
 
-                const { data: device } = await supabase
-                  .from('trusted_devices')
-                  .select('id, last_used_at')
-                  .eq('user_id', user.id)
-                  .eq('device_fingerprint', fp)
-                  .eq('is_trusted', true)
-                  .maybeSingle();
-
-                if (device) {
-                  const days = (Date.now() - new Date(device.last_used_at).getTime()) / 86400000;
-                  if (days <= 30) {
-                    isTrustedDevice = true;
-                    await supabase
-                      .from('trusted_devices')
-                      .update({ last_used_at: new Date().toISOString() })
-                      .eq('id', device.id);
-                  }
+              if (device) {
+                const days = (Date.now() - new Date(device.last_used_at).getTime()) / 86400000;
+                if (days <= 30) {
+                  isTrustedDevice = true;
+                  await supabase
+                    .from('trusted_devices')
+                    .update({ last_used_at: new Date().toISOString() })
+                    .eq('id', device.id);
                 }
               }
             }
-
-            if (isAAL2 || isTrustedDevice) {
-              sessionStorage.setItem('2fa_verified', 'true');
-              verified2FA = true;
-              console.log('🛡️ AuthInterceptor: Restored 2FA verification', { isAAL2, isTrustedDevice });
-            }
-          } catch (e) {
-            console.error('🛡️ AuthInterceptor: Error restoring 2FA state:', e);
           }
+
+          verified2FA = isAAL2 || isTrustedDevice;
+          // Mirror into sessionStorage for legacy UI consumers only; the gate
+          // above already revalidated against the server, so a tampered value
+          // cannot grant access.
+          if (verified2FA) {
+            sessionStorage.setItem('2fa_verified', 'true');
+          } else {
+            sessionStorage.removeItem('2fa_verified');
+          }
+          console.log('🛡️ AuthInterceptor: 2FA state', { isAAL2, isTrustedDevice });
+        } catch (e) {
+          console.error('🛡️ AuthInterceptor: Error checking 2FA state:', e);
+          verified2FA = false;
         }
 
         if (!verified2FA && !isPublicRoute) {
