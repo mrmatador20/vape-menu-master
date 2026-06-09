@@ -44,24 +44,21 @@ export const useSessionTimeout = (options: UseSessionTimeoutOptions = {}) => {
 
   const handleTimeout = useCallback(async () => {
     console.log('[SessionTimeout] Session timed out due to inactivity');
-    
-    // Clear session storage flags
-    sessionStorage.removeItem('2fa_verified');
-    sessionStorage.removeItem('admin_2fa_verified');
-    
-    // Sign out
-    await supabase.auth.signOut();
-    
+
+    // Securely sign out: invalidates global sessions and clears cache/storage
+    const { secureSignOut } = await import('@/lib/secureLogout');
+    await secureSignOut();
+
     toast({
       title: 'Sessão Expirada',
       description: 'Sua sessão foi encerrada por inatividade. Por favor, faça login novamente.',
       variant: 'destructive',
     });
-    
+
     if (onTimeout) {
       onTimeout();
     }
-    
+
     navigate('/auth');
   }, [navigate, onTimeout]);
 
