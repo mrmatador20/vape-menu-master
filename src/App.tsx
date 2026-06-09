@@ -51,7 +51,7 @@ import ProductPage from "./pages/ProductPage";
 import CookieBanner from "./components/CookieBanner";
 import LegalReacceptDialog from "./components/LegalReacceptDialog";
 
-const queryClient = new QueryClient();
+
 
 const INFLUENCER_COUPON_KEY = 'influencer_coupon_code';
 
