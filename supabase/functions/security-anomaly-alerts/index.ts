@@ -254,7 +254,7 @@ Deno.serve(async (req) => {
               })
 
               if (emailResponse.ok) {
-                console.log(`[security-anomaly-alerts] Alert email sent to ${userData.user.email}`)
+                console.log(`[security-anomaly-alerts] Alert email sent (user: ${userId})`)
                 
                 // Log the notification
                 await supabase.from('security_notification_logs').insert({
