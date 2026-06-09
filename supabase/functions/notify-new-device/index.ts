@@ -251,7 +251,7 @@ const handler = async (req: Request): Promise<Response> => {
       `,
     });
 
-    console.log("Device notification email sent successfully:", emailResponse);
+    console.log("Device notification email sent successfully");
 
     return new Response(
       JSON.stringify({ success: true, messageId: emailResponse.data?.id }),
