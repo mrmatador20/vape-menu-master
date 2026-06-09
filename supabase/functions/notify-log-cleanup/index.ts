@@ -188,7 +188,7 @@ serve(async (req: Request): Promise<Response> => {
       `,
     });
 
-    console.log('[notify-log-cleanup] Email sent successfully:', emailResponse);
+    console.log('[notify-log-cleanup] Email sent successfully');
 
     // Log this notification in activity logs
     for (const admin of adminUsers) {
