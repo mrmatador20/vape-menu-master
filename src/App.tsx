@@ -1,7 +1,8 @@
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { queryClient } from "@/lib/queryClient";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { CartProvider } from "./context/CartContext";
 import { AuthStateProvider } from "./context/AuthStateContext";
@@ -50,7 +51,7 @@ import ProductPage from "./pages/ProductPage";
 import CookieBanner from "./components/CookieBanner";
 import LegalReacceptDialog from "./components/LegalReacceptDialog";
 
-const queryClient = new QueryClient();
+
 
 const INFLUENCER_COUPON_KEY = 'influencer_coupon_code';
 

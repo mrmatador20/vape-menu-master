@@ -193,7 +193,8 @@ const ResetPassword = () => {
       // Remove reset flag and sign out after successful password reset
       localStorage.removeItem(RESET_PASSWORD_FLAG);
       window.dispatchEvent(new Event('resetFlowChange'));
-      await supabase.auth.signOut();
+      const { secureSignOut } = await import('@/lib/secureLogout');
+      await secureSignOut();
 
       toast.success('Senha redefinida com sucesso!', {
         description: 'Faça login com sua nova senha.',

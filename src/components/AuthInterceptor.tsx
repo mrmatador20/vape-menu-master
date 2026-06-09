@@ -133,8 +133,8 @@ export const AuthInterceptor = ({ children }: AuthInterceptorProps) => {
         if (!verified2FA && !isPublicRoute) {
           console.log('🛡️ AuthInterceptor: Session exists but 2FA not verified, redirecting to login');
           if (isMounted) {
-            await supabase.auth.signOut();
-            sessionStorage.removeItem('2fa_verified');
+            const { secureSignOut } = await import('@/lib/secureLogout');
+            await secureSignOut();
             navigate('/auth');
           }
           return;
@@ -150,7 +150,8 @@ export const AuthInterceptor = ({ children }: AuthInterceptorProps) => {
       } catch (error) {
         console.error('🛡️ AuthInterceptor: Error during auth check:', error);
         if (isMounted) {
-          await supabase.auth.signOut();
+          const { secureSignOut } = await import('@/lib/secureLogout');
+          await secureSignOut();
           navigate('/auth');
         }
       } finally {

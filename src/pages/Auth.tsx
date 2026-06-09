@@ -273,7 +273,8 @@ const Auth = () => {
     setShow2FAGate(false);
     setChallengeData(null);
     setAuthState('IDLE');
-    await supabase.auth.signOut();
+    const { secureSignOut } = await import('@/lib/secureLogout');
+    await secureSignOut();
     toast.error('Verificação 2FA cancelada');
   };
 

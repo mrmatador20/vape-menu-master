@@ -223,7 +223,7 @@ serve(async (req) => {
 
     // Parse and validate request body
     const rawData = await req.json();
-    console.log('[create-order] Request data received:', JSON.stringify(rawData).substring(0, 200));
+    console.log('[create-order] Request received with keys:', Object.keys(rawData || {}).join(','));
     
     let orderData: OrderRequest;
     try {

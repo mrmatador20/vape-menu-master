@@ -146,7 +146,8 @@ const Header = () => {
 
   const handleLogout = async () => {
     try {
-      const { error } = await supabase.auth.signOut();
+      const { secureSignOut } = await import('@/lib/secureLogout');
+      const { error } = await secureSignOut();
       if (error) throw error;
       toast.success('Logout realizado com sucesso!');
       navigate('/auth');
