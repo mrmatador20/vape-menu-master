@@ -95,7 +95,7 @@ export default function LegalReacceptDialog() {
         <DialogFooter>
           <Button
             variant="outline"
-            onClick={async () => { await supabase.auth.signOut(); window.location.href = '/auth'; }}
+            onClick={async () => { const { secureSignOut } = await import('@/lib/secureLogout'); await secureSignOut(); window.location.href = '/auth'; }}
             disabled={submitting}
           >
             Sair
