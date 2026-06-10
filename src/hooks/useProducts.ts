@@ -36,6 +36,7 @@ export const useProducts = () => {
           discount_type: effective.type,
           display_order: product.display_order || 0,
           visible_in_all: product.visible_in_all ?? true,
+          sku: (product as any).sku ?? null,
         };
       }).sort((a, b) => {
         if (a.display_order !== b.display_order) {
