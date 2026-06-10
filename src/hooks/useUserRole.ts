@@ -1,53 +1,68 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
-export type UserRole = 'super_admin' | 'admin' | 'moderator' | 'operador' | 'user';
+export type UserRole = 'admin' | 'moderator' | 'user';
+export type ExtendedRole = 'super_admin' | 'admin' | 'moderator' | 'operador' | 'user';
 
-const RANK: Record<UserRole, number> = {
-  super_admin: 1,
-  admin: 2,
-  moderator: 3,
-  operador: 4,
-  user: 5,
+const fetchRoles = async (): Promise<ExtendedRole[]> => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+  const { data, error } = await supabase
+    .from('user_roles')
+    .select('role')
+    .eq('user_id', user.id);
+  if (error) return [];
+  return (data ?? []).map((r: any) => r.role as ExtendedRole);
 };
 
+/**
+ * Legacy hook: returns a value compatible with the existing 'admin' | 'moderator' | 'user' checks.
+ * super_admin is mapped to 'admin' so existing admin guards keep working.
+ * For Balcão-specific checks use `useBalcaoRole` instead.
+ */
 export const useUserRole = () => {
   return useQuery({
     queryKey: ['user-role'],
     queryFn: async (): Promise<UserRole | null> => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return null;
-
-      const { data, error } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', user.id);
-
-      if (error) {
-        console.error('Error fetching user role:', error);
-        return null;
-      }
-      if (!data || data.length === 0) return null;
-
-      // Return highest-privilege role
-      const roles = data.map((r: any) => r.role as UserRole);
-      roles.sort((a, b) => (RANK[a] ?? 99) - (RANK[b] ?? 99));
-      return roles[0] ?? null;
+      const roles = await fetchRoles();
+      if (roles.length === 0) return null;
+      if (roles.includes('super_admin') || roles.includes('admin')) return 'admin';
+      if (roles.includes('moderator')) return 'moderator';
+      // 'operador' is a Balcão-only role and is not part of the legacy admin set
+      if (roles.includes('user')) return 'user';
+      return null;
     },
     retry: false,
   });
 };
 
+export const useUserRoles = () => {
+  return useQuery({
+    queryKey: ['user-roles-all'],
+    queryFn: fetchRoles,
+    retry: false,
+  });
+};
+
 export const useBalcaoRole = () => {
-  const { data: role, isLoading } = useUserRole();
+  const { data: roles = [], isLoading } = useUserRoles();
+  const has = (r: ExtendedRole) => roles.includes(r);
+  const primary: ExtendedRole | null =
+    has('super_admin') ? 'super_admin'
+    : has('admin') ? 'admin'
+    : has('moderator') ? 'moderator'
+    : has('operador') ? 'operador'
+    : has('user') ? 'user'
+    : null;
   return {
-    role,
+    roles,
+    role: primary,
     isLoading,
-    canBaixa: role === 'super_admin' || role === 'admin' || role === 'operador',
-    canEntrada: role === 'super_admin' || role === 'admin',
-    canAjuste: role === 'super_admin',
-    canReverter: role === 'super_admin',
-    canSeeAllLogs: role === 'super_admin' || role === 'admin',
-    canExport: role === 'super_admin' || role === 'admin',
+    canBaixa: has('super_admin') || has('admin') || has('operador'),
+    canEntrada: has('super_admin') || has('admin'),
+    canAjuste: has('super_admin'),
+    canReverter: has('super_admin'),
+    canSeeAllLogs: has('super_admin') || has('admin'),
+    canExport: has('super_admin') || has('admin'),
   };
 };
