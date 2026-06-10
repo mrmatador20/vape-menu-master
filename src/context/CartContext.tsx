@@ -21,6 +21,7 @@ export interface Product {
   discount_type?: 'percent' | 'fixed';
   display_order?: number;
   visible_in_all?: boolean;
+  sku?: string | null;
 }
 
 export interface CartItem extends Product {

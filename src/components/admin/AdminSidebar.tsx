@@ -3,6 +3,7 @@ import {
   LayoutDashboard, Package, ShoppingCart, BarChart3, Tag, Star, Truck,
   Settings, Megaphone, Shield, Gift, FolderTree, ChevronDown, Boxes,
   ClipboardList, LineChart, ShieldCheck, Wrench, Trophy, FileText,
+  Store, PackageMinus, ScrollText,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
@@ -30,6 +31,13 @@ const groups: Group[] = [
     title: "Operações", icon: ClipboardList, items: [
       { title: "Pedidos", url: "/546498@18/orders", icon: ShoppingCart },
       { title: "Avaliações", url: "/546498@18/reviews", icon: Star },
+    ],
+  },
+  {
+    title: "Balcão", icon: Store, items: [
+      { title: "Balcão (PDV)", url: "/546498@18/balcao", icon: PackageMinus },
+      { title: "Dashboard Balcão", url: "/546498@18/balcao-dashboard", icon: LayoutDashboard },
+      { title: "Logs de Estoque", url: "/546498@18/stock-logs", icon: ScrollText },
     ],
   },
   {

@@ -40,6 +40,9 @@ import AdminReferrals from "./pages/admin/Referrals";
 import AdminReferralMetrics from "./pages/admin/ReferralMetrics";
 import AdminInfluencerMetrics from "./pages/admin/InfluencerMetrics";
 import AdminReports from "./pages/admin/Reports";
+import AdminBalcao from "./pages/admin/Balcao";
+import AdminBalcaoDashboard from "./pages/admin/BalcaoDashboard";
+import AdminStockLogs from "./pages/admin/StockLogs";
 import TrustedDevices from "./pages/TrustedDevices";
 import Affiliate from "./pages/Affiliate";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
@@ -171,6 +174,9 @@ const App = () => (
                 <Route path="reviews" element={<AdminReviews />} />
                 <Route path="stats" element={<AdminStats />} />
                 <Route path="reports" element={<AdminReports />} />
+                <Route path="balcao" element={<AdminBalcao />} />
+                <Route path="balcao-dashboard" element={<AdminBalcaoDashboard />} />
+                <Route path="stock-logs" element={<AdminStockLogs />} />
                 <Route path="discounts" element={<AdminDiscounts />} />
                 <Route path="store-discount" element={<AdminStoreDiscount />} />
                 <Route path="shipping-rates" element={<AdminShippingRates />} />

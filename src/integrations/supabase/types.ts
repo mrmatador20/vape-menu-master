@@ -749,6 +749,7 @@ export type Database = {
           min_stock: number | null
           name: string
           price: number
+          sku: string | null
           slug: string
           stock: number
           subcategory: string | null
@@ -767,6 +768,7 @@ export type Database = {
           min_stock?: number | null
           name: string
           price: number
+          sku?: string | null
           slug?: string
           stock?: number
           subcategory?: string | null
@@ -785,6 +787,7 @@ export type Database = {
           min_stock?: number | null
           name?: string
           price?: number
+          sku?: string | null
           slug?: string
           stock?: number
           subcategory?: string | null
@@ -1261,6 +1264,39 @@ export type Database = {
         }
         Relationships: []
       }
+      security_events: {
+        Row: {
+          created_at: string
+          event_type: string
+          id: string
+          ip_address: string | null
+          metadata: Json | null
+          severity: string
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          event_type: string
+          id?: string
+          ip_address?: string | null
+          metadata?: Json | null
+          severity?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          event_type?: string
+          id?: string
+          ip_address?: string | null
+          metadata?: Json | null
+          severity?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       security_notification_logs: {
         Row: {
           channel: string
@@ -1398,6 +1434,131 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      stock_movements: {
+        Row: {
+          category_snapshot: string | null
+          created_at: string
+          flavor_id: string | null
+          id: string
+          ip_address: string | null
+          movement_type: Database["public"]["Enums"]["stock_movement_type"]
+          notes: string | null
+          order_id: string | null
+          product_id: string | null
+          product_name_snapshot: string
+          product_sku_snapshot: string | null
+          quantity: number
+          reason: Database["public"]["Enums"]["stock_movement_reason"] | null
+          request_id: string
+          reversed_by_movement_id: string | null
+          reverses_movement_id: string | null
+          stock_after: number
+          stock_before: number
+          user_agent: string | null
+          user_email_snapshot: string | null
+          user_id: string | null
+          user_role_snapshot: Database["public"]["Enums"]["app_role"] | null
+        }
+        Insert: {
+          category_snapshot?: string | null
+          created_at?: string
+          flavor_id?: string | null
+          id?: string
+          ip_address?: string | null
+          movement_type: Database["public"]["Enums"]["stock_movement_type"]
+          notes?: string | null
+          order_id?: string | null
+          product_id?: string | null
+          product_name_snapshot: string
+          product_sku_snapshot?: string | null
+          quantity: number
+          reason?: Database["public"]["Enums"]["stock_movement_reason"] | null
+          request_id: string
+          reversed_by_movement_id?: string | null
+          reverses_movement_id?: string | null
+          stock_after: number
+          stock_before: number
+          user_agent?: string | null
+          user_email_snapshot?: string | null
+          user_id?: string | null
+          user_role_snapshot?: Database["public"]["Enums"]["app_role"] | null
+        }
+        Update: {
+          category_snapshot?: string | null
+          created_at?: string
+          flavor_id?: string | null
+          id?: string
+          ip_address?: string | null
+          movement_type?: Database["public"]["Enums"]["stock_movement_type"]
+          notes?: string | null
+          order_id?: string | null
+          product_id?: string | null
+          product_name_snapshot?: string
+          product_sku_snapshot?: string | null
+          quantity?: number
+          reason?: Database["public"]["Enums"]["stock_movement_reason"] | null
+          request_id?: string
+          reversed_by_movement_id?: string | null
+          reverses_movement_id?: string | null
+          stock_after?: number
+          stock_before?: number
+          user_agent?: string | null
+          user_email_snapshot?: string | null
+          user_id?: string | null
+          user_role_snapshot?: Database["public"]["Enums"]["app_role"] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stock_movements_flavor_id_fkey"
+            columns: ["flavor_id"]
+            isOneToOne: false
+            referencedRelation: "flavors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_movements_flavor_id_fkey"
+            columns: ["flavor_id"]
+            isOneToOne: false
+            referencedRelation: "public_flavors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_movements_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_movements_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_movements_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "public_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_movements_reversed_by_movement_id_fkey"
+            columns: ["reversed_by_movement_id"]
+            isOneToOne: false
+            referencedRelation: "stock_movements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_movements_reverses_movement_id_fkey"
+            columns: ["reverses_movement_id"]
+            isOneToOne: false
+            referencedRelation: "stock_movements"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       subcategories: {
         Row: {
@@ -1765,6 +1926,46 @@ export type Database = {
       }
     }
     Functions: {
+      balcao_ajuste_estoque: {
+        Args: {
+          p_flavor_id: string
+          p_new_stock: number
+          p_notes: string
+          p_product_id: string
+          p_request_id: string
+        }
+        Returns: string
+      }
+      balcao_baixa_estoque: {
+        Args: {
+          p_flavor_id: string
+          p_movement_type: Database["public"]["Enums"]["stock_movement_type"]
+          p_notes: string
+          p_product_id: string
+          p_quantity: number
+          p_reason: Database["public"]["Enums"]["stock_movement_reason"]
+          p_request_id: string
+        }
+        Returns: string
+      }
+      balcao_check_rate_limit: {
+        Args: { p_key: string; p_max: number; p_window_minutes: number }
+        Returns: undefined
+      }
+      balcao_entrada_estoque: {
+        Args: {
+          p_flavor_id: string
+          p_notes: string
+          p_product_id: string
+          p_quantity: number
+          p_request_id: string
+        }
+        Returns: string
+      }
+      balcao_reverter_baixa: {
+        Args: { p_movement_id: string; p_notes?: string; p_request_id: string }
+        Returns: string
+      }
       cleanup_expired_rate_limits: { Args: never; Returns: undefined }
       cleanup_expired_verification_codes: { Args: never; Returns: undefined }
       cleanup_old_audit_logs: {
@@ -1807,6 +2008,10 @@ export type Database = {
         Args: { stock_value: number }
         Returns: string
       }
+      get_user_primary_role: {
+        Args: { _user_id: string }
+        Returns: Database["public"]["Enums"]["app_role"]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1825,6 +2030,10 @@ export type Database = {
           full_name: string
           id: string
         }[]
+      }
+      log_security_event: {
+        Args: { p_event_type: string; p_metadata?: Json; p_severity?: string }
+        Returns: undefined
       }
       publish_legal_document: {
         Args: {
@@ -1878,7 +2087,23 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "moderator" | "user"
+      app_role: "admin" | "moderator" | "user" | "super_admin" | "operador"
+      stock_movement_reason:
+        | "venda_loja"
+        | "produto_danificado"
+        | "troca"
+        | "ajuste_estoque"
+        | "outro"
+        | "venda_site"
+        | "reversao"
+        | "entrada_fornecedor"
+      stock_movement_type:
+        | "baixa_manual"
+        | "reversao"
+        | "entrada"
+        | "ajuste_manual"
+        | "venda_online"
+        | "venda_loja_fisica"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2006,7 +2231,25 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "moderator", "user"],
+      app_role: ["admin", "moderator", "user", "super_admin", "operador"],
+      stock_movement_reason: [
+        "venda_loja",
+        "produto_danificado",
+        "troca",
+        "ajuste_estoque",
+        "outro",
+        "venda_site",
+        "reversao",
+        "entrada_fornecedor",
+      ],
+      stock_movement_type: [
+        "baixa_manual",
+        "reversao",
+        "entrada",
+        "ajuste_manual",
+        "venda_online",
+        "venda_loja_fisica",
+      ],
     },
   },
 } as const
