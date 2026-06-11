@@ -42,7 +42,7 @@ const ProductCard = ({ product, onQuickView, priority = false }: ProductCardProp
     >
       <div
         className="overflow-hidden bg-muted relative rounded-md"
-        style={{ aspectRatio: '3 / 4', contain: 'layout paint' }}
+        style={{ aspectRatio: '4 / 5', contain: 'layout paint' }}
       >
         {isOutOfStock && (
           <div className="absolute inset-0 bg-background/60 flex items-center justify-center z-10">
