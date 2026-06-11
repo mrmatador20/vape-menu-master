@@ -180,6 +180,7 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
       visible_in_all: values.visible_in_all ?? true,
       image: (values.images && values.images[0]) || values.image || null,
       images: values.images ?? [],
+      image_position: values.image_position || 'center',
       description: values.description || null,
     };
 
