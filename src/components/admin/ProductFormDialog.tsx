@@ -57,6 +57,7 @@ const productSchema = z.object({
   visible_in_all: z.boolean().optional(),
   image: z.string().url("URL inválida").optional().or(z.literal("")),
   images: z.array(z.string().url()).max(12, "Máximo de 12 imagens").optional(),
+  image_position: z.string().optional(),
   description: z.string().optional(),
 });
 
