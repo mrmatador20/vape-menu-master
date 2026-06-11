@@ -78,8 +78,9 @@ const ProductCard = ({ product, onQuickView, priority = false }: ProductCardProp
           width={480}
           height={600}
           onLoad={() => setLoaded(true)}
+          style={{ objectPosition: product.image_position || 'center' }}
           className={cn(
-            'absolute inset-0 w-full h-full object-cover object-top transition-opacity duration-500',
+            'absolute inset-0 w-full h-full object-cover transition-opacity duration-500',
             loaded ? 'opacity-100' : 'opacity-0',
             hovered && secondary ? 'opacity-0' : ''
           )}
