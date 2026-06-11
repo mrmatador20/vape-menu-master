@@ -22,6 +22,7 @@ export interface Product {
   display_order?: number;
   visible_in_all?: boolean;
   sku?: string | null;
+  image_position?: string;
 }
 
 export interface CartItem extends Product {
