@@ -57,6 +57,7 @@ const productSchema = z.object({
   visible_in_all: z.boolean().optional(),
   image: z.string().url("URL inválida").optional().or(z.literal("")),
   images: z.array(z.string().url()).max(12, "Máximo de 12 imagens").optional(),
+  image_position: z.string().optional(),
   description: z.string().optional(),
 });
 
@@ -82,6 +83,7 @@ const defaults: ProductFormValues = {
   visible_in_all: true,
   image: "",
   images: [],
+  image_position: "center",
   description: "",
 };
 
@@ -126,6 +128,7 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
         images: (product as any).images && (product as any).images.length
           ? (product as any).images
           : (product.image ? [product.image] : []),
+        image_position: (product as any).image_position || "center",
         description: product.description || "",
       });
     } else {
@@ -157,6 +160,7 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
       images: (editingProduct as any).images && (editingProduct as any).images.length
         ? (editingProduct as any).images
         : (editingProduct.image ? [editingProduct.image] : []),
+      image_position: (editingProduct as any).image_position || "center",
       description: editingProduct.description || "",
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -176,6 +180,7 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
       visible_in_all: values.visible_in_all ?? true,
       image: (values.images && values.images[0]) || values.image || null,
       images: values.images ?? [],
+      image_position: values.image_position || 'center',
       description: values.description || null,
     };
 
@@ -347,7 +352,30 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
                       <FormMessage />
                     </FormItem>
                   )} />
+
+                  <FormField control={form.control} name="image_position" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Enquadramento da imagem no card</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value || 'center'}>
+                        <FormControl>
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="center top">Topo (mostra o rosto)</SelectItem>
+                          <SelectItem value="center">Centro (padrão)</SelectItem>
+                          <SelectItem value="center bottom">Base (mostra a parte de baixo)</SelectItem>
+                          <SelectItem value="left center">Esquerda</SelectItem>
+                          <SelectItem value="right center">Direita</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground">
+                        Define qual parte da foto fica visível quando ela é cortada no card. Use "Topo" para fotos onde o rosto/produto está em cima.
+                      </p>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
                 </TabsContent>
+
 
                 <TabsContent value="stock" className="space-y-4 mt-0">
                   <div className="grid grid-cols-2 gap-4">

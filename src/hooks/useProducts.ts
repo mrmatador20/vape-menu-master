@@ -37,6 +37,7 @@ export const useProducts = () => {
           display_order: product.display_order || 0,
           visible_in_all: product.visible_in_all ?? true,
           sku: (product as any).sku ?? null,
+          image_position: (product as any).image_position || 'center',
         };
       }).sort((a, b) => {
         if (a.display_order !== b.display_order) {
