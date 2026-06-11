@@ -160,6 +160,7 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
       images: (editingProduct as any).images && (editingProduct as any).images.length
         ? (editingProduct as any).images
         : (editingProduct.image ? [editingProduct.image] : []),
+      image_position: (editingProduct as any).image_position || "center",
       description: editingProduct.description || "",
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
