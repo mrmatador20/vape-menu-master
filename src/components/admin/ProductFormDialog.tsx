@@ -83,6 +83,7 @@ const defaults: ProductFormValues = {
   visible_in_all: true,
   image: "",
   images: [],
+  image_position: "center",
   description: "",
 };
 
