@@ -42,7 +42,7 @@ const ProductCard = ({ product, onQuickView, priority = false }: ProductCardProp
     >
       <div
         className="overflow-hidden bg-muted relative rounded-md"
-        style={{ aspectRatio: '1 / 1', contain: 'layout paint' }}
+        style={{ aspectRatio: '3 / 4', contain: 'layout paint' }}
       >
         {isOutOfStock && (
           <div className="absolute inset-0 bg-background/60 flex items-center justify-center z-10">
@@ -79,7 +79,7 @@ const ProductCard = ({ product, onQuickView, priority = false }: ProductCardProp
           height={600}
           onLoad={() => setLoaded(true)}
           className={cn(
-            'absolute inset-0 w-full h-full object-cover transition-opacity duration-500',
+            'absolute inset-0 w-full h-full object-cover object-top transition-opacity duration-500',
             loaded ? 'opacity-100' : 'opacity-0',
             hovered && secondary ? 'opacity-0' : ''
           )}
@@ -95,7 +95,7 @@ const ProductCard = ({ product, onQuickView, priority = false }: ProductCardProp
             decoding="async"
             width={480}
             height={600}
-            className="absolute inset-0 w-full h-full object-cover opacity-100 transition-opacity duration-500"
+            className="absolute inset-0 w-full h-full object-cover object-top opacity-100 transition-opacity duration-500"
           />
         )}
 
