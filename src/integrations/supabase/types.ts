@@ -745,7 +745,6 @@ export type Database = {
           display_order: number | null
           id: string
           image: string | null
-          image_position: string
           images: string[]
           min_stock: number | null
           name: string
@@ -765,7 +764,6 @@ export type Database = {
           display_order?: number | null
           id?: string
           image?: string | null
-          image_position?: string
           images?: string[]
           min_stock?: number | null
           name: string
@@ -785,7 +783,6 @@ export type Database = {
           display_order?: number | null
           id?: string
           image?: string | null
-          image_position?: string
           images?: string[]
           min_stock?: number | null
           name?: string

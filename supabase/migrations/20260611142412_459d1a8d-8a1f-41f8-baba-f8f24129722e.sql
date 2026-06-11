@@ -1,1 +1,0 @@
-ALTER TABLE public.products ADD COLUMN IF NOT EXISTS image_position text NOT NULL DEFAULT 'center';
