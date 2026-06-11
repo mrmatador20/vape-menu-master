@@ -128,6 +128,7 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
         images: (product as any).images && (product as any).images.length
           ? (product as any).images
           : (product.image ? [product.image] : []),
+        image_position: (product as any).image_position || "center",
         description: product.description || "",
       });
     } else {
