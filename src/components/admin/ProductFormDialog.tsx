@@ -352,7 +352,30 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
                       <FormMessage />
                     </FormItem>
                   )} />
+
+                  <FormField control={form.control} name="image_position" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Enquadramento da imagem no card</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value || 'center'}>
+                        <FormControl>
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="center top">Topo (mostra o rosto)</SelectItem>
+                          <SelectItem value="center">Centro (padrão)</SelectItem>
+                          <SelectItem value="center bottom">Base (mostra a parte de baixo)</SelectItem>
+                          <SelectItem value="left center">Esquerda</SelectItem>
+                          <SelectItem value="right center">Direita</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground">
+                        Define qual parte da foto fica visível quando ela é cortada no card. Use "Topo" para fotos onde o rosto/produto está em cima.
+                      </p>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
                 </TabsContent>
+
 
                 <TabsContent value="stock" className="space-y-4 mt-0">
                   <div className="grid grid-cols-2 gap-4">
