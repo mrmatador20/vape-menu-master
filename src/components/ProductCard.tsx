@@ -67,16 +67,16 @@ const ProductCard = ({ product, onQuickView, priority = false }: ProductCardProp
         )}
 
         <img
-          src={optimizedImage(primary, { width: 600, quality: 75 })}
-          srcSet={imageSrcSet(primary, [480, 600, 900], 75)}
+          src={optimizedImage(primary, { width: 1200, quality: 95 })}
+          srcSet={imageSrcSet(primary, [600, 900, 1200, 1600], 95)}
           sizes="(min-width: 1280px) 25vw, (min-width: 1024px) 33vw, 50vw"
           alt={product.name}
           loading={priority ? 'eager' : 'lazy'}
           // @ts-expect-error fetchpriority is valid HTML attribute
           fetchpriority={priority ? 'high' : 'low'}
           decoding="async"
-          width={480}
-          height={640}
+          width={800}
+          height={800}
           onLoad={() => setLoaded(true)}
           className={cn(
             'absolute inset-0 w-full h-full object-cover transition-opacity duration-500',
