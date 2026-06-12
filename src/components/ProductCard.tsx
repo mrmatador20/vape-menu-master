@@ -67,8 +67,8 @@ const ProductCard = ({ product, onQuickView, priority = false }: ProductCardProp
         )}
 
         <img
-          src={optimizedImage(primary, { width: 480, quality: 65 })}
-          srcSet={imageSrcSet(primary, [240, 360, 480, 720])}
+          src={optimizedImage(primary, { width: 600, quality: 75 })}
+          srcSet={imageSrcSet(primary, [480, 600, 900], 75)}
           sizes="(min-width: 1280px) 25vw, (min-width: 1024px) 33vw, 50vw"
           alt={product.name}
           loading={priority ? 'eager' : 'lazy'}
@@ -86,8 +86,8 @@ const ProductCard = ({ product, onQuickView, priority = false }: ProductCardProp
         />
         {secondary && hovered && (
           <img
-            src={optimizedImage(secondary, { width: 480, quality: 65 })}
-            srcSet={imageSrcSet(secondary, [240, 360, 480, 720])}
+            src={optimizedImage(secondary, { width: 600, quality: 75 })}
+            srcSet={imageSrcSet(secondary, [480, 600, 900], 75)}
             sizes="(min-width: 1280px) 25vw, (min-width: 1024px) 33vw, 50vw"
             alt=""
             aria-hidden="true"
