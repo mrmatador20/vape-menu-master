@@ -95,7 +95,7 @@ const ProductCard = ({ product, onQuickView, priority = false }: ProductCardProp
             decoding="async"
             width={480}
             height={640}
-            className="absolute inset-0 w-full h-full object-contain opacity-100 transition-opacity duration-500"
+            className="absolute inset-0 w-full h-full object-cover opacity-100 transition-opacity duration-500"
           />
         )}
 
