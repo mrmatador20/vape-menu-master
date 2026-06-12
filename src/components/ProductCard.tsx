@@ -79,23 +79,23 @@ const ProductCard = ({ product, onQuickView, priority = false }: ProductCardProp
           height={800}
           onLoad={() => setLoaded(true)}
           className={cn(
-            'absolute inset-0 w-full h-full object-cover transition-opacity duration-500',
+            'absolute inset-0 w-full h-full object-cover object-center transition-opacity duration-500',
             loaded ? 'opacity-100' : 'opacity-0',
             hovered && secondary ? 'opacity-0' : ''
           )}
         />
         {secondary && hovered && (
           <img
-            src={optimizedImage(secondary, { width: 600, quality: 75 })}
-            srcSet={imageSrcSet(secondary, [480, 600, 900], 75)}
+            src={optimizedImage(secondary, { width: 1200, quality: 95 })}
+            srcSet={imageSrcSet(secondary, [600, 900, 1200, 1600], 95)}
             sizes="(min-width: 1280px) 25vw, (min-width: 1024px) 33vw, 50vw"
             alt=""
             aria-hidden="true"
             loading="lazy"
             decoding="async"
-            width={480}
-            height={640}
-            className="absolute inset-0 w-full h-full object-cover opacity-100 transition-opacity duration-500"
+            width={800}
+            height={800}
+            className="absolute inset-0 w-full h-full object-cover object-center opacity-100 transition-opacity duration-500"
           />
         )}
 
