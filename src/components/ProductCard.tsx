@@ -41,8 +41,8 @@ const ProductCard = ({ product, onQuickView, priority = false }: ProductCardProp
       )}
     >
       <div
-        className="overflow-hidden bg-muted relative rounded-md"
-        style={{ aspectRatio: '3 / 4', contain: 'layout paint' }}
+        className="aspect-square overflow-hidden bg-muted relative rounded-md"
+        style={{ contain: 'layout paint' }}
       >
         {isOutOfStock && (
           <div className="absolute inset-0 bg-background/60 flex items-center justify-center z-10">
@@ -67,35 +67,35 @@ const ProductCard = ({ product, onQuickView, priority = false }: ProductCardProp
         )}
 
         <img
-          src={optimizedImage(primary, { width: 600, quality: 75 })}
-          srcSet={imageSrcSet(primary, [480, 600, 900], 75)}
+          src={optimizedImage(primary, { width: 1200, quality: 95 })}
+          srcSet={imageSrcSet(primary, [600, 900, 1200, 1600], 95)}
           sizes="(min-width: 1280px) 25vw, (min-width: 1024px) 33vw, 50vw"
           alt={product.name}
           loading={priority ? 'eager' : 'lazy'}
           // @ts-expect-error fetchpriority is valid HTML attribute
           fetchpriority={priority ? 'high' : 'low'}
           decoding="async"
-          width={480}
-          height={640}
+          width={800}
+          height={800}
           onLoad={() => setLoaded(true)}
           className={cn(
-            'absolute inset-0 w-full h-full object-cover transition-opacity duration-500',
+            'absolute inset-0 w-full h-full object-cover object-center transition-opacity duration-500',
             loaded ? 'opacity-100' : 'opacity-0',
             hovered && secondary ? 'opacity-0' : ''
           )}
         />
         {secondary && hovered && (
           <img
-            src={optimizedImage(secondary, { width: 600, quality: 75 })}
-            srcSet={imageSrcSet(secondary, [480, 600, 900], 75)}
+            src={optimizedImage(secondary, { width: 1200, quality: 95 })}
+            srcSet={imageSrcSet(secondary, [600, 900, 1200, 1600], 95)}
             sizes="(min-width: 1280px) 25vw, (min-width: 1024px) 33vw, 50vw"
             alt=""
             aria-hidden="true"
             loading="lazy"
             decoding="async"
-            width={480}
-            height={640}
-            className="absolute inset-0 w-full h-full object-cover opacity-100 transition-opacity duration-500"
+            width={800}
+            height={800}
+            className="absolute inset-0 w-full h-full object-cover object-center opacity-100 transition-opacity duration-500"
           />
         )}
 
