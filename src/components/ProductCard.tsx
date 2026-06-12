@@ -76,10 +76,10 @@ const ProductCard = ({ product, onQuickView, priority = false }: ProductCardProp
           fetchpriority={priority ? 'high' : 'low'}
           decoding="async"
           width={480}
-          height={600}
+          height={640}
           onLoad={() => setLoaded(true)}
           className={cn(
-            'absolute inset-0 w-full h-full object-cover transition-opacity duration-500',
+            'absolute inset-0 w-full h-full object-contain transition-opacity duration-500',
             loaded ? 'opacity-100' : 'opacity-0',
             hovered && secondary ? 'opacity-0' : ''
           )}
