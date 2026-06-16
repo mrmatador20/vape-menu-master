@@ -41,7 +41,7 @@ const ProductCard = ({ product, onQuickView, priority = false }: ProductCardProp
       )}
     >
       <div
-        className="aspect-square overflow-hidden bg-muted relative rounded-md"
+        className="aspect-square overflow-hidden bg-white relative rounded-md"
         style={{ contain: 'layout paint' }}
       >
         {isOutOfStock && (
