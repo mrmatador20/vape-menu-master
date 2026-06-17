@@ -133,7 +133,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Generate product list HTML
     const productsHtml = orderItems
-      .map(item => `<li style="padding: 8px 0; border-bottom: 1px solid #eee;">${item.name} (x${item.quantity})</li>`)
+      .map(item => `<li style="padding: 8px 0; border-bottom: 1px solid #eee;">${escHtml(item.name)} (x${escHtml(item.quantity)})</li>`)
       .join("");
 
     // Build email HTML with branded template
