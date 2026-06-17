@@ -8,6 +8,15 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+const escHtml = (s: unknown): string =>
+  String(s ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+
+
 interface NotifyDeliveryReviewRequest {
   orderId: string;
   userId: string;
@@ -124,7 +133,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Generate product list HTML
     const productsHtml = orderItems
-      .map(item => `<li style="padding: 8px 0; border-bottom: 1px solid #eee;">${item.name} (x${item.quantity})</li>`)
+      .map(item => `<li style="padding: 8px 0; border-bottom: 1px solid #eee;">${escHtml(item.name)} (x${escHtml(item.quantity)})</li>`)
       .join("");
 
     // Build email HTML with branded template
@@ -150,7 +159,7 @@ const handler = async (req: Request): Promise<Response> => {
           <!-- Content -->
           <div style="background-color: #1a1f26; padding: 30px; border-radius: 0 0 12px 12px;">
             <h2 style="color: #ffffff; margin: 0 0 20px 0; font-size: 20px;">
-              Olá${userName ? `, ${userName}` : ''}! 👋
+              Olá${userName ? `, ${escHtml(userName)}` : ''}! 👋
             </h2>
             
             <p style="color: #9ca3af; line-height: 1.6; margin: 0 0 20px 0;">

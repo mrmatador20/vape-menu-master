@@ -1975,6 +1975,19 @@ export type Database = {
         Args: { retention_days?: number }
         Returns: undefined
       }
+      client_check_rate_limit: {
+        Args: {
+          p_action: string
+          p_block_minutes: number
+          p_max_attempts: number
+          p_window_minutes: number
+        }
+        Returns: Json
+      }
+      client_reset_rate_limit: {
+        Args: { p_action: string }
+        Returns: undefined
+      }
       export_user_data: { Args: never; Returns: Json }
       generate_referral_code: { Args: never; Returns: string }
       generate_unique_coupon_code: { Args: never; Returns: string }
