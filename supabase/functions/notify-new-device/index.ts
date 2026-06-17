@@ -12,6 +12,16 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
+const escHtml = (s: unknown): string =>
+  String(s ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+
+
+
 interface NotifyNewDeviceRequest {
   deviceName: string;
   deviceFingerprint: string;
