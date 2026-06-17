@@ -264,35 +264,36 @@ serve(async (req) => {
           <body>
             <div class="container">
               <div class="header">
-                <h1>🎉 Parabéns, ${referrerProfile.full_name || 'Cliente'}!</h1>
+                <h1>🎉 Parabéns, ${escHtml(referrerProfile.full_name || 'Cliente')}!</h1>
                 <p>Você ganhou pontos de indicação</p>
               </div>
               
               <div class="content">
                 <div class="points-box">
                   <div class="points-label">Você ganhou</div>
-                  <div class="points-number">+${pointsAwarded}</div>
+                  <div class="points-number">+${escHtml(pointsAwarded)}</div>
                   <div class="points-label">pontos</div>
                 </div>
                 
                 <p class="info-text">
-                  Um pedido feito usando seu código de indicação <strong>${referrerProfile.referral_code}</strong> foi confirmado! 
+                  Um pedido feito usando seu código de indicação <strong>${escHtml(referrerProfile.referral_code)}</strong> foi confirmado! 
                   Agora você tem mais pontos para trocar por recompensas incríveis.
                 </p>
                 
                 <div class="stats-grid">
                   <div class="stat-card">
-                    <div class="stat-value">${currentBalance}</div>
+                    <div class="stat-value">${escHtml(currentBalance)}</div>
                     <div class="stat-label">Saldo Atual</div>
                   </div>
                   <div class="stat-card">
-                    <div class="stat-value">${totalEarned}</div>
+                    <div class="stat-value">${escHtml(totalEarned)}</div>
                     <div class="stat-label">Total Ganho</div>
                   </div>
                 </div>
                 
                 <p class="info-text" style="text-align: center; margin-top: 30px;">
-                  Continue compartilhando seu código <strong>${referrerProfile.referral_code}</strong> para ganhar mais pontos!
+                  Continue compartilhando seu código <strong>${escHtml(referrerProfile.referral_code)}</strong> para ganhar mais pontos!
+
                 </p>
                 
                 <div style="text-align: center;">
