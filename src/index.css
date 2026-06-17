@@ -110,11 +110,24 @@
   }
 }
 
-a[href*="lovable.dev"], iframe[src*="lovable.dev"], div[style*="Edit with Lovable"], .lovable-badge {
+a[href*="lovable.dev"],
+a[href*="lovable"],
+iframe[src*="lovable.dev"],
+iframe[src*="lovable"],
+div[style*="Edit with Lovable"],
+div[class*="lovable"],
+[class*="lovable-badge"],
+[id*="lovable-badge"],
+.lovable-badge,
+.lovable-edit-button,
+[data-lovable] {
   display: none !important;
   opacity: 0 !important;
   visibility: hidden !important;
   pointer-events: none !important;
   position: absolute !important;
   z-index: -9999 !important;
+  width: 0 !important;
+  height: 0 !important;
+  overflow: hidden !important;
 }
