@@ -159,7 +159,7 @@ const handler = async (req: Request): Promise<Response> => {
           <!-- Content -->
           <div style="background-color: #1a1f26; padding: 30px; border-radius: 0 0 12px 12px;">
             <h2 style="color: #ffffff; margin: 0 0 20px 0; font-size: 20px;">
-              Olá${userName ? `, ${userName}` : ''}! 👋
+              Olá${userName ? `, ${escHtml(userName)}` : ''}! 👋
             </h2>
             
             <p style="color: #9ca3af; line-height: 1.6; margin: 0 0 20px 0;">
