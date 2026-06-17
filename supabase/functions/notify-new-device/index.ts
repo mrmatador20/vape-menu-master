@@ -205,18 +205,19 @@ const handler = async (req: Request): Promise<Response> => {
             <div class="content">
               <div class="alert-box">
                 <h2>🔔 Novo Dispositivo Confiável</h2>
-                <p>Olá ${userName},</p>
+                <p>Olá ${escHtml(userName)},</p>
                 <p>Um novo dispositivo foi adicionado à lista de dispositivos confiáveis da sua conta. Este dispositivo não precisará de verificação 2FA pelos próximos 30 dias.</p>
               </div>
 
               <div class="device-info">
                 <div class="device-info-row">
                   <span class="device-info-label">Dispositivo:</span>
-                  <span class="device-info-value">${deviceType}</span>
+                  <span class="device-info-value">${escHtml(deviceType)}</span>
                 </div>
                 <div class="device-info-row">
                   <span class="device-info-label">Nome:</span>
-                  <span class="device-info-value">${deviceName}</span>
+                  <span class="device-info-value">${escHtml(deviceName)}</span>
+
                 </div>
                 <div class="device-info-row">
                   <span class="device-info-label">Data:</span>
