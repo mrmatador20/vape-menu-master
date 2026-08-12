@@ -122,40 +122,68 @@ export default function StockLogs() {
         </CardContent>
       </Card>
 
-      <div className="overflow-x-auto shadow-sm rounded-lg border bg-card">
-          <Table className="min-w-[850px]">
+      {/* Mobile: cards */}
+      <div className="block sm:hidden space-y-3">
+        {isLoading ? (
+          <div className="text-center py-6">Carregando…</div>
+        ) : movements.length === 0 ? (
+          <div className="text-center py-6 text-muted-foreground">Sem movimentações.</div>
+        ) : movements.map((m) => (
+          <div key={m.id} className={`rounded-lg border bg-card p-3 shadow-sm space-y-2 ${m.reversed_by_movement_id ? 'opacity-60' : ''}`}>
+            <div className="flex items-start justify-between gap-2">
+              <span className="text-xs text-muted-foreground">{new Date(m.created_at).toLocaleString('pt-BR')}</span>
+              <Badge variant={typeVariant(m.movement_type)}>{typeLabel[m.movement_type] ?? m.movement_type}</Badge>
+            </div>
+            <div className="min-w-0">
+              <p className="font-semibold break-words">{m.product_name_snapshot}</p>
+              <p className="font-mono text-xs text-muted-foreground break-all">SKU: {m.product_sku_snapshot ?? '—'}</p>
+            </div>
+            <div className="text-xs space-y-1">
+              <p className="break-all text-muted-foreground">{m.user_email_snapshot ?? '—'}</p>
+              <p className="font-medium">Estoque: {m.stock_before} ➔ {m.stock_after} <span className="text-muted-foreground">({m.quantity})</span></p>
+              <p className="break-words text-muted-foreground">Motivo: {m.reason ?? '—'}{m.notes ? ` — ${m.notes}` : ''}</p>
+            </div>
+            {canReverter && !m.reversed_by_movement_id && m.movement_type !== 'reversao' && (
+              <Button size="sm" variant="outline" className="w-full" onClick={() => onReverter(m)} disabled={reverter.isPending}>
+                <RotateCcw className="h-4 w-4 mr-1" /> Reverter
+              </Button>
+            )}
+            {m.reversed_by_movement_id && <Badge variant="outline">Revertida</Badge>}
+          </div>
+        ))}
+      </div>
+
+      {/* Desktop: tabela */}
+      <div className="hidden sm:block shadow-sm rounded-lg border bg-card">
+          <Table className="w-full table-fixed">
             <TableHeader>
               <TableRow>
-                <TableHead>Data/Hora</TableHead>
-                <TableHead>Usuário</TableHead>
+                <TableHead className="w-[140px]">Data/Hora</TableHead>
+                <TableHead className="w-[160px]">Usuário</TableHead>
                 <TableHead>Produto</TableHead>
-                <TableHead>SKU</TableHead>
-                <TableHead>Tipo</TableHead>
-                <TableHead className="text-right">Qtd</TableHead>
-                <TableHead className="text-right">Antes</TableHead>
-                <TableHead className="text-right">Depois</TableHead>
-                <TableHead>Motivo</TableHead>
-                <TableHead></TableHead>
+                <TableHead className="w-[110px]">SKU</TableHead>
+                <TableHead className="w-[120px]">Tipo</TableHead>
+                <TableHead className="w-[140px]">Alteração de Estoque</TableHead>
+                <TableHead className="w-[160px]">Motivo</TableHead>
+                <TableHead className="w-[110px]"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableRow><TableCell colSpan={10} className="text-center py-6">Carregando…</TableCell></TableRow>
+                <TableRow><TableCell colSpan={8} className="text-center py-6">Carregando…</TableCell></TableRow>
               ) : movements.length === 0 ? (
-                <TableRow><TableCell colSpan={10} className="text-center py-6 text-muted-foreground">Sem movimentações.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={8} className="text-center py-6 text-muted-foreground">Sem movimentações.</TableCell></TableRow>
               ) : movements.map((m) => (
                 <TableRow key={m.id} className={m.reversed_by_movement_id ? 'opacity-60' : ''}>
-                  <TableCell className="whitespace-nowrap text-xs">
+                  <TableCell className="text-xs truncate">
                     {new Date(m.created_at).toLocaleString('pt-BR')}
                   </TableCell>
-                  <TableCell className="text-xs">{m.user_email_snapshot ?? '—'}</TableCell>
-                  <TableCell className="max-w-[240px] truncate">{m.product_name_snapshot}</TableCell>
-                  <TableCell className="font-mono text-xs">{m.product_sku_snapshot ?? '—'}</TableCell>
-                  <TableCell><Badge variant={typeVariant(m.movement_type)}>{typeLabel[m.movement_type] ?? m.movement_type}</Badge></TableCell>
-                  <TableCell className="text-right">{m.quantity}</TableCell>
-                  <TableCell className="text-right">{m.stock_before}</TableCell>
-                  <TableCell className="text-right">{m.stock_after}</TableCell>
-                  <TableCell className="text-xs">{m.reason ?? '—'}{m.notes ? ` — ${m.notes}` : ''}</TableCell>
+                  <TableCell className="text-xs truncate max-w-[160px]" title={m.user_email_snapshot ?? ''}>{m.user_email_snapshot ?? '—'}</TableCell>
+                  <TableCell className="truncate" title={m.product_name_snapshot}>{m.product_name_snapshot}</TableCell>
+                  <TableCell className="font-mono text-xs truncate">{m.product_sku_snapshot ?? '—'}</TableCell>
+                  <TableCell className="truncate"><Badge variant={typeVariant(m.movement_type)}>{typeLabel[m.movement_type] ?? m.movement_type}</Badge></TableCell>
+                  <TableCell className="text-xs whitespace-nowrap font-medium">{m.stock_before} ➔ {m.stock_after} <span className="text-muted-foreground">({m.quantity})</span></TableCell>
+                  <TableCell className="text-xs truncate max-w-[160px]" title={`${m.reason ?? ''}${m.notes ? ` — ${m.notes}` : ''}`}>{m.reason ?? '—'}{m.notes ? ` — ${m.notes}` : ''}</TableCell>
                   <TableCell>
                     {canReverter && !m.reversed_by_movement_id && m.movement_type !== 'reversao' && (
                       <Button size="sm" variant="ghost" onClick={() => onReverter(m)} disabled={reverter.isPending}>
@@ -169,6 +197,7 @@ export default function StockLogs() {
             </TableBody>
           </Table>
       </div>
+
     </div>
   );
 }
