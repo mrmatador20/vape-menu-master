@@ -1,15 +1,20 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Package, ShoppingCart, AlertCircle, DollarSign, Star, TrendingUp } from "lucide-react";
 import { LowStockAlert } from "@/components/admin/LowStockAlert";
 import { Progress } from "@/components/ui/progress";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from "recharts";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useSalesChannelStats, pickChannel, type SalesChannel } from "@/hooks/useSalesChannels";
 import { Navigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 
 export default function AdminDashboard() {
   const { data: role, isLoading: roleLoading } = useUserRole();
+  const [channel, setChannel] = useState<SalesChannel>('all');
 
   if (roleLoading) {
     return (
