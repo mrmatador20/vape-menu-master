@@ -20,6 +20,8 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { playSound, SOUND_PRESETS, type SoundId } from "@/lib/notificationSounds";
+import { playOrderAlert, primeOrderAlert } from "@/lib/orderAlert";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
 
 type OrderNotification = {
   id: string;
@@ -29,11 +31,23 @@ type OrderNotification = {
   read: boolean;
 };
 
+type BellSoundId = SoundId | "order_alert";
+
+const SOUND_OPTIONS: { id: BellSoundId; label: string; description: string }[] = [
+  {
+    id: "order_alert",
+    label: "Alerta de Pedido",
+    description: "Campainha do arquivo order-alert.mp3",
+  },
+  ...SOUND_PRESETS,
+];
+
 const STORAGE_KEY = "admin_order_notifications";
 const MUTE_KEY = "admin_order_notifications_muted";
 const SOUND_KEY = "admin_order_notifications_sound";
-const DEFAULT_SOUND: SoundId = "ding_dong";
+const DEFAULT_SOUND: BellSoundId = "order_alert";
 const MAX_STORED = 20;
+
 
 export function OrderNotificationBell() {
   const navigate = useNavigate();
