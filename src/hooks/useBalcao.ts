@@ -49,9 +49,12 @@ export const useStockMovements = (filters: StockMovementFilters = {}) => {
       if (filters.from) q = q.gte('created_at', filters.from);
       if (filters.to) q = q.lte('created_at', filters.to);
       if (filters.search) {
-        q = q.or(
-          `product_name_snapshot.ilike.%${filters.search}%,product_sku_snapshot.ilike.%${filters.search}%`,
-        );
+        const s = filters.search.replace(/[,()]/g, ' ').trim();
+        if (s) {
+          q = q.or(
+            `product_name_snapshot.ilike.%${s}%,product_sku_snapshot.ilike.%${s}%,user_email_snapshot.ilike.%${s}%`,
+          );
+        }
       }
       const { data, error } = await q;
       if (error) throw error;
