@@ -47,3 +47,6 @@ verify_jwt = true
 
 [functions.notify-log-cleanup]
 verify_jwt = true
+
+[functions.send-order-notification]
+verify_jwt = false
