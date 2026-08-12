@@ -70,7 +70,7 @@ export default function StockLogs() {
 
   return (
     <div className="p-4 md:p-6 space-y-4">
-      <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold">Logs de Estoque</h1>
           <p className="text-sm text-muted-foreground">
@@ -78,7 +78,7 @@ export default function StockLogs() {
           </p>
         </div>
         {canExport && (
-          <div className="flex gap-2">
+          <div className="grid grid-cols-3 gap-2 w-full sm:w-auto sm:flex">
             <Button variant="outline" size="sm" onClick={() => exportStockLogsCsv(movements)}>
               <Download className="h-4 w-4 mr-1" /> CSV
             </Button>
