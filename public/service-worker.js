@@ -42,10 +42,10 @@ self.addEventListener('fetch', (event) => {
 });
 
 self.addEventListener('push', (event) => {
-  console.log('[Service Worker] Push notification received', event);
+  console.log('[Service Worker] Push notification received');
 
-  let data = { title: 'Vape-Menu-Express', body: 'Nova notificação' };
-  
+  let data = { title: 'Fox Velour', body: 'Nova notificação' };
+
   if (event.data) {
     try {
       data = event.data.json();
@@ -56,19 +56,36 @@ self.addEventListener('push', (event) => {
 
   const options = {
     body: data.body,
-    icon: '/favicon.ico',
-    badge: '/favicon.ico',
-    vibrate: [200, 100, 200],
+    icon: data.icon || '/favicon.ico',
+    badge: data.badge || '/favicon.ico',
+    // Som de alerta (suportado em navegadores que implementam a opção)
+    sound: data.sound || '/sounds/order-alert.mp3',
+    vibrate: data.vibrate || [500, 110, 500, 110, 500],
+    requireInteraction: data.requireInteraction !== false,
+    tag: data.tag || 'new-order',
+    renotify: true,
+    silent: false,
+    timestamp: Date.now(),
     data: {
       url: data.url || '/',
+      sound: data.sound || '/sounds/order-alert.mp3',
     },
-    actions: data.actions || [],
+    actions: data.actions || [{ action: 'open', title: 'Ver pedido' }],
   };
 
   event.waitUntil(
-    self.registration.showNotification(data.title, options)
+    (async () => {
+      await self.registration.showNotification(data.title, options);
+
+      // Se houver alguma aba aberta do painel, pede para ela tocar o som
+      const clientList = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+      for (const client of clientList) {
+        client.postMessage({ type: 'PLAY_ORDER_ALERT', sound: options.data.sound });
+      }
+    })()
   );
 });
+
 
 self.addEventListener('notificationclick', (event) => {
   console.log('[Service Worker] Notification clicked');
