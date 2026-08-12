@@ -1,5 +1,5 @@
 import { Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
-import { SidebarProvider } from "@/components/ui/sidebar";
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import { useUserRole } from "@/hooks/useUserRole";
 import { supabase } from "@/integrations/supabase/client";
@@ -235,10 +235,13 @@ export default function AdminLayout() {
       <div className="min-h-screen flex w-full">
         <AdminSidebar />
         <main className="flex-1 overflow-auto">
-          <div className="sticky top-0 z-30 flex items-center justify-end gap-2 px-6 py-3 border-b bg-background/80 backdrop-blur">
-            <OrderNotificationBell />
+          <div className="sticky top-0 z-30 flex items-center justify-between gap-2 px-4 md:px-6 py-3 border-b bg-background/80 backdrop-blur">
+            <SidebarTrigger className="block md:hidden" />
+            <div className="flex items-center gap-2 ml-auto">
+              <OrderNotificationBell />
+            </div>
           </div>
-          <div className="p-6">
+          <div className="p-4 md:p-6">
             <Outlet />
           </div>
         </main>
