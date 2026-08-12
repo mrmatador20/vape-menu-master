@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,25 +12,17 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useBalcaoSales, type SalesChannelFilter as Channel } from "@/hooks/useBalcaoSales";
+import { SalesChannelFilter } from "@/components/admin/SalesChannelFilter";
 import { Navigate } from "react-router-dom";
 
 export default function AdminStats() {
   const { data: role, isLoading: roleLoading } = useUserRole();
   const [dateFrom, setDateFrom] = useState<Date | undefined>();
   const [dateTo, setDateTo] = useState<Date | undefined>();
+  const [channel, setChannel] = useState<Channel>('all');
 
-  if (roleLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  if (role !== 'admin') {
-    return <Navigate to="/" replace />;
-  }
-  const { data: salesData, isLoading } = useQuery({
+  const { data: rawSalesData, isLoading } = useQuery({
     queryKey: ['admin-sales-stats', dateFrom, dateTo],
     queryFn: async () => {
       // Vendas por mês
@@ -105,6 +97,74 @@ export default function AdminStats() {
     },
   });
 
+  const toIsoExclusive = dateTo ? new Date(new Date(dateTo).setDate(dateTo.getDate() + 1)).toISOString() : undefined;
+  const { data: balcaoSales } = useBalcaoSales(dateFrom?.toISOString(), toIsoExclusive);
+
+  const salesData = useMemo(() => {
+    const bal = balcaoSales ?? [];
+    const base = rawSalesData;
+    if (!base && bal.length === 0) return base;
+
+    const onlineRevenue = channel === 'balcao' ? 0 : base?.totalRevenue ?? 0;
+    const onlineOrders = channel === 'balcao' ? 0 : base?.totalOrders ?? 0;
+    const balRevenue = channel === 'online' ? 0 : bal.reduce((s2, m) => s2 + m.revenue, 0);
+    const balOrders = channel === 'online' ? 0 : bal.length;
+
+    // Vendas por mês
+    const monthly = new Map<string, { month: string; total: number; count: number }>();
+    if (channel !== 'balcao') {
+      ((base?.monthlyData as any[]) ?? []).forEach((m: any) => monthly.set(m.month, { ...m }));
+    }
+    if (channel !== 'online') {
+      bal.forEach((m) => {
+        const month = new Date(m.created_at).toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' });
+        const e = monthly.get(month) ?? { month, total: 0, count: 0 };
+        e.total += m.revenue;
+        e.count += 1;
+        monthly.set(month, e);
+      });
+    }
+
+    // Top produtos
+    const products = new Map<string, { name: string; quantity: number }>();
+    if (channel !== 'balcao') {
+      ((base?.topProducts as any[]) ?? []).forEach((p: any) => products.set(p.name, { ...p }));
+    }
+    if (channel !== 'online') {
+      bal.forEach((m) => {
+        const e = products.get(m.product_name) ?? { name: m.product_name, quantity: 0 };
+        e.quantity += m.quantity;
+        products.set(m.product_name, e);
+      });
+    }
+
+    const statusData = channel === 'balcao'
+      ? [{ status: 'balcao', count: balOrders, total: balRevenue }]
+      : channel === 'online'
+        ? (base?.statusData ?? [])
+        : [...((base?.statusData as any[]) ?? []), ...(balOrders ? [{ status: 'balcao', count: balOrders, total: balRevenue }] : [])];
+
+    return {
+      monthlyData: Array.from(monthly.values()).slice(-6),
+      statusData,
+      topProducts: Array.from(products.values()).sort((a, b) => b.quantity - a.quantity).slice(0, 5),
+      totalRevenue: onlineRevenue + balRevenue,
+      totalOrders: onlineOrders + balOrders,
+    };
+  }, [rawSalesData, balcaoSales, channel]);
+
+  if (roleLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (role !== 'admin') {
+    return <Navigate to="/" replace />;
+  }
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -120,6 +180,8 @@ export default function AdminStats() {
         <h1 className="text-3xl font-bold">Dashboard de Vendas</h1>
         <p className="text-muted-foreground">Visualize estatísticas e gráficos de vendas</p>
       </div>
+
+      <SalesChannelFilter value={channel} onChange={setChannel} />
 
       <Card>
         <CardHeader>
@@ -240,6 +302,8 @@ export default function AdminStats() {
         <h1 className="text-3xl font-bold">Dashboard de Vendas</h1>
         <p className="text-muted-foreground">Visualize estatísticas e gráficos de vendas</p>
       </div>
+
+      <SalesChannelFilter value={channel} onChange={setChannel} />
 
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
