@@ -1,15 +1,20 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Package, ShoppingCart, AlertCircle, DollarSign, Star, TrendingUp } from "lucide-react";
 import { LowStockAlert } from "@/components/admin/LowStockAlert";
 import { Progress } from "@/components/ui/progress";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from "recharts";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useSalesChannelStats, pickChannel, type SalesChannel } from "@/hooks/useSalesChannels";
 import { Navigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 
 export default function AdminDashboard() {
   const { data: role, isLoading: roleLoading } = useUserRole();
+  const [channel, setChannel] = useState<SalesChannel>('all');
 
   if (roleLoading) {
     return (
@@ -22,6 +27,9 @@ export default function AdminDashboard() {
   if (role !== 'admin') {
     return <Navigate to="/" replace />;
   }
+  const { data: channelStats } = useSalesChannelStats();
+  const channelData = pickChannel(channelStats, channel);
+
   const { data: stats } = useQuery({
     queryKey: ['admin-stats'],
     queryFn: async () => {
@@ -101,6 +109,9 @@ export default function AdminDashboard() {
     },
   });
 
+  const channelLabel =
+    channel === 'online' ? 'Somente loja online' : channel === 'balcao' ? 'Somente balcão (PDV)' : 'Online + balcão (PDV)';
+
   const statCards = [
     {
       title: "Total de Produtos",
@@ -109,10 +120,10 @@ export default function AdminDashboard() {
       description: "Produtos cadastrados",
     },
     {
-      title: "Pedidos Recebidos",
-      value: stats?.totalOrders || 0,
+      title: channel === 'balcao' ? "Vendas no Balcão" : "Pedidos Recebidos",
+      value: channelData.orders,
       icon: ShoppingCart,
-      description: "Total de pedidos",
+      description: channelLabel,
     },
     {
       title: "Estoque Baixo",
@@ -123,17 +134,29 @@ export default function AdminDashboard() {
     },
     {
       title: "Receita Total",
-      value: `R$ ${(stats?.totalRevenue || 0).toFixed(2)}`,
+      value: `R$ ${channelData.revenue.toFixed(2)}`,
       icon: DollarSign,
-      description: "Valor total em vendas",
+      description: channelLabel,
     },
   ];
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Dashboard</h1>
-        <p className="text-muted-foreground">Visão geral do seu e-commerce</p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold">Dashboard</h1>
+          <p className="text-muted-foreground">Visão geral do seu e-commerce</p>
+        </div>
+        <Select value={channel} onValueChange={(v) => setChannel(v as SalesChannel)}>
+          <SelectTrigger className="w-full sm:w-[220px]">
+            <SelectValue placeholder="Canal de venda" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos os Canais</SelectItem>
+            <SelectItem value="online">Somente Loja Online</SelectItem>
+            <SelectItem value="balcao">Somente Balcão (PDV)</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -152,6 +175,32 @@ export default function AdminDashboard() {
           </Card>
         ))}
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Receita por dia (últimos 30 dias) — {channelLabel}</CardTitle>
+        </CardHeader>
+        <CardContent className="h-72">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={channelData.chart}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="day" tick={{ fontSize: 11 }} interval="preserveStartEnd" />
+              <YAxis tick={{ fontSize: 11 }} />
+              <Tooltip formatter={(v: number) => `R$ ${Number(v).toFixed(2)}`} />
+              <Legend />
+              {(channel === 'all' || channel === 'online') && (
+                <Line type="monotone" dataKey="online" name="Loja Online" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} />
+              )}
+              {(channel === 'all' || channel === 'balcao') && (
+                <Line type="monotone" dataKey="balcao" name="Balcão (PDV)" stroke="hsl(var(--muted-foreground))" strokeWidth={2} dot={false} />
+              )}
+              {channel === 'all' && (
+                <Line type="monotone" dataKey="total" name="Total" stroke="hsl(var(--destructive))" strokeWidth={1} dot={false} strokeDasharray="4 4" />
+              )}
+            </LineChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
 
       <LowStockAlert />
 
