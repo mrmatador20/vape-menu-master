@@ -62,17 +62,24 @@ export function OrderNotificationBell() {
   const [muted, setMuted] = useState<boolean>(
     () => localStorage.getItem(MUTE_KEY) === "1",
   );
-  const [soundId, setSoundId] = useState<SoundId>(() => {
-    const stored = localStorage.getItem(SOUND_KEY) as SoundId | null;
-    return stored && SOUND_PRESETS.some((s) => s.id === stored)
+  const [soundId, setSoundId] = useState<BellSoundId>(() => {
+    const stored = localStorage.getItem(SOUND_KEY) as BellSoundId | null;
+    return stored && SOUND_OPTIONS.some((s) => s.id === stored)
       ? stored
       : DEFAULT_SOUND;
   });
   const [ringing, setRinging] = useState(false);
   const mutedRef = useRef(muted);
   mutedRef.current = muted;
-  const soundRef = useRef<SoundId>(soundId);
+  const soundRef = useRef<BellSoundId>(soundId);
   soundRef.current = soundId;
+  const { isSupported: pushSupported, permission: pushPermission, enablePush } =
+    usePushNotifications();
+
+  const playSelected = (id: BellSoundId) => {
+    if (id === "order_alert") void playOrderAlert();
+    else playSound(id);
+  };
 
   // persist
   useEffect(() => {
@@ -84,6 +91,33 @@ export function OrderNotificationBell() {
   useEffect(() => {
     localStorage.setItem(SOUND_KEY, soundId);
   }, [soundId]);
+
+  // Destrava o áudio no primeiro gesto do usuário
+  useEffect(() => {
+    const unlock = () => {
+      void primeOrderAlert();
+      window.removeEventListener("pointerdown", unlock);
+      window.removeEventListener("keydown", unlock);
+    };
+    window.addEventListener("pointerdown", unlock);
+    window.addEventListener("keydown", unlock);
+    return () => {
+      window.removeEventListener("pointerdown", unlock);
+      window.removeEventListener("keydown", unlock);
+    };
+  }, []);
+
+  // Som acionado pelo Service Worker (push recebido com a aba aberta)
+  useEffect(() => {
+    if (!("serviceWorker" in navigator)) return;
+    const onMessage = (event: MessageEvent) => {
+      if (event.data?.type === "PLAY_ORDER_ALERT" && !mutedRef.current) {
+        void playOrderAlert();
+      }
+    };
+    navigator.serviceWorker.addEventListener("message", onMessage);
+    return () => navigator.serviceWorker.removeEventListener("message", onMessage);
+  }, []);
 
   // realtime subscription
   useEffect(() => {
@@ -107,7 +141,7 @@ export function OrderNotificationBell() {
             return [newItem, ...prev].slice(0, MAX_STORED);
           });
 
-          if (!mutedRef.current) playSound(soundRef.current);
+          if (!mutedRef.current) playSelected(soundRef.current);
           setRinging(true);
           setTimeout(() => setRinging(false), 2500);
 
@@ -126,6 +160,7 @@ export function OrderNotificationBell() {
       supabase.removeChannel(channel);
     };
   }, [navigate]);
+
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
