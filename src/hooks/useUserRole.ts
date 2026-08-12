@@ -61,7 +61,7 @@ export const useBalcaoRole = () => {
     canBaixa: has('super_admin') || has('admin') || has('operador'),
     canEntrada: has('super_admin') || has('admin'),
     canAjuste: has('super_admin'),
-    canReverter: has('super_admin'),
+    canReverter: has('super_admin') || has('admin'),
     canSeeAllLogs: has('super_admin') || has('admin'),
     canExport: has('super_admin') || has('admin'),
   };
