@@ -69,6 +69,12 @@ const invalidate = (qc: ReturnType<typeof useQueryClient>) => {
   qc.invalidateQueries({ queryKey: ['flavors'] });
   qc.invalidateQueries({ queryKey: ['stock-movements'] });
   qc.invalidateQueries({ queryKey: ['balcao-dashboard'] });
+  // Dashboard principal (KPIs consolidados, estoque baixo e previsões)
+  qc.invalidateQueries({ queryKey: ['admin-stats'] });
+  qc.invalidateQueries({ queryKey: ['dashboard-channel-stats'] });
+  qc.invalidateQueries({ queryKey: ['analytics-stock-forecast'] });
+  qc.invalidateQueries({ queryKey: ['analytics-sales'] });
+  qc.invalidateQueries({ queryKey: ['analytics-top-sold'] });
 };
 
 export const useBalcaoBaixa = () => {
