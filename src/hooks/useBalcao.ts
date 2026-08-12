@@ -75,6 +75,8 @@ const invalidate = (qc: ReturnType<typeof useQueryClient>) => {
   qc.invalidateQueries({ queryKey: ['analytics-stock-forecast'] });
   qc.invalidateQueries({ queryKey: ['analytics-sales'] });
   qc.invalidateQueries({ queryKey: ['analytics-top-sold'] });
+  qc.invalidateQueries({ queryKey: ['balcao-sales'] });
+  qc.invalidateQueries({ queryKey: ['admin-sales-stats'] });
 };
 
 export const useBalcaoBaixa = () => {
