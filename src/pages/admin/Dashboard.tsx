@@ -27,6 +27,9 @@ export default function AdminDashboard() {
   if (role !== 'admin') {
     return <Navigate to="/" replace />;
   }
+  const { data: channelStats } = useSalesChannelStats();
+  const channelData = pickChannel(channelStats, channel);
+
   const { data: stats } = useQuery({
     queryKey: ['admin-stats'],
     queryFn: async () => {
