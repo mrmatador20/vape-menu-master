@@ -96,26 +96,34 @@ export default function StockLogs() {
         <CardContent className="p-4 grid grid-cols-1 md:grid-cols-5 gap-2">
           <div className="relative md:col-span-2">
             <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <Input className="pl-9" placeholder="Buscar produto ou SKU…" value={search} onChange={(e) => setSearch(e.target.value)} />
+            <Input className="pl-9" placeholder="Buscar produto, SKU ou e-mail…" value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
           <Select value={type} onValueChange={setType}>
-            <SelectTrigger><SelectValue placeholder="Tipo" /></SelectTrigger>
+            <SelectTrigger><SelectValue placeholder="Todos os tipos" /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Todos tipos</SelectItem>
-              {Object.entries(typeLabel).map(([v, l]) => <SelectItem key={v} value={v}>{l}</SelectItem>)}
+              <SelectItem value="all">Todos os tipos</SelectItem>
+              <SelectItem value="venda_loja_fisica">Venda Loja Física</SelectItem>
+              <SelectItem value="reversao">Reversão</SelectItem>
+              <SelectItem value="ajuste_manual">Ajuste Manual</SelectItem>
+              <SelectItem value="entrada">Entrada de Estoque</SelectItem>
             </SelectContent>
           </Select>
-          <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} placeholder="De" />
-          <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} placeholder="Até" />
+          <div className="space-y-1">
+            <label className="text-xs text-muted-foreground">Data inicial</label>
+            <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs text-muted-foreground">Data final</label>
+            <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
+          </div>
           {canSeeAllLogs && (
             <Input className="md:col-span-5" placeholder="Filtrar por email do usuário…" value={userEmail} onChange={(e) => setUserEmail(e.target.value)} />
           )}
         </CardContent>
       </Card>
 
-      <Card>
-        <CardContent className="p-0 overflow-x-auto">
-          <Table>
+      <div className="overflow-x-auto shadow-sm rounded-lg border bg-card">
+          <Table className="min-w-[850px]">
             <TableHeader>
               <TableRow>
                 <TableHead>Data/Hora</TableHead>
