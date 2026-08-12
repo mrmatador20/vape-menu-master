@@ -168,8 +168,7 @@ export default function StockLogs() {
               ))}
             </TableBody>
           </Table>
-        </CardContent>
-      </Card>
+      </div>
     </div>
   );
 }
