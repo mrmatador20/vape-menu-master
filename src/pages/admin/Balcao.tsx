@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent } from '@/components/ui/card';
 import { Search, PackageMinus, Lock } from 'lucide-react';
 import { BalcaoBaixaDialog } from '@/components/admin/BalcaoBaixaDialog';
+import { RecentBalcaoMovements } from '@/components/admin/RecentBalcaoMovements';
 import type { Product } from '@/context/CartContext';
 
 const stockStatus = (p: Product) => {
