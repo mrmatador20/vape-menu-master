@@ -156,7 +156,7 @@ export default function AdminReports() {
             <div className="h-full flex items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
           ) : (
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={sales?.series || []} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
+              <LineChart data={merged.series} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
                 <XAxis dataKey="date" tickFormatter={(v) => v.slice(5)} fontSize={11} />
                 <YAxis fontSize={11} tickFormatter={(v) => `R$${v}`} />
@@ -178,11 +178,11 @@ export default function AdminReports() {
             <CardDescription>Ordenado por unidades vendidas no período.</CardDescription>
           </CardHeader>
           <CardContent>
-            {!topSold || topSold.length === 0 ? (
+            {merged.top.length === 0 ? (
               <p className="text-center text-muted-foreground py-6 text-sm">Nenhuma venda registrada.</p>
             ) : (
               <div className="space-y-3">
-                {topSold.map((p, i) => (
+                {merged.top.map((p, i) => (
                   <div key={p.product_id} className="flex items-center gap-3">
                     <span className="text-lg font-bold text-muted-foreground w-6">#{i + 1}</span>
                     {p.image && <img src={p.image} alt={p.name} className="h-10 w-10 rounded object-cover" />}
