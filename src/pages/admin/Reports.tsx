@@ -117,14 +117,18 @@ export default function AdminReports() {
           <h1 className="text-3xl font-bold tracking-tight">Relatórios de Performance</h1>
           <p className="text-muted-foreground text-sm">Acompanhe receita, ticket médio e conversão por produto.</p>
         </div>
-        <Tabs value={String(period)} onValueChange={(v) => setPeriod(Number(v) as Period)}>
-          <TabsList>
-            <TabsTrigger value="7">7 dias</TabsTrigger>
-            <TabsTrigger value="30">30 dias</TabsTrigger>
-            <TabsTrigger value="90">90 dias</TabsTrigger>
-          </TabsList>
-        </Tabs>
+        <div className="flex flex-wrap gap-2">
+          <SalesChannelFilter value={channel} onChange={setChannel} />
+          <Tabs value={String(period)} onValueChange={(v) => setPeriod(Number(v) as Period)}>
+            <TabsList>
+              <TabsTrigger value="7">7 dias</TabsTrigger>
+              <TabsTrigger value="30">30 dias</TabsTrigger>
+              <TabsTrigger value="90">90 dias</TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
       </div>
+
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {kpis.map((k) => (
