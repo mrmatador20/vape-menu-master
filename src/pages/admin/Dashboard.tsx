@@ -109,6 +109,9 @@ export default function AdminDashboard() {
     },
   });
 
+  const channelLabel =
+    channel === 'online' ? 'Somente loja online' : channel === 'balcao' ? 'Somente balcão (PDV)' : 'Online + balcão (PDV)';
+
   const statCards = [
     {
       title: "Total de Produtos",
@@ -117,10 +120,10 @@ export default function AdminDashboard() {
       description: "Produtos cadastrados",
     },
     {
-      title: "Pedidos Recebidos",
-      value: stats?.totalOrders || 0,
+      title: channel === 'balcao' ? "Vendas no Balcão" : "Pedidos Recebidos",
+      value: channelData.orders,
       icon: ShoppingCart,
-      description: "Total de pedidos",
+      description: channelLabel,
     },
     {
       title: "Estoque Baixo",
@@ -131,17 +134,29 @@ export default function AdminDashboard() {
     },
     {
       title: "Receita Total",
-      value: `R$ ${(stats?.totalRevenue || 0).toFixed(2)}`,
+      value: `R$ ${channelData.revenue.toFixed(2)}`,
       icon: DollarSign,
-      description: "Valor total em vendas",
+      description: channelLabel,
     },
   ];
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Dashboard</h1>
-        <p className="text-muted-foreground">Visão geral do seu e-commerce</p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold">Dashboard</h1>
+          <p className="text-muted-foreground">Visão geral do seu e-commerce</p>
+        </div>
+        <Select value={channel} onValueChange={(v) => setChannel(v as SalesChannel)}>
+          <SelectTrigger className="w-full sm:w-[220px]">
+            <SelectValue placeholder="Canal de venda" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos os Canais</SelectItem>
+            <SelectItem value="online">Somente Loja Online</SelectItem>
+            <SelectItem value="balcao">Somente Balcão (PDV)</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
