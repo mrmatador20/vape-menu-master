@@ -228,12 +228,12 @@ export function OrderNotificationBell() {
             Som de notificação
           </div>
           <div className="flex items-center gap-2">
-            <Select value={soundId} onValueChange={(v) => setSoundId(v as SoundId)}>
+            <Select value={soundId} onValueChange={(v) => setSoundId(v as BellSoundId)}>
               <SelectTrigger className="h-8 text-xs flex-1">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {SOUND_PRESETS.map((s) => (
+                {SOUND_OPTIONS.map((s) => (
                   <SelectItem key={s.id} value={s.id} className="text-xs">
                     <div className="flex flex-col">
                       <span className="font-medium">{s.label}</span>
@@ -249,13 +249,32 @@ export function OrderNotificationBell() {
               variant="outline"
               size="icon"
               className="h-8 w-8 shrink-0"
-              onClick={() => playSound(soundId)}
+              onClick={() => playSelected(soundId)}
               title="Testar som"
             >
               <Play className="h-3.5 w-3.5" />
             </Button>
           </div>
+          {pushSupported && pushPermission !== "granted" && (
+            <Button
+              variant="secondary"
+              size="sm"
+              className="w-full h-8 text-xs"
+              onClick={async () => {
+                await primeOrderAlert();
+                const ok = await enablePush();
+                toast[ok ? "success" : "error"](
+                  ok
+                    ? "Alertas em segundo plano ativados!"
+                    : "Não foi possível ativar as notificações",
+                );
+              }}
+            >
+              Ativar alertas com o app fechado
+            </Button>
+          )}
         </div>
+
         <ScrollArea className="max-h-80">
           {notifications.length === 0 ? (
             <div className="px-3 py-8 text-center text-sm text-muted-foreground">
