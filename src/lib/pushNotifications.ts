@@ -1,3 +1,7 @@
+// Chave pública VAPID (pode ser exposta no cliente)
+export const VAPID_PUBLIC_KEY =
+  'BAHDlnB_LrT3BmjClhAY18ucuDhWgO3b6colXFOjUQhSqFqQlk_2UUNSTWENj8NrGDzSBXB2RRzW3Dt6TXhiMaw';
+
 const urlBase64ToUint8Array = (base64String: string): Uint8Array<ArrayBuffer> => {
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
   const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
