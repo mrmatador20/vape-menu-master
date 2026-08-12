@@ -20,6 +20,8 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { playSound, SOUND_PRESETS, type SoundId } from "@/lib/notificationSounds";
+import { playOrderAlert, primeOrderAlert } from "@/lib/orderAlert";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
 
 type OrderNotification = {
   id: string;
@@ -29,11 +31,23 @@ type OrderNotification = {
   read: boolean;
 };
 
+type BellSoundId = SoundId | "order_alert";
+
+const SOUND_OPTIONS: { id: BellSoundId; label: string; description: string }[] = [
+  {
+    id: "order_alert",
+    label: "Alerta de Pedido",
+    description: "Campainha do arquivo order-alert.mp3",
+  },
+  ...SOUND_PRESETS,
+];
+
 const STORAGE_KEY = "admin_order_notifications";
 const MUTE_KEY = "admin_order_notifications_muted";
 const SOUND_KEY = "admin_order_notifications_sound";
-const DEFAULT_SOUND: SoundId = "ding_dong";
+const DEFAULT_SOUND: BellSoundId = "order_alert";
 const MAX_STORED = 20;
+
 
 export function OrderNotificationBell() {
   const navigate = useNavigate();
@@ -48,17 +62,24 @@ export function OrderNotificationBell() {
   const [muted, setMuted] = useState<boolean>(
     () => localStorage.getItem(MUTE_KEY) === "1",
   );
-  const [soundId, setSoundId] = useState<SoundId>(() => {
-    const stored = localStorage.getItem(SOUND_KEY) as SoundId | null;
-    return stored && SOUND_PRESETS.some((s) => s.id === stored)
+  const [soundId, setSoundId] = useState<BellSoundId>(() => {
+    const stored = localStorage.getItem(SOUND_KEY) as BellSoundId | null;
+    return stored && SOUND_OPTIONS.some((s) => s.id === stored)
       ? stored
       : DEFAULT_SOUND;
   });
   const [ringing, setRinging] = useState(false);
   const mutedRef = useRef(muted);
   mutedRef.current = muted;
-  const soundRef = useRef<SoundId>(soundId);
+  const soundRef = useRef<BellSoundId>(soundId);
   soundRef.current = soundId;
+  const { isSupported: pushSupported, permission: pushPermission, enablePush } =
+    usePushNotifications();
+
+  const playSelected = (id: BellSoundId) => {
+    if (id === "order_alert") void playOrderAlert();
+    else playSound(id);
+  };
 
   // persist
   useEffect(() => {
@@ -70,6 +91,33 @@ export function OrderNotificationBell() {
   useEffect(() => {
     localStorage.setItem(SOUND_KEY, soundId);
   }, [soundId]);
+
+  // Destrava o áudio no primeiro gesto do usuário
+  useEffect(() => {
+    const unlock = () => {
+      void primeOrderAlert();
+      window.removeEventListener("pointerdown", unlock);
+      window.removeEventListener("keydown", unlock);
+    };
+    window.addEventListener("pointerdown", unlock);
+    window.addEventListener("keydown", unlock);
+    return () => {
+      window.removeEventListener("pointerdown", unlock);
+      window.removeEventListener("keydown", unlock);
+    };
+  }, []);
+
+  // Som acionado pelo Service Worker (push recebido com a aba aberta)
+  useEffect(() => {
+    if (!("serviceWorker" in navigator)) return;
+    const onMessage = (event: MessageEvent) => {
+      if (event.data?.type === "PLAY_ORDER_ALERT" && !mutedRef.current) {
+        void playOrderAlert();
+      }
+    };
+    navigator.serviceWorker.addEventListener("message", onMessage);
+    return () => navigator.serviceWorker.removeEventListener("message", onMessage);
+  }, []);
 
   // realtime subscription
   useEffect(() => {
@@ -93,7 +141,7 @@ export function OrderNotificationBell() {
             return [newItem, ...prev].slice(0, MAX_STORED);
           });
 
-          if (!mutedRef.current) playSound(soundRef.current);
+          if (!mutedRef.current) playSelected(soundRef.current);
           setRinging(true);
           setTimeout(() => setRinging(false), 2500);
 
@@ -112,6 +160,7 @@ export function OrderNotificationBell() {
       supabase.removeChannel(channel);
     };
   }, [navigate]);
+
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
@@ -179,12 +228,12 @@ export function OrderNotificationBell() {
             Som de notificação
           </div>
           <div className="flex items-center gap-2">
-            <Select value={soundId} onValueChange={(v) => setSoundId(v as SoundId)}>
+            <Select value={soundId} onValueChange={(v) => setSoundId(v as BellSoundId)}>
               <SelectTrigger className="h-8 text-xs flex-1">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {SOUND_PRESETS.map((s) => (
+                {SOUND_OPTIONS.map((s) => (
                   <SelectItem key={s.id} value={s.id} className="text-xs">
                     <div className="flex flex-col">
                       <span className="font-medium">{s.label}</span>
@@ -200,13 +249,32 @@ export function OrderNotificationBell() {
               variant="outline"
               size="icon"
               className="h-8 w-8 shrink-0"
-              onClick={() => playSound(soundId)}
+              onClick={() => playSelected(soundId)}
               title="Testar som"
             >
               <Play className="h-3.5 w-3.5" />
             </Button>
           </div>
+          {pushSupported && pushPermission !== "granted" && (
+            <Button
+              variant="secondary"
+              size="sm"
+              className="w-full h-8 text-xs"
+              onClick={async () => {
+                await primeOrderAlert();
+                const ok = await enablePush();
+                toast[ok ? "success" : "error"](
+                  ok
+                    ? "Alertas em segundo plano ativados!"
+                    : "Não foi possível ativar as notificações",
+                );
+              }}
+            >
+              Ativar alertas com o app fechado
+            </Button>
+          )}
         </div>
+
         <ScrollArea className="max-h-80">
           {notifications.length === 0 ? (
             <div className="px-3 py-8 text-center text-sm text-muted-foreground">

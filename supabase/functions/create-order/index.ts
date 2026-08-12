@@ -604,8 +604,28 @@ serve(async (req) => {
       }
     }
 
+    // Dispara notificação push (alta prioridade) para a equipe administrativa
+    try {
+      const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+      await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/send-order-notification`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${serviceKey}`,
+        },
+        body: JSON.stringify({
+          title: 'Novo pedido recebido!',
+          body: `Pedido de R$ ${Number(finalAmount).toFixed(2)} aguardando atendimento.`,
+          url: '/546498@18/orders',
+        }),
+      });
+    } catch (notifyError) {
+      console.error('[create-order] push notification failed:', notifyError);
+    }
+
     // Return the validated items with names for WhatsApp message
     console.log('[create-order] Order created successfully:', order.id);
+
     return new Response(
       JSON.stringify({
         success: true,
