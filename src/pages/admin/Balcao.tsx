@@ -131,6 +131,8 @@ export default function Balcao() {
         </div>
       )}
 
+      <RecentBalcaoMovements />
+
       <BalcaoBaixaDialog open={!!selected} onOpenChange={(v) => !v && setSelected(null)} product={selected} />
     </div>
   );
