@@ -176,6 +176,32 @@ export default function AdminDashboard() {
         ))}
       </div>
 
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Receita por dia (últimos 30 dias) — {channelLabel}</CardTitle>
+        </CardHeader>
+        <CardContent className="h-72">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={channelData.chart}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="day" tick={{ fontSize: 11 }} interval="preserveStartEnd" />
+              <YAxis tick={{ fontSize: 11 }} />
+              <Tooltip formatter={(v: number) => `R$ ${Number(v).toFixed(2)}`} />
+              <Legend />
+              {(channel === 'all' || channel === 'online') && (
+                <Line type="monotone" dataKey="online" name="Loja Online" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} />
+              )}
+              {(channel === 'all' || channel === 'balcao') && (
+                <Line type="monotone" dataKey="balcao" name="Balcão (PDV)" stroke="hsl(var(--muted-foreground))" strokeWidth={2} dot={false} />
+              )}
+              {channel === 'all' && (
+                <Line type="monotone" dataKey="total" name="Total" stroke="hsl(var(--destructive))" strokeWidth={1} dot={false} strokeDasharray="4 4" />
+              )}
+            </LineChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
+
       <LowStockAlert />
 
       {/* Estatísticas de Avaliações */}
