@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { Loader2, DollarSign, ShoppingBag, TrendingUp, Eye } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -12,6 +12,8 @@ import {
   useTopSold,
   useViewsVsSales,
 } from '@/hooks/useAnalytics';
+import { useBalcaoSales, type SalesChannelFilter as Channel } from '@/hooks/useBalcaoSales';
+import { SalesChannelFilter } from '@/components/admin/SalesChannelFilter';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 
 const formatBRL = (n: number) => `R$ ${n.toFixed(2)}`;
@@ -19,9 +21,61 @@ const formatBRL = (n: number) => `R$ ${n.toFixed(2)}`;
 export default function AdminReports() {
   const { data: role, isLoading: roleLoading } = useUserRole();
   const [period, setPeriod] = useState<Period>(30);
+  const [channel, setChannel] = useState<Channel>('all');
   const { data: sales, isLoading: salesLoading } = useSalesAnalytics(period);
   const { data: topSold } = useTopSold(period, 10);
   const { data: views } = useViewsVsSales(period);
+
+  const fromIso = useMemo(() => {
+    const d = new Date();
+    d.setDate(d.getDate() - period);
+    return d.toISOString();
+  }, [period]);
+  const { data: balcaoSales } = useBalcaoSales(fromIso);
+
+  const merged = useMemo(() => {
+    const bal = balcaoSales ?? [];
+    const balRevenue = bal.reduce((s, m) => s + m.revenue, 0);
+    const balCount = bal.length;
+
+    const onlineRevenue = sales?.revenue ?? 0;
+    const onlineCount = sales?.orderCount ?? 0;
+
+    const revenue =
+      channel === 'online' ? onlineRevenue : channel === 'balcao' ? balRevenue : onlineRevenue + balRevenue;
+    const orderCount =
+      channel === 'online' ? onlineCount : channel === 'balcao' ? balCount : onlineCount + balCount;
+
+    const series = (sales?.series ?? []).map((p) => ({ ...p }));
+    if (channel === 'balcao') series.forEach((p) => { p.revenue = 0; p.orders = 0; });
+    if (channel !== 'online') {
+      const byDay = new Map(series.map((p) => [p.date, p]));
+      bal.forEach((m) => {
+        const e = byDay.get((m.created_at || '').slice(0, 10));
+        if (e) {
+          e.revenue += m.revenue;
+          e.orders += 1;
+        }
+      });
+    }
+
+    // Top produtos
+    const map = new Map<string, { product_id: string; name: string; image?: string | null; qty: number }>();
+    if (channel !== 'balcao') {
+      (topSold ?? []).forEach((p) => map.set(p.product_id, { ...p }));
+    }
+    if (channel !== 'online') {
+      bal.forEach((m) => {
+        const key = m.product_id ?? `name:${m.product_name}`;
+        const prev = map.get(key) || { product_id: key, name: m.product_name, image: null, qty: 0 };
+        prev.qty += m.quantity;
+        map.set(key, prev);
+      });
+    }
+    const top = Array.from(map.values()).sort((a, b) => b.qty - a.qty).slice(0, 10);
+
+    return { revenue, orderCount, avgTicket: orderCount > 0 ? revenue / orderCount : 0, series, top };
+  }, [sales, balcaoSales, topSold, channel]);
 
   if (roleLoading) {
     return (
@@ -35,17 +89,17 @@ export default function AdminReports() {
   const kpis = [
     {
       label: 'Receita',
-      value: formatBRL(sales?.revenue || 0),
+      value: formatBRL(merged.revenue),
       icon: DollarSign,
     },
     {
       label: 'Pedidos pagos',
-      value: sales?.orderCount || 0,
+      value: merged.orderCount,
       icon: ShoppingBag,
     },
     {
       label: 'Ticket médio',
-      value: formatBRL(sales?.avgTicket || 0),
+      value: formatBRL(merged.avgTicket),
       icon: TrendingUp,
     },
     {
@@ -54,6 +108,7 @@ export default function AdminReports() {
       icon: Eye,
     },
   ];
+
 
   return (
     <div className="space-y-6">
