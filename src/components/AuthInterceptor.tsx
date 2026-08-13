@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthState } from '@/context/AuthStateContext';
 import { Loader2 } from 'lucide-react';
-import { getMfaStatus, clearMfaSession } from '@/lib/mfaSession';
+import { getMfaStatus } from '@/lib/mfaSession';
 
 interface AuthInterceptorProps {
   children: React.ReactNode;

@@ -11,7 +11,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { OrderNotificationBell } from "@/components/admin/OrderNotificationBell";
-import { getMfaStatus, markMfaVerified, saveTrustedDeviceToken } from "@/lib/mfaSession";
+import { getMfaStatus, markMfaVerified } from "@/lib/mfaSession";
 
 export default function AdminLayout() {
   const { data: role, isLoading: roleLoading } = useUserRole();
