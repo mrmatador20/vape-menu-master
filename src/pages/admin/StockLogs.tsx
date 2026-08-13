@@ -7,9 +7,10 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Search, Download, RotateCcw, Lock } from 'lucide-react';
+import { Search, Download, RotateCcw, Lock, Eye } from 'lucide-react';
 import { toast } from 'sonner';
 import { exportStockLogsCsv, exportStockLogsPdf, exportStockLogsXls } from '@/lib/exportStockLogs';
+import { StockMovementDetailsDialog } from '@/components/admin/StockMovementDetailsDialog';
 
 const typeLabel: Record<string, string> = {
   baixa_manual: 'Baixa Manual',
@@ -34,6 +35,7 @@ export default function StockLogs() {
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
   const [userEmail, setUserEmail] = useState('');
+  const [details, setDetails] = useState<StockMovement | null>(null);
 
   const filters = useMemo(() => ({
     search: search || undefined,
@@ -141,7 +143,10 @@ export default function StockLogs() {
             <div className="text-xs space-y-1">
               <p className="break-all text-muted-foreground">{m.user_email_snapshot ?? '—'}</p>
               <p className="font-medium">Estoque: {m.stock_before} ➔ {m.stock_after} <span className="text-muted-foreground">({m.quantity})</span></p>
-              <p className="break-words text-muted-foreground">Motivo: {m.reason ?? '—'}{m.notes ? ` — ${m.notes}` : ''}</p>
+              <button type="button" onClick={() => setDetails(m)} className="flex items-center gap-1 max-w-full text-left text-muted-foreground hover:text-primary">
+                <span className="truncate">Motivo: {m.reason ?? '—'}{m.notes ? ` — ${m.notes}` : ''}</span>
+                <Eye className="h-3.5 w-3.5 shrink-0" />
+              </button>
             </div>
             {canReverter && !m.reversed_by_movement_id && m.movement_type !== 'reversao' && (
               <Button size="sm" variant="outline" className="w-full" onClick={() => onReverter(m)} disabled={reverter.isPending}>
@@ -183,7 +188,16 @@ export default function StockLogs() {
                   <TableCell className="font-mono text-xs truncate">{m.product_sku_snapshot ?? '—'}</TableCell>
                   <TableCell className="truncate"><Badge variant={typeVariant(m.movement_type)}>{typeLabel[m.movement_type] ?? m.movement_type}</Badge></TableCell>
                   <TableCell className="text-xs whitespace-nowrap font-medium">{m.stock_before} ➔ {m.stock_after} <span className="text-muted-foreground">({m.quantity})</span></TableCell>
-                  <TableCell className="text-xs truncate max-w-[160px]" title={`${m.reason ?? ''}${m.notes ? ` — ${m.notes}` : ''}`}>{m.reason ?? '—'}{m.notes ? ` — ${m.notes}` : ''}</TableCell>
+                  <TableCell className="text-xs">
+                    <button
+                      type="button"
+                      onClick={() => setDetails(m)}
+                      className="flex items-center gap-1 max-w-[150px] text-left hover:text-primary hover:underline transition-colors"
+                    >
+                      <span className="truncate">{m.reason ?? '—'}{m.notes ? ` — ${m.notes}` : ''}</span>
+                      <Eye className="h-3.5 w-3.5 shrink-0 opacity-70" />
+                    </button>
+                  </TableCell>
                   <TableCell>
                     {canReverter && !m.reversed_by_movement_id && m.movement_type !== 'reversao' && (
                       <Button size="sm" variant="ghost" onClick={() => onReverter(m)} disabled={reverter.isPending}>
@@ -198,6 +212,7 @@ export default function StockLogs() {
           </Table>
       </div>
 
+      <StockMovementDetailsDialog movement={details} open={!!details} onOpenChange={(v) => !v && setDetails(null)} />
     </div>
   );
 }
