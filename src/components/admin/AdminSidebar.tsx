@@ -102,12 +102,12 @@ export function AdminSidebar() {
             >
               {open && (
                 <CollapsibleTrigger asChild>
-                  <SidebarGroupLabel className="cursor-pointer flex items-center justify-between hover:text-foreground transition-colors">
+                  <SidebarGroupLabel className="cursor-pointer flex items-center justify-between text-sidebar-foreground/80 hover:text-sidebar-foreground transition-colors">
                     <span className="flex items-center gap-2">
-                      <group.icon className="h-3.5 w-3.5 opacity-70" />
-                      <span className="text-[11px] uppercase tracking-wider">{group.title}</span>
+                      <group.icon className="h-3.5 w-3.5 opacity-80" />
+                      <span className="text-[11px] uppercase tracking-wider font-semibold text-[#d4a359]">{group.title}</span>
                     </span>
-                    <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", openMap[group.title] === false && "-rotate-90")} />
+                    <ChevronDown className={cn("h-3.5 w-3.5 transition-transform opacity-80", openMap[group.title] === false && "-rotate-90")} />
                   </SidebarGroupLabel>
                 </CollapsibleTrigger>
               )}
@@ -120,8 +120,8 @@ export function AdminSidebar() {
                           <NavLink
                             to={item.url}
                             end={item.url === "/546498@18"}
-                            className="hover:bg-accent rounded-md transition-colors"
-                            activeClassName="bg-accent text-accent-foreground font-medium"
+                            className="rounded-md transition-colors hover:bg-white/10 hover:text-white"
+                            activeClassName="bg-sidebar-accent text-sidebar-accent-foreground font-bold"
                           >
                             <item.icon className="h-4 w-4" />
                             {open && <span className="text-sm">{item.title}</span>}
