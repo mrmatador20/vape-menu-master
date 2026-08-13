@@ -302,6 +302,22 @@ serve(async (req) => {
         mobilePhone: phoneClean,
       };
       paymentBody.remoteIp = clientIp;
+
+      // Parcelamento (apenas crédito): 1x-2x sem juros, 3x-12x com juros repassados
+      if (paymentMethod === 'credit') {
+        let n = parseInt(String(installmentCount ?? 1), 10);
+        if (isNaN(n) || n < 1) n = 1;
+        if (n > MAX_INSTALLMENTS) n = MAX_INSTALLMENTS;
+        if (n > 1) {
+          const { installmentValue, totalValue } = calcInstallment(roundedAmount, n);
+          paymentBody.installmentCount = n;
+          paymentBody.installmentValue = installmentValue;
+          paymentBody.totalValue = totalValue;
+          delete paymentBody.value;
+          safeLog('[Asaas] Installments', { n, installmentValue, totalValue });
+        }
+      }
+
     }
 
     const paymentRes = await fetch(`${ASAAS_BASE_URL}/payments`, {
