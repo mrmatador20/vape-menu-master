@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { claimTotpCode } from '@/lib/totpReplayGuard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -112,6 +113,12 @@ const ResetPassword = () => {
 
     setIsLoading(true);
     try {
+      // Anti-replay: consome o código na janela de 30s atual
+      const claim = await claimTotpCode(mfaCode);
+      if (!claim.allowed) {
+        throw new Error(claim.error || 'Código inválido');
+      }
+
       // Use challengeAndVerify to elevate session to AAL2
       const { error } = await supabase.auth.mfa.challengeAndVerify({
         factorId: mfaFactorId,
