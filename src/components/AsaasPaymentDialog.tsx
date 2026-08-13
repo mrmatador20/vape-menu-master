@@ -309,11 +309,15 @@ export const AsaasPaymentDialog = ({
               R$ {amount.toFixed(2)}
             </span>
           </div>
-          {paymentMethod === 'credit' && installments > 1 && (
+          {paymentMethod === 'credit' && installments > 1 && selectedOption && (
             <p className="text-[11px] text-muted-foreground mt-1 text-right">
-              ou {installments}x de R$ {(amount / installments).toFixed(2)} sem juros
+              ou {installments}x de R$ {selectedOption.installmentValue.toFixed(2)}{' '}
+              {selectedOption.hasInterest
+                ? `(com juros — total R$ ${selectedOption.totalValue.toFixed(2)})`
+                : 'sem juros'}
             </p>
           )}
+
         </div>
       </div>
     </div>
