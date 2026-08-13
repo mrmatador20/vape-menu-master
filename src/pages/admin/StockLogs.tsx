@@ -183,7 +183,16 @@ export default function StockLogs() {
                   <TableCell className="font-mono text-xs truncate">{m.product_sku_snapshot ?? '—'}</TableCell>
                   <TableCell className="truncate"><Badge variant={typeVariant(m.movement_type)}>{typeLabel[m.movement_type] ?? m.movement_type}</Badge></TableCell>
                   <TableCell className="text-xs whitespace-nowrap font-medium">{m.stock_before} ➔ {m.stock_after} <span className="text-muted-foreground">({m.quantity})</span></TableCell>
-                  <TableCell className="text-xs truncate max-w-[160px]" title={`${m.reason ?? ''}${m.notes ? ` — ${m.notes}` : ''}`}>{m.reason ?? '—'}{m.notes ? ` — ${m.notes}` : ''}</TableCell>
+                  <TableCell className="text-xs">
+                    <button
+                      type="button"
+                      onClick={() => setDetails(m)}
+                      className="flex items-center gap-1 max-w-[150px] text-left hover:text-primary hover:underline transition-colors"
+                    >
+                      <span className="truncate">{m.reason ?? '—'}{m.notes ? ` — ${m.notes}` : ''}</span>
+                      <Eye className="h-3.5 w-3.5 shrink-0 opacity-70" />
+                    </button>
+                  </TableCell>
                   <TableCell>
                     {canReverter && !m.reversed_by_movement_id && m.movement_type !== 'reversao' && (
                       <Button size="sm" variant="ghost" onClick={() => onReverter(m)} disabled={reverter.isPending}>
