@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { mapRefusal, logOrderEvent } from "../_shared/asaasRefusal.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -358,14 +359,42 @@ serve(async (req) => {
 
     if (!paymentRes.ok) {
       const errJson = await paymentRes.json().catch(() => ({}));
+      const rawList: string[] = Array.isArray(errJson?.errors)
+        ? errJson.errors.map((e: any) => `${e?.code || ''} ${e?.description || ''}`.trim())
+        : [];
+      const raw = [errJson?.refusalReason, ...rawList].filter(Boolean).join(' | ');
       console.error('[Asaas] Payment error status:', paymentRes.status, 'code:', errJson?.errors?.[0]?.code);
-      const userMsg = errJson?.errors?.[0]?.description || 'Erro ao processar pagamento';
-      return new Response(JSON.stringify({ error: userMsg }), {
-        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+
+      const mapped = mapRefusal(raw);
+      await logOrderEvent(supabase, orderId, 'payment_refused', mapped.message, raw, {
+        http_status: paymentRes.status,
+        reason_code: mapped.code,
       });
+
+      return new Response(
+        JSON.stringify({ error: mapped.message, reasonCode: mapped.code, refusalReason: raw || null }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
     const payment = await paymentRes.json();
     safeLog('[Asaas] Payment created', { id: payment.id, status: payment.status });
+
+    // Cartão recusado mesmo com HTTP 200
+    if (isCard && ['REFUSED', 'DECLINED', 'REFUNDED', 'CHARGEBACK_REQUESTED'].includes(String(payment.status))) {
+      const raw = [payment.refusalReason, payment.creditCard?.refusalReason, payment.status]
+        .filter(Boolean).join(' | ');
+      const mapped = mapRefusal(raw);
+      await logOrderEvent(supabase, orderId, 'payment_refused', mapped.message, raw, {
+        payment_id: payment.id, asaas_status: payment.status, reason_code: mapped.code,
+      });
+      // Mantém o pedido aberto para nova tentativa
+      await supabase.from('orders').update({ status: 'pending_payment' }).eq('id', orderId);
+      return new Response(
+        JSON.stringify({ error: mapped.message, reasonCode: mapped.code, refusalReason: raw || null }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
 
     // 3. Para PIX, buscar QR Code
     let qrCodeBase64: string | null = null;

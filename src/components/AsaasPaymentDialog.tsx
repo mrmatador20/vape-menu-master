@@ -196,7 +196,15 @@ export const AsaasPaymentDialog = ({
       if (isCard) setCard({ holderName: '', number: '', expiry: '', ccv: '', cpf: '' });
 
       if (error || !data?.success) {
-        const msg = (data as any)?.error || 'Erro ao processar pagamento.';
+        let msg = (data as any)?.error as string | undefined;
+        // Em respostas não-2xx o corpo vem em error.context
+        if (!msg && (error as any)?.context?.json) {
+          try {
+            const body = await (error as any).context.json();
+            msg = body?.error;
+          } catch { /* corpo não-JSON */ }
+        }
+        msg = msg || 'Não foi possível processar o pagamento. Tente novamente ou utilize outro cartão.';
         setErrorMsg(msg); setPhase('error'); toast.error(msg); return;
       }
       if (data.confirmed) {
@@ -212,8 +220,10 @@ export const AsaasPaymentDialog = ({
         toast.info('Aguardando confirmação do pagamento...');
       }
     } catch (e) {
-      setErrorMsg('Erro ao processar pagamento.'); setPhase('error');
+      setErrorMsg('Não foi possível processar o pagamento. Tente novamente ou utilize outro cartão.');
+      setPhase('error');
     }
+
   };
 
   const handleSubmitCard = (e: React.FormEvent) => {
@@ -659,16 +669,27 @@ export const AsaasPaymentDialog = ({
       )}
 
       {phase === 'error' && (
-        <div className="text-center py-10 space-y-4 animate-fade-in">
-          <p className="text-destructive font-medium">{errorMsg || 'Erro ao processar pagamento'}</p>
-          <Button
-            onClick={() => setPhase(isCard ? 'form' : 'processing')}
-            className="rounded-xl h-12 px-6 bg-gradient-to-r from-primary to-accent text-primary-foreground"
-          >
-            Tentar Novamente
-          </Button>
+        <div className="py-8 space-y-4 animate-fade-in">
+          <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-4 text-center space-y-2">
+            <p className="text-destructive font-semibold">Pagamento não autorizado</p>
+            <p className="text-sm text-destructive/90">
+              {errorMsg || 'Não foi possível processar o pagamento. Tente novamente ou utilize outro cartão.'}
+            </p>
+          </div>
+          <p className="text-xs text-muted-foreground text-center">
+            Seu pedido continua aberto. Você pode tentar novamente com o mesmo cartão ou com outro.
+          </p>
+          <div className="flex justify-center">
+            <Button
+              onClick={() => setPhase(isCard ? 'form' : 'processing')}
+              className="rounded-xl h-12 px-6 bg-gradient-to-r from-primary to-accent text-primary-foreground"
+            >
+              Tentar Novamente
+            </Button>
+          </div>
         </div>
       )}
+
 
       {phase === 'confirmed' && (
         <div className="flex flex-col items-center py-16 space-y-4 animate-fade-in">

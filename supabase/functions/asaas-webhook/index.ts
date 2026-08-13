@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { mapRefusal, logOrderEvent } from "../_shared/asaasRefusal.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -54,6 +55,26 @@ serve(async (req) => {
       case 'PAYMENT_OVERDUE':
         newStatus = 'cancelled';
         break;
+      case 'PAYMENT_REFUSED':
+      case 'PAYMENT_FAILED':
+      case 'PAYMENT_CREDIT_CARD_CAPTURE_REFUSED': {
+        // Pagamento recusado: registra o motivo e mantém o pedido aberto
+        const raw = [payment.refusalReason, payment.creditCard?.refusalReason, payment.status]
+          .filter(Boolean).join(' | ');
+        const mapped = mapRefusal(raw);
+        await logOrderEvent(supabase, orderId, 'payment_failed', mapped.message, raw, {
+          event: event.event,
+          payment_id: payment.id,
+          asaas_status: payment.status,
+          reason_code: mapped.code,
+        });
+        // Mantém aguardando pagamento para permitir nova tentativa
+        await supabase.from('orders').update({ status: 'pending_payment' }).eq('id', orderId);
+        console.log('[Asaas Webhook] Order', orderId, 'payment refused ->', mapped.code);
+        return new Response(JSON.stringify({ ok: true }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
     }
 
     if (newStatus) {
@@ -63,6 +84,15 @@ serve(async (req) => {
         .eq('id', orderId);
       if (error) console.error('[Asaas Webhook] Update error:', error);
       else console.log('[Asaas Webhook] Order', orderId, '->', newStatus);
+
+      await logOrderEvent(
+        supabase,
+        orderId,
+        newStatus === 'confirmed' ? 'payment_confirmed' : 'payment_cancelled',
+        newStatus === 'confirmed' ? 'Pagamento confirmado.' : 'Pagamento cancelado/estornado.',
+        null,
+        { event: event.event, payment_id: payment.id },
+      );
     }
 
     return new Response(JSON.stringify({ ok: true }), {
