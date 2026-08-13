@@ -208,13 +208,18 @@ export const AsaasPaymentDialog = ({
   };
 
   const installmentOptions = useMemo(() => {
-    const max = paymentMethod === 'credit' ? 12 : 1;
-    return Array.from({ length: max }, (_, i) => {
-      const n = i + 1;
-      const value = amount / n;
-      return { n, value, label: n === 1 ? 'À vista' : `${n}x sem juros` };
-    });
+    if (paymentMethod !== 'credit') {
+      const single = calcInstallment(amount, 1);
+      return [{ n: 1, ...single, label: 'À vista, sem juros' }];
+    }
+    return buildInstallmentOptions(amount, MAX_INSTALLMENTS);
   }, [amount, paymentMethod]);
+
+  const selectedOption = useMemo(
+    () => installmentOptions.find((o) => o.n === installments) ?? installmentOptions[0],
+    [installmentOptions, installments]
+  );
+
 
   /* ------------- estilo input ------------- */
   const inputBase =
