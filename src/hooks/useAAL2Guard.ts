@@ -1,5 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import { logActivity } from '@/hooks/useActivityLogs';
+import { claimTotpCode } from '@/lib/totpReplayGuard';
 
 export interface AAL2Challenge {
   factorId: string;
@@ -107,6 +108,13 @@ export const useAAL2Guard = () => {
     code: string
   ): Promise<{ success: boolean; error?: string }> => {
     try {
+      // Anti-replay: consome o código na janela de 30s atual (validado no servidor)
+      const claim = await claimTotpCode(code);
+      if (!claim.allowed) {
+        console.warn('🔐 Anti-replay: código recusado -', claim.error);
+        return { success: false, error: claim.error };
+      }
+
       const { error } = await supabase.auth.mfa.verify({
         factorId,
         challengeId,

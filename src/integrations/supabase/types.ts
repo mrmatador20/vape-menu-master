@@ -542,6 +542,30 @@ export type Database = {
         }
         Relationships: []
       }
+      mfa_code_usage: {
+        Row: {
+          code_hash: string
+          id: string
+          time_step: number
+          used_at: string
+          user_id: string
+        }
+        Insert: {
+          code_hash: string
+          id?: string
+          time_step: number
+          used_at?: string
+          user_id: string
+        }
+        Update: {
+          code_hash?: string
+          id?: string
+          time_step?: number
+          used_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       notification_preferences: {
         Row: {
           created_at: string | null
@@ -2029,6 +2053,7 @@ export type Database = {
         Args: { p_movement_id: string; p_notes?: string; p_request_id: string }
         Returns: string
       }
+      claim_totp_code: { Args: { p_code_hash: string }; Returns: Json }
       cleanup_expired_rate_limits: { Args: never; Returns: undefined }
       cleanup_expired_verification_codes: { Args: never; Returns: undefined }
       cleanup_old_audit_logs: {
