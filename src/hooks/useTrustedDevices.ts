@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { logActivity } from './useActivityLogs';
+import { saveTrustedDeviceToken, generateDeviceFingerprint as buildFingerprint } from '@/lib/mfaSession';
 
 interface TrustedDevice {
   id: string;
@@ -15,30 +16,7 @@ interface TrustedDevice {
 }
 
 // Generate a device fingerprint based on browser characteristics
-const generateDeviceFingerprint = (): string => {
-  const nav = navigator;
-  const screen = window.screen;
-  
-  const fingerprint = [
-    nav.userAgent,
-    nav.language,
-    screen.colorDepth,
-    screen.width + 'x' + screen.height,
-    new Date().getTimezoneOffset(),
-    !!window.sessionStorage,
-    !!window.localStorage,
-  ].join('|');
-  
-  // Simple hash function
-  let hash = 0;
-  for (let i = 0; i < fingerprint.length; i++) {
-    const char = fingerprint.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash;
-  }
-  
-  return Math.abs(hash).toString(36);
-};
+const generateDeviceFingerprint = (): string => buildFingerprint();
 
 const getDeviceName = (): string => {
   const ua = navigator.userAgent;
@@ -108,6 +86,7 @@ export const useTrustedDevices = () => {
           .eq('id', existingDevice.id);
 
         if (updateError) throw updateError;
+        saveTrustedDeviceToken(user.id, deviceFingerprint);
         return { isNew: false };
       }
 
@@ -125,6 +104,8 @@ export const useTrustedDevices = () => {
         });
 
       if (insertError) throw insertError;
+
+      saveTrustedDeviceToken(user.id, deviceFingerprint);
 
       // Log activity
       await logActivity('device_trusted', {

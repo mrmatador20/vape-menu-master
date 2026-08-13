@@ -22,6 +22,7 @@ import { checkPwnedPassword, formatPwnedCount } from '@/lib/pwnedPassword';
 import { usePageMeta } from '@/hooks/usePageMeta';
 import { LEGAL_DOC_VERSIONS } from '@/lib/legalDocVersions';
 import { LegalDocumentDialog } from '@/components/LegalDocumentDialog';
+import { markMfaVerified, saveTrustedDeviceToken } from '@/lib/mfaSession';
 
 const Auth = () => {
   usePageMeta({ title: 'Entrar ou Cadastrar - Fox Velour', description: 'Acesse sua conta Fox Velour ou crie uma nova para gerenciar pedidos e endereços.', path: '/auth' });
@@ -192,7 +193,10 @@ const Auth = () => {
         if (!authCheck.has2FAEnabled) {
           // No 2FA, go directly to home
           console.log('🔐 No 2FA enabled, proceeding to home');
-          sessionStorage.setItem('2fa_verified', 'true');
+          {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) markMfaVerified(user.id);
+          }
           setAuthState('AUTHENTICATED');
           navigate('/');
           return;
@@ -201,7 +205,13 @@ const Auth = () => {
         if (authCheck.isDeviceRemembered) {
           // Device is remembered, skip 2FA
           console.log('🔐 Device is trusted, skipping 2FA');
-          sessionStorage.setItem('2fa_verified', 'true');
+          {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+              markMfaVerified(user.id);
+              saveTrustedDeviceToken(user.id);
+            }
+          }
           setAuthState('AUTHENTICATED');
           navigate('/');
           return;
@@ -253,15 +263,14 @@ const Auth = () => {
     
     // Save remembered device if user chose to
     const shouldRemember = deviceRemembered || rememberDevice;
-    if (shouldRemember) {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        await saveRememberDevice(user.id);
-      }
+    const { data: { user } } = await supabase.auth.getUser();
+    if (shouldRemember && user) {
+      await saveRememberDevice(user.id);
+      saveTrustedDeviceToken(user.id);
     }
-    
-    // Mark as verified and navigate to home
-    sessionStorage.setItem('2fa_verified', 'true');
+
+    // Persist 2FA verification so a page refresh (F5) doesn't ask again
+    if (user) markMfaVerified(user.id);
     setAuthState('AUTHENTICATED');
     setShow2FAGate(false);
     toast.success('Login realizado com sucesso!');

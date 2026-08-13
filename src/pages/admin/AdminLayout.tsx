@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { OrderNotificationBell } from "@/components/admin/OrderNotificationBell";
+import { getMfaStatus, markMfaVerified } from "@/lib/mfaSession";
 
 export default function AdminLayout() {
   const { data: role, isLoading: roleLoading } = useUserRole();
@@ -28,11 +29,6 @@ export default function AdminLayout() {
     });
   }, []);
 
-  // Clear admin 2FA verification on mount - ALWAYS require 2FA for admin access
-  useEffect(() => {
-    sessionStorage.removeItem('admin_2fa_verified');
-  }, []);
-
   // Check admin 2FA verification on component mount
   useEffect(() => {
     const checkAdminAuth = async () => {
@@ -42,12 +38,20 @@ export default function AdminLayout() {
 
       hasCheckedRef.current = true;
 
-      // ALWAYS require 2FA for admin access - no session caching
-      console.log('🔐 Admin: Requiring 2FA verification for admin dashboard access');
-
-      console.log('🔐 Admin: Checking 2FA requirements for admin access');
-      
       try {
+        // Persisted verification: skip the modal on refresh (F5) when the
+        // session is already AAL2 or the device is trusted (30 days).
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const status = await getMfaStatus(user.id);
+          if (status.satisfied) {
+            console.log('🔐 Admin: 2FA already satisfied, skipping modal', status);
+            sessionStorage.setItem('admin_2fa_verified', 'true');
+            setAdminAuthState('authenticated');
+            return;
+          }
+        }
+
         const authCheck = await checkAuthRequires2FA();
         
         // CRITICAL: Admin MUST have 2FA enabled to access dashboard
@@ -102,6 +106,8 @@ export default function AdminLayout() {
   const handleAdmin2FASuccess = async () => {
     console.log('🔐 Admin: 2FA verification successful for admin access');
     sessionStorage.setItem('admin_2fa_verified', 'true');
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) markMfaVerified(user.id);
     setAdminAuthState('authenticated');
     toast.success('Acesso ao painel administrativo autorizado!');
   };
