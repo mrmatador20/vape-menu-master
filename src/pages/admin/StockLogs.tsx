@@ -143,7 +143,10 @@ export default function StockLogs() {
             <div className="text-xs space-y-1">
               <p className="break-all text-muted-foreground">{m.user_email_snapshot ?? '—'}</p>
               <p className="font-medium">Estoque: {m.stock_before} ➔ {m.stock_after} <span className="text-muted-foreground">({m.quantity})</span></p>
-              <p className="break-words text-muted-foreground">Motivo: {m.reason ?? '—'}{m.notes ? ` — ${m.notes}` : ''}</p>
+              <button type="button" onClick={() => setDetails(m)} className="flex items-center gap-1 max-w-full text-left text-muted-foreground hover:text-primary">
+                <span className="truncate">Motivo: {m.reason ?? '—'}{m.notes ? ` — ${m.notes}` : ''}</span>
+                <Eye className="h-3.5 w-3.5 shrink-0" />
+              </button>
             </div>
             {canReverter && !m.reversed_by_movement_id && m.movement_type !== 'reversao' && (
               <Button size="sm" variant="outline" className="w-full" onClick={() => onReverter(m)} disabled={reverter.isPending}>
