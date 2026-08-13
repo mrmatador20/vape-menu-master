@@ -9,6 +9,8 @@ import { z } from 'zod';
 import { toast } from 'sonner';
 import { AsaasPaymentDialog } from '@/components/AsaasPaymentDialog';
 import { usePageMeta } from '@/hooks/usePageMeta';
+import { supabase } from '@/integrations/supabase/client';
+
 
 const orderItemSchema = z.object({
   name: z.string().min(1, 'Nome do produto é obrigatório'),
