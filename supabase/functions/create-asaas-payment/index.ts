@@ -90,7 +90,9 @@ serve(async (req) => {
       cardHolderPostalCode,
       cardHolderAddressNumber,
       cardHolderPhone,
+      installmentCount,
     } = body;
+
 
     safeLog('[Asaas] Request received', { orderId, paymentMethod });
 
