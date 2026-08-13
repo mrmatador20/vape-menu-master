@@ -186,6 +186,7 @@ export const AsaasPaymentDialog = ({
         body.cardCcv = cardData.ccv;
         body.cardHolderCpf = cardData.cpf.replace(/\D/g, '');
         body.installmentCount = installments;
+        body.totalAmount = finalOrderTotal;
         const cepDigits = (address?.cep || '').replace(/\D/g, '');
         if (cepDigits.length === 8) body.cardHolderPostalCode = cepDigits;
         if (address?.numero) body.cardHolderAddressNumber = String(address.numero).substring(0, 10);
