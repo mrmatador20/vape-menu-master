@@ -327,20 +327,26 @@ serve(async (req) => {
       };
       paymentBody.remoteIp = clientIp;
 
-      // Parcelamento (apenas crédito): 1x-2x sem juros, 3x-12x com juros repassados
+      // Parcelamento (apenas crédito) — Zero-Trust: regras lidas do banco e recalculadas aqui
       if (paymentMethod === 'credit') {
-        let n = parseInt(String(installmentCount ?? 1), 10);
-        if (isNaN(n) || n < 1) n = 1;
-        if (n > MAX_INSTALLMENTS) n = MAX_INSTALLMENTS;
+        const rules = await fetchInstallmentRules(authClient);
+        const n = parseInt(String(installmentCount ?? 1), 10);
+        if (isNaN(n) || n < 1 || n > rules.maxTotal) {
+          return new Response(
+            JSON.stringify({ error: `Número de parcelas inválido. Permitido: 1 a ${rules.maxTotal}.` }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
         if (n > 1) {
-          const { installmentValue, totalValue } = calcInstallment(roundedAmount, n);
+          const { installmentValue, totalValue } = calcInstallment(roundedAmount, n, rules);
           paymentBody.installmentCount = n;
           paymentBody.installmentValue = installmentValue;
           paymentBody.totalValue = totalValue;
           delete paymentBody.value;
-          safeLog('[Asaas] Installments', { n, installmentValue, totalValue });
+          safeLog('[Asaas] Installments', { n, installmentValue, totalValue, rules });
         }
       }
+
 
     }
 
