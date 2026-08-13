@@ -35,6 +35,7 @@ export default function StockLogs() {
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
   const [userEmail, setUserEmail] = useState('');
+  const [details, setDetails] = useState<StockMovement | null>(null);
 
   const filters = useMemo(() => ({
     search: search || undefined,
