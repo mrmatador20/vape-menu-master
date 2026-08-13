@@ -12,6 +12,8 @@ import {
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
+import { buildInstallmentOptions, calcInstallment, MAX_INSTALLMENTS } from '@/lib/installments';
+
 
 interface OrderSummaryItem {
   name?: string;
