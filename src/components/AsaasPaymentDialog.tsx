@@ -196,7 +196,15 @@ export const AsaasPaymentDialog = ({
       if (isCard) setCard({ holderName: '', number: '', expiry: '', ccv: '', cpf: '' });
 
       if (error || !data?.success) {
-        const msg = (data as any)?.error || 'Erro ao processar pagamento.';
+        let msg = (data as any)?.error as string | undefined;
+        // Em respostas não-2xx o corpo vem em error.context
+        if (!msg && (error as any)?.context?.json) {
+          try {
+            const body = await (error as any).context.json();
+            msg = body?.error;
+          } catch { /* corpo não-JSON */ }
+        }
+        msg = msg || 'Não foi possível processar o pagamento. Tente novamente ou utilize outro cartão.';
         setErrorMsg(msg); setPhase('error'); toast.error(msg); return;
       }
       if (data.confirmed) {
@@ -212,8 +220,10 @@ export const AsaasPaymentDialog = ({
         toast.info('Aguardando confirmação do pagamento...');
       }
     } catch (e) {
-      setErrorMsg('Erro ao processar pagamento.'); setPhase('error');
+      setErrorMsg('Não foi possível processar o pagamento. Tente novamente ou utilize outro cartão.');
+      setPhase('error');
     }
+
   };
 
   const handleSubmitCard = (e: React.FormEvent) => {
