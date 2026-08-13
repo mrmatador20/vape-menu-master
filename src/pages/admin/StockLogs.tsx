@@ -7,9 +7,10 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Search, Download, RotateCcw, Lock } from 'lucide-react';
+import { Search, Download, RotateCcw, Lock, Eye } from 'lucide-react';
 import { toast } from 'sonner';
 import { exportStockLogsCsv, exportStockLogsPdf, exportStockLogsXls } from '@/lib/exportStockLogs';
+import { StockMovementDetailsDialog } from '@/components/admin/StockMovementDetailsDialog';
 
 const typeLabel: Record<string, string> = {
   baixa_manual: 'Baixa Manual',
