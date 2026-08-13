@@ -258,6 +258,17 @@ export const AsaasPaymentDialog = ({
     [installmentOptions, installments]
   );
 
+  /** Valor total final do pedido considerando a opção de parcelamento escolhida */
+  const finalOrderTotal = useMemo(
+    () => (selectedOption?.hasInterest ? selectedOption.totalValue : amount),
+    [selectedOption, amount]
+  );
+  const interestAmount = useMemo(
+    () => Math.max(0, Math.round((finalOrderTotal - amount) * 100) / 100),
+    [finalOrderTotal, amount]
+  );
+
+
 
   /* ------------- estilo input ------------- */
   const inputBase =
