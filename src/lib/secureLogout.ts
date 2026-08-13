@@ -11,6 +11,7 @@ const USER_SCOPED_LOCAL_KEYS = [
   'influencer_coupon_code',
   'password_reset_flow',
   '2fa_verified',
+  '2fa_verified_session',  // MFA_SESSION_KEY — cleared ONLY on explicit logout
 ];
 
 /**
