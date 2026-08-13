@@ -330,6 +330,12 @@ export const AsaasPaymentDialog = ({
             <span className="font-medium">R$ {subtotal.toFixed(2)}</span>
           </div>
         )}
+        {interestAmount > 0 && (
+          <div className="flex justify-between text-xs">
+            <span className="text-muted-foreground">Juros de parcelamento</span>
+            <span className="font-medium text-amber-600">+ R$ {interestAmount.toFixed(2)}</span>
+          </div>
+        )}
         {typeof shippingCost === 'number' && (
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">Frete</span>
@@ -341,21 +347,22 @@ export const AsaasPaymentDialog = ({
         <div className="mt-4 p-5 rounded-2xl bg-gradient-to-br from-primary/15 via-accent/5 to-transparent border border-primary/25 shadow-[inset_0_1px_0_hsl(var(--primary)/0.15)]">
           <div className="flex justify-between items-baseline">
             <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-foreground/80">Total</span>
-            <span className="text-3xl font-bold bg-gradient-to-br from-primary via-accent to-primary bg-clip-text text-transparent">
-              R$ {amount.toFixed(2)}
+            <span className="text-3xl font-bold bg-gradient-to-br from-primary via-accent to-primary bg-clip-text text-transparent transition-all">
+              R$ {finalOrderTotal.toFixed(2)}
             </span>
           </div>
           {paymentMethod === 'credit' && installments > 1 && selectedOption && (
             <p className="text-[11px] text-muted-foreground mt-1 text-right">
-              ou {installments}x de R$ {selectedOption.installmentValue.toFixed(2)}{' '}
+              {installments}x de R$ {selectedOption.installmentValue.toFixed(2)}{' '}
               {selectedOption.hasInterest
-                ? `(com juros — total R$ ${selectedOption.totalValue.toFixed(2)})`
+                ? `(com juros — valor à vista R$ ${amount.toFixed(2)})`
                 : 'sem juros'}
             </p>
           )}
 
         </div>
       </div>
+
     </div>
   );
 
