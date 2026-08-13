@@ -12,7 +12,9 @@ import {
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
-import { buildInstallmentOptions, calcInstallment, MAX_INSTALLMENTS } from '@/lib/installments';
+import { buildInstallmentOptions, calcInstallment } from '@/lib/installments';
+import { useInstallmentRules } from '@/hooks/usePaymentSettings';
+
 
 
 interface OrderSummaryItem {
@@ -211,11 +213,16 @@ export const AsaasPaymentDialog = ({
 
   const installmentOptions = useMemo(() => {
     if (paymentMethod !== 'credit') {
-      const single = calcInstallment(amount, 1);
+      const single = calcInstallment(amount, 1, installmentRules);
       return [{ n: 1, ...single, label: 'À vista, sem juros' }];
     }
-    return buildInstallmentOptions(amount, MAX_INSTALLMENTS);
-  }, [amount, paymentMethod]);
+    return buildInstallmentOptions(amount, installmentRules);
+  }, [amount, paymentMethod, installmentRules]);
+
+  useEffect(() => {
+    if (installments > installmentRules.maxTotal) setInstallments(1);
+  }, [installmentRules.maxTotal, installments]);
+
 
   const selectedOption = useMemo(
     () => installmentOptions.find((o) => o.n === installments) ?? installmentOptions[0],
