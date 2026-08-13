@@ -18,31 +18,6 @@ interface TrustedDevice {
 // Generate a device fingerprint based on browser characteristics
 const generateDeviceFingerprint = (): string => buildFingerprint();
 
-const legacyFingerprint = (): string => {
-  const nav = navigator;
-  const screen = window.screen;
-  
-  const fingerprint = [
-    nav.userAgent,
-    nav.language,
-    screen.colorDepth,
-    screen.width + 'x' + screen.height,
-    new Date().getTimezoneOffset(),
-    !!window.sessionStorage,
-    !!window.localStorage,
-  ].join('|');
-  
-  // Simple hash function
-  let hash = 0;
-  for (let i = 0; i < fingerprint.length; i++) {
-    const char = fingerprint.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash;
-  }
-  
-  return Math.abs(hash).toString(36);
-};
-
 const getDeviceName = (): string => {
   const ua = navigator.userAgent;
   let browser = 'Unknown';

@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthState } from '@/context/AuthStateContext';
 import { Loader2 } from 'lucide-react';
+import { getMfaStatus, clearMfaSession } from '@/lib/mfaSession';
 
 interface AuthInterceptorProps {
   children: React.ReactNode;
@@ -68,63 +69,13 @@ export const AuthInterceptor = ({ children }: AuthInterceptorProps) => {
         // it can be set via DevTools to bypass 2FA enforcement.
         let verified2FA = false;
         try {
-          const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-          const isAAL2 = aalData?.currentLevel === 'aal2';
-
-          let isTrustedDevice = false;
-          if (!isAAL2) {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (user) {
-              // Inline trusted-device check (mirrors useTrustedDevices fingerprint)
-              const fp = (() => {
-                const s = [
-                  navigator.userAgent,
-                  navigator.language,
-                  window.screen.colorDepth,
-                  window.screen.width + 'x' + window.screen.height,
-                  new Date().getTimezoneOffset(),
-                  !!window.sessionStorage,
-                  !!window.localStorage,
-                ].join('|');
-                let h = 0;
-                for (let i = 0; i < s.length; i++) {
-                  h = ((h << 5) - h) + s.charCodeAt(i);
-                  h = h & h;
-                }
-                return Math.abs(h).toString(36);
-              })();
-
-              const { data: device } = await supabase
-                .from('trusted_devices')
-                .select('id, last_used_at')
-                .eq('user_id', user.id)
-                .eq('device_fingerprint', fp)
-                .eq('is_trusted', true)
-                .maybeSingle();
-
-              if (device) {
-                const days = (Date.now() - new Date(device.last_used_at).getTime()) / 86400000;
-                if (days <= 30) {
-                  isTrustedDevice = true;
-                  await supabase
-                    .from('trusted_devices')
-                    .update({ last_used_at: new Date().toISOString() })
-                    .eq('id', device.id);
-                }
-              }
-            }
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) {
+            // Server-derived: AAL2 (persists across F5 via JWT) OR trusted device
+            const status = await getMfaStatus(user.id);
+            verified2FA = status.satisfied;
+            console.log('🛡️ AuthInterceptor: 2FA state', status);
           }
-
-          verified2FA = isAAL2 || isTrustedDevice;
-          // Mirror into sessionStorage for legacy UI consumers only; the gate
-          // above already revalidated against the server, so a tampered value
-          // cannot grant access.
-          if (verified2FA) {
-            sessionStorage.setItem('2fa_verified', 'true');
-          } else {
-            sessionStorage.removeItem('2fa_verified');
-          }
-          console.log('🛡️ AuthInterceptor: 2FA state', { isAAL2, isTrustedDevice });
         } catch (e) {
           console.error('🛡️ AuthInterceptor: Error checking 2FA state:', e);
           verified2FA = false;
@@ -169,7 +120,6 @@ export const AuthInterceptor = ({ children }: AuthInterceptorProps) => {
   // Reset verification when user explicitly navigates to auth page
   useEffect(() => {
     if (location.pathname === '/auth') {
-      sessionStorage.removeItem('2fa_verified');
       setInterceptorState('checking');
     }
   }, [location.pathname]);
