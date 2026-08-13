@@ -63,6 +63,22 @@
     --sidebar-ring: 35 65% 45%;
   }
 
+  /* Menu lateral no mobile: painel sólido escuro com texto branco */
+  [data-sidebar="sidebar"][data-mobile="true"] {
+    --sidebar-background: 30 8% 10%;
+    --sidebar-foreground: 0 0% 100%;
+    --sidebar-accent: 35 65% 45%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 0 0% 100% / 0.12;
+    --background: 30 8% 10%;
+    --foreground: 0 0% 100%;
+    --accent: 35 65% 45%;
+    --accent-foreground: 0 0% 100%;
+    --muted-foreground: 0 0% 88%;
+    --border: 0 0% 100% / 0.12;
+    background-color: hsl(30 8% 10%);
+  }
+
   .dark {
     --background: 30 8% 8%;
     --foreground: 36 30% 94%;
