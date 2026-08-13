@@ -212,6 +212,7 @@ export default function StockLogs() {
           </Table>
       </div>
 
+      <StockMovementDetailsDialog movement={details} open={!!details} onOpenChange={(v) => !v && setDetails(null)} />
     </div>
   );
 }
