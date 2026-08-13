@@ -82,6 +82,47 @@ const OrderConfirmation = () => {
     }
   }, [location.state, navigate]);
 
+  // Sincroniza o status real do pedido (webhook Asaas) em tempo real
+  useEffect(() => {
+    if (!orderData || paymentConfirmed) return;
+    const orderId = orderData.orderId;
+    const isPaid = (s?: string | null) => !!s && ['confirmed', 'paid', 'received'].includes(s);
+
+    let active = true;
+    supabase
+      .from('orders')
+      .select('status')
+      .eq('id', orderId)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (active && isPaid(data?.status)) {
+          setPaymentConfirmed(true);
+          setShowPixDialog(false);
+        }
+      });
+
+    const channel = supabase
+      .channel(`order-confirmation-${orderId}`)
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'orders', filter: `id=eq.${orderId}` },
+        (payload) => {
+          if (isPaid((payload.new as { status?: string })?.status)) {
+            setPaymentConfirmed(true);
+            setShowPixDialog(false);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      active = false;
+      supabase.removeChannel(channel);
+    };
+  }, [orderData, paymentConfirmed]);
+
+
+
   if (!orderData) {
     return null;
   }
