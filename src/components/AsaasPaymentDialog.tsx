@@ -123,22 +123,49 @@ export const AsaasPaymentDialog = ({
 
   useEffect(() => {
     if (!open || phase === 'form' || phase === 'confirmed') return;
-    const interval = setInterval(async () => {
-      const { data } = await supabase.from('orders').select('status').eq('id', orderId).single();
-      if (data?.status === 'confirmed') {
-        setPhase('confirmed');
-        clearInterval(interval);
-        toast.success('Pagamento confirmado!');
-        onPaymentConfirmed();
-      } else if (data?.status === 'cancelled') {
+
+    const markConfirmed = () => {
+      setPhase('confirmed');
+      toast.success('Pagamento confirmado!');
+      onPaymentConfirmed();
+    };
+
+    const handleStatus = (status?: string | null) => {
+      if (!status) return false;
+      if (['confirmed', 'paid', 'received'].includes(status)) { markConfirmed(); return true; }
+      if (status === 'cancelled') {
         setPhase('error');
         setErrorMsg('Pagamento cancelado.');
-        clearInterval(interval);
+        return true;
       }
+      return false;
+    };
+
+    const interval = setInterval(async () => {
+      const { data } = await supabase.from('orders').select('status').eq('id', orderId).single();
+      if (handleStatus(data?.status)) clearInterval(interval);
     }, 3000);
+
+    // Realtime: confirmação instantânea via webhook do Asaas
+    const channel = supabase
+      .channel(`order-status-${orderId}`)
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'orders', filter: `id=eq.${orderId}` },
+        (payload) => {
+          if (handleStatus((payload.new as { status?: string })?.status)) clearInterval(interval);
+        }
+      )
+      .subscribe();
+
     const timeoutId = setTimeout(() => clearInterval(interval), 600000);
-    return () => { clearInterval(interval); clearTimeout(timeoutId); };
+    return () => {
+      clearInterval(interval);
+      clearTimeout(timeoutId);
+      supabase.removeChannel(channel);
+    };
   }, [open, phase, orderId, onPaymentConfirmed]);
+
 
   const createPayment = async (cardData?: typeof card) => {
     try {
@@ -601,10 +628,11 @@ export const AsaasPaymentDialog = ({
           </div>
           <div className="text-center space-y-1">
             <p className="text-sm font-semibold">
-              {isCard ? 'Processando pagamento' : 'Gerando QR Code PIX'}
+              {isCard ? 'Processando pagamento junto ao banco...' : 'Gerando QR Code PIX'}
             </p>
             <p className="text-xs text-muted-foreground">
-              {isCard ? 'Validando seu cartão com segurança...' : 'Conectando ao Asaas...'}
+              {isCard ? 'Aguarde, estamos validando seu cartão com segurança...' : 'Conectando ao Asaas...'}
+
             </p>
           </div>
           {trustBadges}

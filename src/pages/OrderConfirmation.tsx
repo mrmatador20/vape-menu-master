@@ -3,12 +3,14 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { CheckCircle2, MessageCircle, Package, MapPin, CreditCard, Home } from 'lucide-react';
+import { CheckCircle2, MessageCircle, Package, MapPin, CreditCard, Home, Clock } from 'lucide-react';
 import Header from '@/components/Header';
 import { z } from 'zod';
 import { toast } from 'sonner';
 import { AsaasPaymentDialog } from '@/components/AsaasPaymentDialog';
 import { usePageMeta } from '@/hooks/usePageMeta';
+import { supabase } from '@/integrations/supabase/client';
+
 
 const orderItemSchema = z.object({
   name: z.string().min(1, 'Nome do produto é obrigatório'),
@@ -82,6 +84,47 @@ const OrderConfirmation = () => {
     }
   }, [location.state, navigate]);
 
+  // Sincroniza o status real do pedido (webhook Asaas) em tempo real
+  useEffect(() => {
+    if (!orderData || paymentConfirmed) return;
+    const orderId = orderData.orderId;
+    const isPaid = (s?: string | null) => !!s && ['confirmed', 'paid', 'received'].includes(s);
+
+    let active = true;
+    supabase
+      .from('orders')
+      .select('status')
+      .eq('id', orderId)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (active && isPaid(data?.status)) {
+          setPaymentConfirmed(true);
+          setShowPixDialog(false);
+        }
+      });
+
+    const channel = supabase
+      .channel(`order-confirmation-${orderId}`)
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'orders', filter: `id=eq.${orderId}` },
+        (payload) => {
+          if (isPaid((payload.new as { status?: string })?.status)) {
+            setPaymentConfirmed(true);
+            setShowPixDialog(false);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      active = false;
+      supabase.removeChannel(channel);
+    };
+  }, [orderData, paymentConfirmed]);
+
+
+
   if (!orderData) {
     return null;
   }
@@ -105,25 +148,55 @@ const OrderConfirmation = () => {
   // Calcular subtotal como soma dos itens (price já vem com desconto aplicado)
   const subtotal = orderData.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
+  const isOnlinePayment = ['pix', 'credit', 'debit'].includes(orderData.paymentMethod);
+  const awaitingPayment = isOnlinePayment && !paymentConfirmed;
+
+  const headline = awaitingPayment
+    ? orderData.paymentMethod === 'pix'
+      ? 'Pedido Gerado — Aguardando Pagamento'
+      : 'Finalize seu Pagamento'
+    : 'Pedido Realizado com Sucesso! 🛍️';
+
+  const subline = awaitingPayment
+    ? orderData.paymentMethod === 'pix'
+      ? 'Pague o PIX para confirmarmos seu pedido.'
+      : 'Conclua o pagamento com cartão para confirmarmos seu pedido.'
+    : 'Pagamento confirmado com sucesso!';
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
       <div className="container mx-auto px-4 py-8 max-w-4xl">
-        <Card className="mb-6 border-2 border-green-500/20 bg-green-500/5">
+        <Card
+          className={
+            awaitingPayment
+              ? 'mb-6 border-2 border-amber-500/30 bg-amber-500/5'
+              : 'mb-6 border-2 border-green-500/20 bg-green-500/5'
+          }
+        >
           <CardContent className="pt-6">
             <div className="flex flex-col items-center text-center space-y-4">
-              <div className="w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center">
-                <CheckCircle2 className="w-10 h-10 text-green-600" />
+              <div
+                className={
+                  awaitingPayment
+                    ? 'w-16 h-16 rounded-full bg-amber-500/20 flex items-center justify-center'
+                    : 'w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center'
+                }
+              >
+                {awaitingPayment ? (
+                  <Clock className="w-10 h-10 text-amber-600" />
+                ) : (
+                  <CheckCircle2 className="w-10 h-10 text-green-600" />
+                )}
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-foreground mb-2">
-                  Pedido Confirmado!
-                </h1>
+                <h1 className="text-3xl font-bold text-foreground mb-2">{headline}</h1>
                 <p className="text-muted-foreground">
                   Pedido #{orderData.orderId.slice(-8).toUpperCase()}
                 </p>
+                <p className="text-sm text-muted-foreground mt-1">{subline}</p>
               </div>
-              {['pix', 'credit', 'debit'].includes(orderData.paymentMethod) && !paymentConfirmed ? (
+              {awaitingPayment ? (
                 <Button
                   onClick={() => setShowPixDialog(true)}
                   size="lg"
@@ -145,6 +218,7 @@ const OrderConfirmation = () => {
             </div>
           </CardContent>
         </Card>
+
 
         <h2 className="sr-only">Detalhes do pedido</h2>
         <div className="grid md:grid-cols-2 gap-6">
