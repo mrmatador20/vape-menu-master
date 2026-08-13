@@ -711,6 +711,33 @@ export type Database = {
         }
         Relationships: []
       }
+      payment_settings: {
+        Row: {
+          created_at: string
+          id: string
+          max_interest_free_installments: number
+          max_total_installments: number
+          monthly_interest_rate: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          max_interest_free_installments?: number
+          max_total_installments?: number
+          monthly_interest_rate?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          max_interest_free_installments?: number
+          max_total_installments?: number
+          monthly_interest_rate?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       product_views: {
         Row: {
           created_at: string

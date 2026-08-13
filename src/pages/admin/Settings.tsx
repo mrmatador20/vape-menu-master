@@ -5,6 +5,8 @@ import LogRetentionSettings from '@/components/admin/LogRetentionSettings';
 import SiteIdentitySettings from '@/components/admin/SiteIdentitySettings';
 import SiteThemeSettings from '@/components/admin/SiteThemeSettings';
 import CategoriesSettings from '@/components/admin/CategoriesSettings';
+import PaymentSettingsCard from '@/components/admin/PaymentSettingsCard';
+
 
 export default function Settings() {
   const { data: role, isLoading: roleLoading } = useUserRole();
@@ -35,6 +37,9 @@ export default function Settings() {
       <SiteThemeSettings />
 
       <CategoriesSettings />
+
+      <PaymentSettingsCard />
+
 
       <LogRetentionSettings />
 

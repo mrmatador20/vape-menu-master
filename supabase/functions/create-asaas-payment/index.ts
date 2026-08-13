@@ -8,21 +8,45 @@ const corsHeaders = {
 
 const ASAAS_BASE_URL = 'https://api.asaas.com/v3';
 
-// Regras de parcelamento: 1x-2x sem juros (lojista), 3x-12x com juros repassados ao cliente
-const MAX_INSTALLMENTS = 12;
-const INTEREST_FREE_INSTALLMENTS = 2;
-const MONTHLY_INTEREST_RATE = 0.0299;
+// Regras de parcelamento (Zero-Trust): SEMPRE lidas do banco (payment_settings)
+// e recalculadas no servidor. Nunca confiar em valores vindos do frontend.
+interface InstallmentRules {
+  maxInterestFree: number;
+  maxTotal: number;
+  monthlyRate: number; // fração (ex.: 0.0299)
+}
+const DEFAULT_RULES: InstallmentRules = { maxInterestFree: 2, maxTotal: 12, monthlyRate: 0.0299 };
 const round2 = (v: number) => Math.round(v * 100) / 100;
 
-const calcInstallment = (amount: number, n: number) => {
-  if (n <= INTEREST_FREE_INSTALLMENTS) {
+const fetchInstallmentRules = async (client: any): Promise<InstallmentRules> => {
+  try {
+    const { data, error } = await client
+      .from('payment_settings')
+      .select('max_interest_free_installments, max_total_installments, monthly_interest_rate')
+      .order('updated_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (error || !data) return DEFAULT_RULES;
+    const maxTotal = Math.max(1, Math.min(12, Number(data.max_total_installments) || 12));
+    const maxInterestFree = Math.max(1, Math.min(maxTotal, Number(data.max_interest_free_installments) || 1));
+    const ratePct = Number(data.monthly_interest_rate);
+    const monthlyRate = isNaN(ratePct) || ratePct < 0 || ratePct > 15 ? DEFAULT_RULES.monthlyRate : ratePct / 100;
+    return { maxInterestFree, maxTotal, monthlyRate };
+  } catch (_e) {
+    return DEFAULT_RULES;
+  }
+};
+
+const calcInstallment = (amount: number, n: number, rules: InstallmentRules) => {
+  if (n <= rules.maxInterestFree || rules.monthlyRate <= 0) {
     const installmentValue = round2(amount / n);
     return { installmentValue, totalValue: round2(installmentValue * n), hasInterest: false };
   }
-  const i = MONTHLY_INTEREST_RATE;
+  const i = rules.monthlyRate;
   const installmentValue = round2((amount * i) / (1 - Math.pow(1 + i, -n)));
   return { installmentValue, totalValue: round2(installmentValue * n), hasInterest: true };
 };
+
 
 
 // Sanitiza dados sensíveis para logs (PCI-DSS)
@@ -303,20 +327,26 @@ serve(async (req) => {
       };
       paymentBody.remoteIp = clientIp;
 
-      // Parcelamento (apenas crédito): 1x-2x sem juros, 3x-12x com juros repassados
+      // Parcelamento (apenas crédito) — Zero-Trust: regras lidas do banco e recalculadas aqui
       if (paymentMethod === 'credit') {
-        let n = parseInt(String(installmentCount ?? 1), 10);
-        if (isNaN(n) || n < 1) n = 1;
-        if (n > MAX_INSTALLMENTS) n = MAX_INSTALLMENTS;
+        const rules = await fetchInstallmentRules(authClient);
+        const n = parseInt(String(installmentCount ?? 1), 10);
+        if (isNaN(n) || n < 1 || n > rules.maxTotal) {
+          return new Response(
+            JSON.stringify({ error: `Número de parcelas inválido. Permitido: 1 a ${rules.maxTotal}.` }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
         if (n > 1) {
-          const { installmentValue, totalValue } = calcInstallment(roundedAmount, n);
+          const { installmentValue, totalValue } = calcInstallment(roundedAmount, n, rules);
           paymentBody.installmentCount = n;
           paymentBody.installmentValue = installmentValue;
           paymentBody.totalValue = totalValue;
           delete paymentBody.value;
-          safeLog('[Asaas] Installments', { n, installmentValue, totalValue });
+          safeLog('[Asaas] Installments', { n, installmentValue, totalValue, rules });
         }
       }
+
 
     }
 
