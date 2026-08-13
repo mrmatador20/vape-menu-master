@@ -488,14 +488,18 @@ export const AsaasPaymentDialog = ({
                     </span>
                     <div>
                       <p className="text-sm font-semibold">
-                        {opt.n}x de R$ {opt.value.toFixed(2)}
+                        {opt.n}x de R$ {opt.installmentValue.toFixed(2)}{' '}
+                        <span className={cn("text-[11px] font-medium", opt.hasInterest ? "text-amber-500" : "text-primary")}>
+                          {opt.hasInterest ? '(com juros)' : 'sem juros'}
+                        </span>
                       </p>
                       <p className="text-[11px] text-muted-foreground">{opt.label}</p>
                     </div>
                   </div>
                   <p className="text-sm font-bold text-foreground/80">
-                    R$ {amount.toFixed(2)}
+                    R$ {opt.totalValue.toFixed(2)}
                   </p>
+
                 </button>
               );
             })}
