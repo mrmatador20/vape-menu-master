@@ -174,11 +174,7 @@ export const getMfaStatus = async (userId: string): Promise<MfaStatus> => {
   let isTrustedDevice = false;
 
   if (!isAAL2) {
-    if (readTrustedDeviceToken(userId) || !hasFlag) {
-      isTrustedDevice = await isDeviceTrustedOnServer(userId);
-    } else {
-      isTrustedDevice = await isDeviceTrustedOnServer(userId);
-    }
+    isTrustedDevice = await isDeviceTrustedOnServer(userId);
   }
 
   const satisfied = isAAL2 || isTrustedDevice;
