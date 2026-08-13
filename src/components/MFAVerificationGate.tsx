@@ -10,6 +10,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Shield, Loader2, Info } from 'lucide-react';
 import { toast } from 'sonner';
+import { TOTP_MAX_AGE_MS } from '@/lib/totpReplayGuard';
 
 interface MFAVerificationGateProps {
   open: boolean;
@@ -46,8 +47,8 @@ export const MFAVerificationGate = ({
   const { verifyTOTPCode } = useAAL2Guard();
   const { rememberDevice: saveRememberedDevice } = useAuthGuard();
 
-  // Challenge expiration: 5 minutes
-  const CHALLENGE_EXPIRATION_MS = 5 * 60 * 1000;
+  // Janela estrita: o desafio só vive pelo passo TOTP atual + 1 (máx. 60s)
+  const CHALLENGE_EXPIRATION_MS = TOTP_MAX_AGE_MS;
 
   // Monitor challenge expiration
   useEffect(() => {
@@ -67,7 +68,7 @@ export const MFAVerificationGate = ({
     checkExpiration();
 
     // Check every 10 seconds
-    const interval = setInterval(checkExpiration, 10000);
+    const interval = setInterval(checkExpiration, 5000);
 
     return () => clearInterval(interval);
   }, [open, challengeData, onExpired, CHALLENGE_EXPIRATION_MS]);

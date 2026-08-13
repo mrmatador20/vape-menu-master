@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { logActivity } from '@/hooks/useActivityLogs';
 import QRCode from 'qrcode';
+import { claimTotpCode } from '@/lib/totpReplayGuard';
 
 // Generate random backup code
 const generateBackupCode = (): string => {
@@ -173,6 +174,12 @@ export const useMFA = () => {
 
   const verifyMFACode = async (factorId: string, code: string) => {
     try {
+      // Anti-replay: o mesmo código não pode ser reutilizado na mesma janela de 30s
+      const claim = await claimTotpCode(code);
+      if (!claim.allowed) {
+        throw new Error(claim.error || 'Código inválido');
+      }
+
       const challenge = await supabase.auth.mfa.challenge({ factorId });
       
       if (challenge.error) throw challenge.error;
