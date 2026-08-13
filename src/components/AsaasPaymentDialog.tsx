@@ -105,6 +105,8 @@ export const AsaasPaymentDialog = ({
   const [copied, setCopied] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string>('');
   const [installments, setInstallments] = useState<number>(1);
+  const { rules: installmentRules } = useInstallmentRules();
+
 
   const [card, setCard] = useState({
     holderName: '', number: '', expiry: '', ccv: '', cpf: payerCpf ? maskCpf(payerCpf) : '',
