@@ -8,6 +8,23 @@ const corsHeaders = {
 
 const ASAAS_BASE_URL = 'https://api.asaas.com/v3';
 
+// Regras de parcelamento: 1x-2x sem juros (lojista), 3x-12x com juros repassados ao cliente
+const MAX_INSTALLMENTS = 12;
+const INTEREST_FREE_INSTALLMENTS = 2;
+const MONTHLY_INTEREST_RATE = 0.0299;
+const round2 = (v: number) => Math.round(v * 100) / 100;
+
+const calcInstallment = (amount: number, n: number) => {
+  if (n <= INTEREST_FREE_INSTALLMENTS) {
+    const installmentValue = round2(amount / n);
+    return { installmentValue, totalValue: round2(installmentValue * n), hasInterest: false };
+  }
+  const i = MONTHLY_INTEREST_RATE;
+  const installmentValue = round2((amount * i) / (1 - Math.pow(1 + i, -n)));
+  return { installmentValue, totalValue: round2(installmentValue * n), hasInterest: true };
+};
+
+
 // Sanitiza dados sensíveis para logs (PCI-DSS)
 const safeLog = (msg: string, data?: any) => {
   if (data) {
@@ -90,7 +107,9 @@ serve(async (req) => {
       cardHolderPostalCode,
       cardHolderAddressNumber,
       cardHolderPhone,
+      installmentCount,
     } = body;
+
 
     safeLog('[Asaas] Request received', { orderId, paymentMethod });
 
@@ -283,6 +302,22 @@ serve(async (req) => {
         mobilePhone: phoneClean,
       };
       paymentBody.remoteIp = clientIp;
+
+      // Parcelamento (apenas crédito): 1x-2x sem juros, 3x-12x com juros repassados
+      if (paymentMethod === 'credit') {
+        let n = parseInt(String(installmentCount ?? 1), 10);
+        if (isNaN(n) || n < 1) n = 1;
+        if (n > MAX_INSTALLMENTS) n = MAX_INSTALLMENTS;
+        if (n > 1) {
+          const { installmentValue, totalValue } = calcInstallment(roundedAmount, n);
+          paymentBody.installmentCount = n;
+          paymentBody.installmentValue = installmentValue;
+          paymentBody.totalValue = totalValue;
+          delete paymentBody.value;
+          safeLog('[Asaas] Installments', { n, installmentValue, totalValue });
+        }
+      }
+
     }
 
     const paymentRes = await fetch(`${ASAAS_BASE_URL}/payments`, {

@@ -12,6 +12,8 @@ import {
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
+import { buildInstallmentOptions, calcInstallment, MAX_INSTALLMENTS } from '@/lib/installments';
+
 
 interface OrderSummaryItem {
   name?: string;
@@ -208,13 +210,18 @@ export const AsaasPaymentDialog = ({
   };
 
   const installmentOptions = useMemo(() => {
-    const max = paymentMethod === 'credit' ? 12 : 1;
-    return Array.from({ length: max }, (_, i) => {
-      const n = i + 1;
-      const value = amount / n;
-      return { n, value, label: n === 1 ? 'À vista' : `${n}x sem juros` };
-    });
+    if (paymentMethod !== 'credit') {
+      const single = calcInstallment(amount, 1);
+      return [{ n: 1, ...single, label: 'À vista, sem juros' }];
+    }
+    return buildInstallmentOptions(amount, MAX_INSTALLMENTS);
   }, [amount, paymentMethod]);
+
+  const selectedOption = useMemo(
+    () => installmentOptions.find((o) => o.n === installments) ?? installmentOptions[0],
+    [installmentOptions, installments]
+  );
+
 
   /* ------------- estilo input ------------- */
   const inputBase =
@@ -302,11 +309,15 @@ export const AsaasPaymentDialog = ({
               R$ {amount.toFixed(2)}
             </span>
           </div>
-          {paymentMethod === 'credit' && installments > 1 && (
+          {paymentMethod === 'credit' && installments > 1 && selectedOption && (
             <p className="text-[11px] text-muted-foreground mt-1 text-right">
-              ou {installments}x de R$ {(amount / installments).toFixed(2)} sem juros
+              ou {installments}x de R$ {selectedOption.installmentValue.toFixed(2)}{' '}
+              {selectedOption.hasInterest
+                ? `(com juros — total R$ ${selectedOption.totalValue.toFixed(2)})`
+                : 'sem juros'}
             </p>
           )}
+
         </div>
       </div>
     </div>
@@ -481,14 +492,18 @@ export const AsaasPaymentDialog = ({
                     </span>
                     <div>
                       <p className="text-sm font-semibold">
-                        {opt.n}x de R$ {opt.value.toFixed(2)}
+                        {opt.n}x de R$ {opt.installmentValue.toFixed(2)}{' '}
+                        <span className={cn("text-[11px] font-medium", opt.hasInterest ? "text-amber-500" : "text-primary")}>
+                          {opt.hasInterest ? '(com juros)' : 'sem juros'}
+                        </span>
                       </p>
                       <p className="text-[11px] text-muted-foreground">{opt.label}</p>
                     </div>
                   </div>
                   <p className="text-sm font-bold text-foreground/80">
-                    R$ {amount.toFixed(2)}
+                    R$ {opt.totalValue.toFixed(2)}
                   </p>
+
                 </button>
               );
             })}
