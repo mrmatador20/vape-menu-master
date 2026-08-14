@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { OrderNotificationBell } from "@/components/admin/OrderNotificationBell";
 import { getMfaStatus, markMfaVerified } from "@/lib/mfaSession";
+import { isPathAllowedForModerator, ADMIN_BASE } from "@/lib/adminAccess";
 
 export default function AdminLayout() {
   const { data: role, isLoading: roleLoading } = useUserRole();
@@ -32,7 +33,7 @@ export default function AdminLayout() {
   // Check admin 2FA verification on component mount
   useEffect(() => {
     const checkAdminAuth = async () => {
-      if (hasCheckedRef.current || !isAuthenticated || role !== 'admin') {
+      if (hasCheckedRef.current || !isAuthenticated || (role !== 'admin' && role !== 'moderator')) {
         return;
       }
 
@@ -171,7 +172,7 @@ export default function AdminLayout() {
   }
 
   // Block if not authenticated or not admin
-  if (!isAuthenticated || role !== 'admin') {
+  if (!isAuthenticated || (role !== 'admin' && role !== 'moderator')) {
     return <Navigate to="/" state={{ from: location }} replace />;
   }
 
@@ -234,6 +235,11 @@ export default function AdminLayout() {
         />
       </div>
     );
+  }
+
+  // Moderadores só acessam as áreas de apoio operacional
+  if (role === 'moderator' && !isPathAllowedForModerator(location.pathname)) {
+    return <Navigate to={ADMIN_BASE} replace state={{ restricted: true }} />;
   }
 
   return (
