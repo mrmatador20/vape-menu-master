@@ -24,6 +24,14 @@ export default function AdminLayout() {
   const navigate = useNavigate();
   const hasCheckedRef = useRef(false);
 
+  const restricted = role === 'moderator' && !isPathAllowedForModerator(location.pathname);
+
+  useEffect(() => {
+    if (restricted) {
+      toast.error('Acesso restrito', { description: 'Você não tem permissão para acessar esta área.' });
+    }
+  }, [restricted, location.pathname]);
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setIsAuthenticated(!!session);
@@ -238,7 +246,7 @@ export default function AdminLayout() {
   }
 
   // Moderadores só acessam as áreas de apoio operacional
-  if (role === 'moderator' && !isPathAllowedForModerator(location.pathname)) {
+  if (restricted) {
     return <Navigate to={ADMIN_BASE} replace state={{ restricted: true }} />;
   }
 
