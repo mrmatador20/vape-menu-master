@@ -110,7 +110,17 @@ export default function Balcao() {
                   <div className="text-xs text-muted-foreground space-y-0.5">
                     {p.sku && <div>SKU: <span className="font-mono">{p.sku}</span></div>}
                     <div>{p.category}{p.subcategory ? ` • ${p.subcategory}` : ''}</div>
-                    <div>R$ {p.price.toFixed(2)}</div>
+                    {(() => {
+                      const pr = getPromoPrice(p.price, p.discount_value, p.discount_type as 'percent' | 'fixed' | undefined);
+                      return pr.hasPromo ? (
+                        <div className="text-sm">
+                          <span className="line-through mr-2">R$ {pr.base.toFixed(2)}</span>
+                          <span className="font-semibold text-foreground">R$ {pr.unit.toFixed(2)}</span>
+                        </div>
+                      ) : (
+                        <div className="text-sm font-semibold text-foreground">R$ {pr.base.toFixed(2)}</div>
+                      );
+                    })()}
                   </div>
                   <div className="flex items-center justify-between mt-auto pt-2">
                     <div className="text-sm">
