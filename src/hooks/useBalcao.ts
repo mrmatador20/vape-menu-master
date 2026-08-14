@@ -79,6 +79,8 @@ const invalidate = (qc: ReturnType<typeof useQueryClient>) => {
   qc.invalidateQueries({ queryKey: ['admin-sales-stats'] });
 };
 
+export type BalcaoPaymentMethod = 'dinheiro' | 'pix_balcao' | 'credito_balcao' | 'debito_balcao';
+
 export const useBalcaoBaixa = () => {
   const qc = useQueryClient();
   return useMutation({
@@ -90,6 +92,8 @@ export const useBalcaoBaixa = () => {
       reason: 'venda_loja' | 'produto_danificado' | 'troca' | 'ajuste_estoque' | 'outro';
       notes?: string | null;
       request_id: string;
+      manual_discount?: number;
+      payment_method?: BalcaoPaymentMethod | null;
     }) => {
       const { data, error } = await supabase.rpc('balcao_baixa_estoque', {
         p_product_id: p.product_id,
@@ -99,7 +103,9 @@ export const useBalcaoBaixa = () => {
         p_reason: p.reason,
         p_notes: p.notes ?? null,
         p_request_id: p.request_id,
-      });
+        p_manual_discount: p.manual_discount ?? 0,
+        p_payment_method: p.payment_method ?? null,
+      } as any);
       if (error) throw error;
       return data as string;
     },

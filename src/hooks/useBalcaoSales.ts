@@ -23,7 +23,7 @@ export const useBalcaoSales = (fromIso?: string, toIso?: string) => {
       let q = supabase
         .from('stock_movements')
         .select(
-          'id, product_id, flavor_id, product_name_snapshot, quantity, movement_type, reason, reversed_by_movement_id, created_at',
+          'id, product_id, flavor_id, product_name_snapshot, quantity, movement_type, reason, reversed_by_movement_id, created_at, final_price',
         )
         .in('movement_type', ['venda_loja_fisica', 'baixa_manual'])
         .limit(5000);
@@ -50,16 +50,23 @@ export const useBalcaoSales = (fromIso?: string, toIso?: string) => {
             (m.movement_type === 'venda_loja_fisica' ||
               (m.movement_type === 'baixa_manual' && m.reason === 'venda_loja')),
         )
-        .map((m) => {
-          const fp = m.flavor_id ? flavorPrice.get(m.flavor_id) : null;
-          const unit = fp != null ? fp : m.product_id ? productPrice.get(m.product_id) ?? 0 : 0;
+        .map((m: any) => {
+          // Valor real faturado (com descontos) quando registrado; fallback legado por preço atual
+          let revenue: number;
+          if (m.final_price != null) {
+            revenue = Number(m.final_price);
+          } else {
+            const fp = m.flavor_id ? flavorPrice.get(m.flavor_id) : null;
+            const unit = fp != null ? fp : m.product_id ? productPrice.get(m.product_id) ?? 0 : 0;
+            revenue = unit * (m.quantity ?? 0);
+          }
           return {
             id: m.id,
             created_at: m.created_at,
             product_id: m.product_id,
             product_name: m.product_name_snapshot || 'Produto',
             quantity: m.quantity ?? 0,
-            revenue: unit * (m.quantity ?? 0),
+            revenue,
           };
         });
     },

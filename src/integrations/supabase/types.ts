@@ -1564,12 +1564,16 @@ export type Database = {
         Row: {
           category_snapshot: string | null
           created_at: string
+          discount_amount: number | null
+          final_price: number | null
           flavor_id: string | null
           id: string
           ip_address: string | null
           movement_type: Database["public"]["Enums"]["stock_movement_type"]
           notes: string | null
           order_id: string | null
+          original_price: number | null
+          payment_method: string | null
           product_id: string | null
           product_name_snapshot: string
           product_sku_snapshot: string | null
@@ -1588,12 +1592,16 @@ export type Database = {
         Insert: {
           category_snapshot?: string | null
           created_at?: string
+          discount_amount?: number | null
+          final_price?: number | null
           flavor_id?: string | null
           id?: string
           ip_address?: string | null
           movement_type: Database["public"]["Enums"]["stock_movement_type"]
           notes?: string | null
           order_id?: string | null
+          original_price?: number | null
+          payment_method?: string | null
           product_id?: string | null
           product_name_snapshot: string
           product_sku_snapshot?: string | null
@@ -1612,12 +1620,16 @@ export type Database = {
         Update: {
           category_snapshot?: string | null
           created_at?: string
+          discount_amount?: number | null
+          final_price?: number | null
           flavor_id?: string | null
           id?: string
           ip_address?: string | null
           movement_type?: Database["public"]["Enums"]["stock_movement_type"]
           notes?: string | null
           order_id?: string | null
+          original_price?: number | null
+          payment_method?: string | null
           product_id?: string | null
           product_name_snapshot?: string
           product_sku_snapshot?: string | null
@@ -2061,18 +2073,33 @@ export type Database = {
         }
         Returns: string
       }
-      balcao_baixa_estoque: {
-        Args: {
-          p_flavor_id: string
-          p_movement_type: Database["public"]["Enums"]["stock_movement_type"]
-          p_notes: string
-          p_product_id: string
-          p_quantity: number
-          p_reason: Database["public"]["Enums"]["stock_movement_reason"]
-          p_request_id: string
-        }
-        Returns: string
-      }
+      balcao_baixa_estoque:
+        | {
+            Args: {
+              p_flavor_id: string
+              p_movement_type: Database["public"]["Enums"]["stock_movement_type"]
+              p_notes: string
+              p_product_id: string
+              p_quantity: number
+              p_reason: Database["public"]["Enums"]["stock_movement_reason"]
+              p_request_id: string
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              p_flavor_id: string
+              p_manual_discount?: number
+              p_movement_type: Database["public"]["Enums"]["stock_movement_type"]
+              p_notes: string
+              p_payment_method?: string
+              p_product_id: string
+              p_quantity: number
+              p_reason: Database["public"]["Enums"]["stock_movement_reason"]
+              p_request_id: string
+            }
+            Returns: string
+          }
       balcao_check_rate_limit: {
         Args: { p_key: string; p_max: number; p_window_minutes: number }
         Returns: undefined
@@ -2090,6 +2117,10 @@ export type Database = {
       balcao_reverter_baixa: {
         Args: { p_movement_id: string; p_notes?: string; p_request_id: string }
         Returns: string
+      }
+      balcao_unit_price: {
+        Args: { p_flavor_id: string; p_product_id: string }
+        Returns: number
       }
       claim_totp_code: { Args: { p_code_hash: string }; Returns: Json }
       cleanup_expired_rate_limits: { Args: never; Returns: undefined }
