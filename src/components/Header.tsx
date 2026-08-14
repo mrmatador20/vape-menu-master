@@ -401,7 +401,7 @@ const Header = () => {
                 <DropdownMenuItem onClick={() => handleNavigate('/my-orders')} className="gap-2 text-sm">
                   <Package className="h-4 w-4" {...ICON_PROPS} /> Meus pedidos
                 </DropdownMenuItem>
-                {role === 'admin' && (
+                {(role === 'admin' || role === 'moderator') && (
                   <>
                     <DropdownMenuSeparator />
                     <DropdownMenuLabel className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground font-normal">
