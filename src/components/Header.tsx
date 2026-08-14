@@ -401,14 +401,14 @@ const Header = () => {
                 <DropdownMenuItem onClick={() => handleNavigate('/my-orders')} className="gap-2 text-sm">
                   <Package className="h-4 w-4" {...ICON_PROPS} /> Meus pedidos
                 </DropdownMenuItem>
-                {role === 'admin' && (
+                {(role === 'admin' || role === 'moderator') && (
                   <>
                     <DropdownMenuSeparator />
                     <DropdownMenuLabel className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground font-normal">
                       Administração
                     </DropdownMenuLabel>
                     <DropdownMenuItem onClick={() => handleNavigate('/546498@18')} className="gap-2 text-sm">
-                      <Settings className="h-4 w-4" {...ICON_PROPS} /> Painel administrativo
+                      <Settings className="h-4 w-4" {...ICON_PROPS} /> {role === 'moderator' ? 'Painel operacional' : 'Painel administrativo'}
                     </DropdownMenuItem>
                   </>
                 )}
@@ -606,9 +606,9 @@ const Header = () => {
                       <MobileLink onClick={() => handleNavigate('/my-orders')} icon={<Package className="h-4 w-4" {...ICON_PROPS} />}>
                         Meus pedidos
                       </MobileLink>
-                      {role === 'admin' && (
+                      {(role === 'admin' || role === 'moderator') && (
                         <MobileLink onClick={() => handleNavigate('/546498@18')} icon={<Settings className="h-4 w-4" {...ICON_PROPS} />}>
-                          Painel administrativo
+                          {role === 'moderator' ? 'Painel operacional' : 'Painel administrativo'}
                         </MobileLink>
                       )}
                       <MobileLink onClick={handleLogout} icon={<LogOut className="h-4 w-4" {...ICON_PROPS} />} destructive>
