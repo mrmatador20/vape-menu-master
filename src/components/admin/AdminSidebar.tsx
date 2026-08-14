@@ -13,6 +13,8 @@ import {
 } from "@/components/ui/sidebar";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
+import { useUserRole } from "@/hooks/useUserRole";
+import { isPathAllowedForModerator } from "@/lib/adminAccess";
 
 type Item = { title: string; url: string; icon: any };
 type Group = { title: string; icon: any; items: Item[] };
@@ -69,10 +71,17 @@ const groups: Group[] = [
 export function AdminSidebar() {
   const { open } = useSidebar();
   const { pathname } = useLocation();
+  const { data: role } = useUserRole();
+
+  const visibleGroups = (role === "moderator"
+    ? groups
+        .map((g) => ({ ...g, items: g.items.filter((i) => isPathAllowedForModerator(i.url)) }))
+        .filter((g) => g.items.length > 0)
+    : groups);
 
   // open the group containing the current route by default
   const initialOpen: Record<string, boolean> = {};
-  groups.forEach((g) => {
+  visibleGroups.forEach((g) => {
     initialOpen[g.title] = g.items.some((i) =>
       i.url === "/546498@18" ? pathname === "/546498@18" : pathname.startsWith(i.url)
     );
@@ -94,7 +103,7 @@ export function AdminSidebar() {
           <SidebarTrigger />
         </div>
 
-        {groups.map((group) => (
+        {visibleGroups.map((group) => (
           <SidebarGroup key={group.title}>
             <Collapsible
               open={open ? (openMap[group.title] ?? true) : true}
