@@ -10,6 +10,7 @@ import { Search, PackageMinus, Lock } from 'lucide-react';
 import { BalcaoBaixaDialog } from '@/components/admin/BalcaoBaixaDialog';
 import { RecentBalcaoMovements } from '@/components/admin/RecentBalcaoMovements';
 import type { Product } from '@/context/CartContext';
+import { getPromoPrice } from '@/lib/balcaoPricing';
 
 const stockStatus = (p: Product) => {
   if (p.stock <= 0) return { label: 'Sem estoque', variant: 'destructive' as const };
