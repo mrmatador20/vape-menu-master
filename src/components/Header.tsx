@@ -606,9 +606,9 @@ const Header = () => {
                       <MobileLink onClick={() => handleNavigate('/my-orders')} icon={<Package className="h-4 w-4" {...ICON_PROPS} />}>
                         Meus pedidos
                       </MobileLink>
-                      {role === 'admin' && (
+                      {(role === 'admin' || role === 'moderator') && (
                         <MobileLink onClick={() => handleNavigate('/546498@18')} icon={<Settings className="h-4 w-4" {...ICON_PROPS} />}>
-                          Painel administrativo
+                          {role === 'moderator' ? 'Painel operacional' : 'Painel administrativo'}
                         </MobileLink>
                       )}
                       <MobileLink onClick={handleLogout} icon={<LogOut className="h-4 w-4" {...ICON_PROPS} />} destructive>
