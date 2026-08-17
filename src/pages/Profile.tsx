@@ -55,7 +55,7 @@ const Profile = () => {
   usePageMeta({ title: 'Meu Perfil - Fox Velour', description: 'Gerencie seus dados pessoais, endereços e preferências de segurança.', path: '/profile' });
 
   const navigate = useNavigate();
-  const { profile, isLoading, updateProfile, isUpdating } = useProfile();
+  const { profile, isLoading, error: profileError, updateProfile, isUpdating } = useProfile();
   const { listFactors, unenrollMFA, isUnenrolling } = useMFA();
   const [userEmail, setUserEmail] = useState<string>('');
   const [mfaFactors, setMfaFactors] = useState<any[]>([]);
@@ -200,6 +200,28 @@ const Profile = () => {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (profileError) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <div className="container mx-auto px-4 py-12 max-w-2xl">
+          <Card>
+            <CardHeader>
+              <CardTitle>Não foi possível carregar seu perfil</CardTitle>
+              <CardDescription>
+                Sua sessão continua ativa. Tente novamente em instantes.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-sm text-muted-foreground break-words">{profileError.message}</p>
+              <Button onClick={() => window.location.reload()}>Tentar novamente</Button>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     );
   }

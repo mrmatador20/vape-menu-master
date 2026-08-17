@@ -19,7 +19,7 @@ export interface Profile {
 export const useProfile = () => {
   const queryClient = useQueryClient();
 
-  const { data: profile, isLoading } = useQuery({
+  const { data: profile, isLoading, error } = useQuery({
     queryKey: ['profile'],
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -83,6 +83,7 @@ export const useProfile = () => {
   return {
     profile,
     isLoading,
+    error: error as Error | null,
     updateProfile: updateProfile.mutate,
     isUpdating: updateProfile.isPending,
   };

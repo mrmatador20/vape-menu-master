@@ -99,11 +99,11 @@ export const AuthInterceptor = ({ children }: AuthInterceptorProps) => {
         }
 
       } catch (error) {
+        // Erro transitório (rede/consulta) NÃO deve deslogar o usuário.
         console.error('🛡️ AuthInterceptor: Error during auth check:', error);
         if (isMounted) {
-          const { secureSignOut } = await import('@/lib/secureLogout');
-          await secureSignOut();
-          navigate('/auth');
+          setGlobalAuthState('AUTHENTICATED');
+          setInterceptorState('authenticated');
         }
       } finally {
         isCheckingRef.current = false;

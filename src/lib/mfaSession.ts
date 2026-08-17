@@ -155,6 +155,8 @@ export interface MfaStatus {
   isAAL2: boolean;
   isTrustedDevice: boolean;
   hasFlag: boolean;
+  /** O usuário possui algum fator TOTP habilitado (2FA obrigatório para ele). */
+  hasEnrolledFactor: boolean;
 }
 
 /**
@@ -163,22 +165,27 @@ export interface MfaStatus {
  */
 export const getMfaStatus = async (userId: string): Promise<MfaStatus> => {
   let isAAL2 = false;
+  // Se o usuário não tem fator TOTP habilitado, o servidor reporta nextLevel !== 'aal2'
+  // e ele NUNCA conseguiria atingir AAL2 — nesse caso não há 2FA a exigir.
+  let hasEnrolledFactor = false;
   try {
     const { data } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
     isAAL2 = data?.currentLevel === 'aal2';
+    hasEnrolledFactor = data?.nextLevel === 'aal2';
   } catch {
     isAAL2 = false;
+    hasEnrolledFactor = false;
   }
 
   const hasFlag = hasMfaSessionFlag(userId);
   let isTrustedDevice = false;
 
-  if (!isAAL2) {
+  if (!isAAL2 && hasEnrolledFactor) {
     isTrustedDevice = await isDeviceTrustedOnServer(userId);
   }
 
-  const satisfied = isAAL2 || isTrustedDevice;
+  const satisfied = isAAL2 || isTrustedDevice || !hasEnrolledFactor;
   if (satisfied) markMfaVerified(userId);
 
-  return { satisfied, isAAL2, isTrustedDevice, hasFlag };
+  return { satisfied, isAAL2, isTrustedDevice, hasFlag, hasEnrolledFactor };
 };
