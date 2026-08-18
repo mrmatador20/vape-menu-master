@@ -10,6 +10,8 @@ import { useBalcaoBaixa } from '@/hooks/useBalcao';
 import { useFlavors } from '@/hooks/useFlavors';
 import type { Product } from '@/context/CartContext';
 import { getPromoPrice } from '@/lib/balcaoPricing';
+import { PixBalcaoQr } from '@/components/admin/PixBalcaoQr';
+
 
 type Reason = 'venda_loja' | 'produto_danificado' | 'troca' | 'ajuste_estoque' | 'outro';
 const REASONS: { value: Reason; label: string }[] = [
