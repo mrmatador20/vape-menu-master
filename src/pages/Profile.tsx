@@ -6,7 +6,7 @@ import { useMFA } from '@/hooks/useMFA';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Loader2, User, MapPin, Phone, Calendar, Package, Shield, ShieldCheck, ShieldOff, Key } from 'lucide-react';
+import { Loader2, User, MapPin, Package, Shield, ShieldCheck, ShieldOff, Key } from 'lucide-react';
 import Header from '@/components/Header';
 import { logActivity } from '@/hooks/useActivityLogs';
 import { Button } from '@/components/ui/button';
