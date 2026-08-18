@@ -227,8 +227,8 @@ export default function AdminProducts() {
         </CardContent>
       </Card>
 
-      {/* ===== Mobile: Cards ===== */}
-      <div className="block md:hidden space-y-3">
+      {/* ===== Cards responsivo (mobile + desktop) ===== */}
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
         {isLoading ? (
           <div className="flex justify-center py-10"><Loader2 className="h-6 w-6 animate-spin" /></div>
         ) : pageData.length === 0 ? (
