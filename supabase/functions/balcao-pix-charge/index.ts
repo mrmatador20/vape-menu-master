@@ -47,11 +47,30 @@ Deno.serve(async (req) => {
     }
     const roundedAmount = Math.round(amount * 100) / 100
     const description = String(body?.description ?? 'Venda Balcão').slice(0, 200)
-    const cpfNumbers = String(body?.customerCpf ?? '').replace(/\D/g, '')
+    let cpfNumbers = String(body?.customerCpf ?? '').replace(/\D/g, '')
+    let customerName = String(body?.customerName ?? '').trim().slice(0, 100)
+    let usedFallback = false
+
     if (cpfNumbers.length !== 11 && cpfNumbers.length !== 14) {
-      return json({ error: 'Informe o CPF/CNPJ do cliente para gerar o Pix' }, 400)
+      // Fallback: usa os dados do titular cadastrados em Sistema -> Configurações
+      const { data: fallbackSettings } = await supabase
+        .from('settings')
+        .select('key, value')
+        .in('key', ['balcao_pix_fallback_cpf', 'balcao_pix_fallback_name'])
+
+      const map = Object.fromEntries((fallbackSettings ?? []).map((s: { key: string; value: string }) => [s.key, s.value]))
+      const fallbackCpf = String(map['balcao_pix_fallback_cpf'] ?? '').replace(/\D/g, '')
+      if (fallbackCpf.length !== 11 && fallbackCpf.length !== 14) {
+        return json({
+          error: 'Informe o CPF/CNPJ do cliente ou cadastre o documento do titular em Sistema → Configurações',
+        }, 400)
+      }
+      cpfNumbers = fallbackCpf
+      customerName = String(map['balcao_pix_fallback_name'] ?? '').trim().slice(0, 100) || 'Cliente Balcão'
+      usedFallback = true
     }
-    const customerName = String(body?.customerName ?? '').trim().slice(0, 100) || 'Cliente Balcão'
+
+    customerName = customerName || 'Cliente Balcão'
 
     const apiKey = Deno.env.get('ASAAS_API_KEY')
     if (!apiKey) return json({ error: 'Pagamento indisponível' }, 503)
