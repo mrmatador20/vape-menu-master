@@ -228,14 +228,14 @@ export default function Referrals() {
         </TabsList>
 
         <TabsContent value="rewards" className="space-y-4">
-          <div className="flex justify-between items-center">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
             <div>
               <h2 className="text-xl font-semibold">Recompensas</h2>
               <p className="text-sm text-muted-foreground">
                 Configure as recompensas que clientes podem resgatar com pontos
               </p>
             </div>
-            <Button onClick={handleNewReward}>
+            <Button onClick={handleNewReward} className="w-full sm:w-auto">
               <Plus className="h-4 w-4 mr-2" />
               Nova Recompensa
             </Button>
@@ -250,61 +250,120 @@ export default function Referrals() {
                   <Skeleton className="h-12 w-full" />
                 </div>
               ) : rewards && rewards.length > 0 ? (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Nome</TableHead>
-                      <TableHead>Descrição</TableHead>
-                      <TableHead>Pontos</TableHead>
-                      <TableHead>Cupom</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Ações</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
+                <>
+                  {/* Mobile: cards */}
+                  <div className="md:hidden p-4 space-y-3">
                     {rewards.map((reward) => (
-                      <TableRow key={reward.id}>
-                        <TableCell className="font-medium">{reward.name}</TableCell>
-                        <TableCell className="max-w-xs truncate">
+                      <div
+                        key={reward.id}
+                        className="border rounded-lg p-4 space-y-2 flex flex-col"
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="font-semibold truncate">{reward.name}</span>
+                          <Badge variant="secondary" className="whitespace-nowrap">
+                            {reward.points_required} pts
+                          </Badge>
+                        </div>
+                        <Badge
+                          variant={reward.is_active ? "default" : "outline"}
+                          className="w-fit"
+                        >
+                          {reward.is_active ? 'Ativa' : 'Inativa'}
+                        </Badge>
+                        <p className="text-sm text-muted-foreground break-words">
                           {reward.description || '-'}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="secondary">{reward.points_required} pts</Badge>
-                        </TableCell>
-                        <TableCell>
-                          {reward.discount_code ? (
-                            <code className="text-xs bg-muted px-2 py-1 rounded">
+                        </p>
+                        {reward.discount_code && (
+                          <div className="text-sm">
+                            <span className="text-muted-foreground">Cupom: </span>
+                            <code className="text-xs bg-muted px-2 py-1 rounded break-all">
                               {reward.discount_code}
                             </code>
-                          ) : '-'}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={reward.is_active ? "default" : "outline"}>
-                            {reward.is_active ? 'Ativa' : 'Inativa'}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-2">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleEditReward(reward)}
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => setDeleteRewardId(reward.id)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
                           </div>
-                        </TableCell>
-                      </TableRow>
+                        )}
+                        <div className="flex gap-2 pt-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="flex-1"
+                            onClick={() => handleEditReward(reward)}
+                          >
+                            <Pencil className="h-4 w-4 mr-1" />
+                            Editar
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="flex-1"
+                            onClick={() => setDeleteRewardId(reward.id)}
+                          >
+                            <Trash2 className="h-4 w-4 mr-1" />
+                            Excluir
+                          </Button>
+                        </div>
+                      </div>
                     ))}
-                  </TableBody>
-                </Table>
+                  </div>
+
+                  {/* Desktop: table */}
+                  <div className="hidden md:block">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Nome</TableHead>
+                          <TableHead>Descrição</TableHead>
+                          <TableHead>Pontos</TableHead>
+                          <TableHead>Cupom</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead className="text-right">Ações</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {rewards.map((reward) => (
+                          <TableRow key={reward.id}>
+                            <TableCell className="font-medium">{reward.name}</TableCell>
+                            <TableCell className="max-w-xs truncate">
+                              {reward.description || '-'}
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="secondary">{reward.points_required} pts</Badge>
+                            </TableCell>
+                            <TableCell>
+                              {reward.discount_code ? (
+                                <code className="text-xs bg-muted px-2 py-1 rounded">
+                                  {reward.discount_code}
+                                </code>
+                              ) : '-'}
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant={reward.is_active ? "default" : "outline"}>
+                                {reward.is_active ? 'Ativa' : 'Inativa'}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex justify-end gap-2">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleEditReward(reward)}
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => setDeleteRewardId(reward.id)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </>
               ) : (
                 <div className="p-12 text-center">
                   <Gift className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
