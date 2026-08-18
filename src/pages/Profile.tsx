@@ -63,7 +63,6 @@ const Profile = () => {
   const [showUnenrollDialog, setShowUnenrollDialog] = useState(false);
   const [selectedFactorId, setSelectedFactorId] = useState<string | null>(null);
   const [showChangePasswordDialog, setShowChangePasswordDialog] = useState(false);
-  const { isLoading: isLoadingCep, lookupCep } = useCepLookup();
 
   const form = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
