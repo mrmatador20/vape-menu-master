@@ -111,11 +111,26 @@ export default function AdminOrders() {
 
   const handleStatusChange = async (orderId: string, newStatus: string) => {
     const order = orders?.find(o => o.id === orderId);
+
+    // Pix Balcão: confirmação de pagamento só pode ocorrer no servidor (Zero-Trust)
+    if (order?.payment_method === 'pix_balcao' && ['confirmed', 'shipped', 'delivered'].includes(newStatus) && !['confirmed', 'shipped', 'delivered'].includes(order.status)) {
+      const { data, error: fnError } = await supabase.functions.invoke('confirm-pix-balcao', { body: { orderId } });
+      if (fnError || (data as any)?.error) {
+        toast({ title: "Erro ao confirmar Pix Balcão", description: (data as any)?.error || fnError?.message, variant: "destructive" });
+        return;
+      }
+      toast({ title: "Pagamento Pix Balcão confirmado" });
+      queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+      if (newStatus === 'confirmed') return;
+    }
+
     const { error } = await supabase.from('orders').update({ status: newStatus }).eq('id', orderId);
     if (error) {
       toast({ title: "Erro ao atualizar status", description: error.message, variant: "destructive" });
       return;
     }
+
     if (newStatus === 'delivered' && order) {
       try {
         const { data: userData } = await supabase.from('profiles').select('full_name').eq('id', order.user_id).single();
