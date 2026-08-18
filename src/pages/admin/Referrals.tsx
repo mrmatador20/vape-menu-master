@@ -398,48 +398,94 @@ export default function Referrals() {
                   <Skeleton className="h-12 w-full" />
                 </div>
               ) : allPoints && allPoints.length > 0 ? (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Cliente</TableHead>
-                      <TableHead>Código de Indicação</TableHead>
-                      <TableHead>Saldo</TableHead>
-                      <TableHead>Total Ganho</TableHead>
-                      <TableHead>Total Resgatado</TableHead>
-                      <TableHead className="text-right">Ações</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
+                <>
+                  {/* Mobile: cards */}
+                  <div className="md:hidden p-4 space-y-3">
                     {allPoints.map((point: any) => (
-                      <TableRow key={point.id}>
-                        <TableCell className="font-medium">
-                          {point.profiles?.full_name || 'Usuário sem nome'}
-                        </TableCell>
-                        <TableCell>
-                          <code className="text-xs bg-muted px-2 py-1 rounded">
+                      <div
+                        key={point.id}
+                        className="border rounded-lg p-4 space-y-2 flex flex-col"
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="font-semibold truncate">
+                            {point.profiles?.full_name || 'Usuário sem nome'}
+                          </span>
+                          <Badge variant="default" className="font-bold whitespace-nowrap">
+                            {point.points_balance} pts
+                          </Badge>
+                        </div>
+                        <div className="text-sm">
+                          <span className="text-muted-foreground">Código: </span>
+                          <code className="text-xs bg-muted px-2 py-1 rounded break-all">
                             {point.profiles?.referral_code || '-'}
                           </code>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="default" className="font-bold">
-                            {point.points_balance}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>{point.total_earned}</TableCell>
-                        <TableCell>{point.total_redeemed}</TableCell>
-                        <TableCell className="text-right">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleAdjustPoints(point.user_id)}
-                          >
-                            Ajustar Pontos
-                          </Button>
-                        </TableCell>
-                      </TableRow>
+                        </div>
+                        <div className="flex gap-4 text-sm">
+                          <span className="text-muted-foreground">
+                            Ganho: <strong>{point.total_earned}</strong>
+                          </span>
+                          <span className="text-muted-foreground">
+                            Resgatado: <strong>{point.total_redeemed}</strong>
+                          </span>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full"
+                          onClick={() => handleAdjustPoints(point.user_id)}
+                        >
+                          Ajustar Pontos
+                        </Button>
+                      </div>
                     ))}
-                  </TableBody>
-                </Table>
+                  </div>
+
+                  {/* Desktop: table */}
+                  <div className="hidden md:block">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Cliente</TableHead>
+                          <TableHead>Código de Indicação</TableHead>
+                          <TableHead>Saldo</TableHead>
+                          <TableHead>Total Ganho</TableHead>
+                          <TableHead>Total Resgatado</TableHead>
+                          <TableHead className="text-right">Ações</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {allPoints.map((point: any) => (
+                          <TableRow key={point.id}>
+                            <TableCell className="font-medium">
+                              {point.profiles?.full_name || 'Usuário sem nome'}
+                            </TableCell>
+                            <TableCell>
+                              <code className="text-xs bg-muted px-2 py-1 rounded">
+                                {point.profiles?.referral_code || '-'}
+                              </code>
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="default" className="font-bold">
+                                {point.points_balance}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>{point.total_earned}</TableCell>
+                            <TableCell>{point.total_redeemed}</TableCell>
+                            <TableCell className="text-right">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleAdjustPoints(point.user_id)}
+                              >
+                                Ajustar Pontos
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </>
               ) : (
                 <div className="p-12 text-center">
                   <Users className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
