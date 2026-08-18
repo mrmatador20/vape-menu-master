@@ -216,6 +216,16 @@ export default function AdminDiscounts() {
                   <Badge variant="destructive" className="w-fit">Esgotado</Badge>
                 )}
                 <div className="flex justify-end gap-2 pt-1">
+                  {discount.is_influencer_coupon && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      title="Copiar link de indicação"
+                      onClick={() => copyInfluencerLink(discount.code)}
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                  )}
                   <Button
                     variant="outline"
                     size="sm"
