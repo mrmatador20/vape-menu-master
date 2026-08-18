@@ -405,11 +405,16 @@ export function BalcaoBaixaDialog({ open, onOpenChange, product }: Props) {
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-          <Button onClick={submit} disabled={baixa.isPending}>
-            {baixa.isPending ? 'Registrando…' : isSale ? `Confirmar venda • ${brl(finalPrice)}` : 'Confirmar Baixa'}
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            {pixPaid ? 'Fechar' : 'Cancelar'}
           </Button>
+          {!(isPix && (pixOrderId || pixPaid)) && (
+            <Button onClick={submit} disabled={baixa.isPending || (isPix && !pixPaid)}>
+              {baixa.isPending ? 'Registrando…' : isSale ? `Confirmar venda • ${brl(finalPrice)}` : 'Confirmar Baixa'}
+            </Button>
+          )}
         </DialogFooter>
+
       </DialogContent>
     </Dialog>
   );
