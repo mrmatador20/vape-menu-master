@@ -50,6 +50,25 @@ export function BalcaoBaixaDialog({ open, onOpenChange, product }: Props) {
   const [payment, setPayment] = useState<PaymentMethod>('dinheiro');
   const [discountMode, setDiscountMode] = useState<'brl' | 'percent'>('brl');
   const [discountInput, setDiscountInput] = useState('');
+  // Pix Balcão (Asaas dinâmico)
+  const [pixCpf, setPixCpf] = useState('');
+  const [pixLoading, setPixLoading] = useState(false);
+  const [pixOrderId, setPixOrderId] = useState<string | null>(null);
+  const [pixQr, setPixQr] = useState<string | null>(null);
+  const [pixPayload, setPixPayload] = useState<string | null>(null);
+  const [pixPaid, setPixPaid] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const autoBaixaRef = useRef(false);
+
+  const resetPix = () => {
+    setPixLoading(false);
+    setPixOrderId(null);
+    setPixQr(null);
+    setPixPayload(null);
+    setPixPaid(false);
+    setCopied(false);
+    autoBaixaRef.current = false;
+  };
 
   useEffect(() => {
     if (open) {
@@ -60,9 +79,12 @@ export function BalcaoBaixaDialog({ open, onOpenChange, product }: Props) {
       setPayment('dinheiro');
       setDiscountMode('brl');
       setDiscountInput('');
+      setPixCpf('');
+      resetPix();
       setRequestId(crypto.randomUUID());
     }
   }, [open, product?.id]);
+
 
   const flavor = useMemo(
     () => (flavorId && flavors ? flavors.find((f) => f.id === flavorId) ?? null : null),
