@@ -6,6 +6,7 @@ import SiteIdentitySettings from '@/components/admin/SiteIdentitySettings';
 import SiteThemeSettings from '@/components/admin/SiteThemeSettings';
 import CategoriesSettings from '@/components/admin/CategoriesSettings';
 import PaymentSettingsCard from '@/components/admin/PaymentSettingsCard';
+import PixBalcaoSettingsCard from '@/components/admin/PixBalcaoSettingsCard';
 
 
 export default function Settings() {
@@ -39,6 +40,8 @@ export default function Settings() {
       <CategoriesSettings />
 
       <PaymentSettingsCard />
+
+      <PixBalcaoSettingsCard />
 
 
       <LogRetentionSettings />
