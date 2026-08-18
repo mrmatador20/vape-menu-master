@@ -21,9 +21,6 @@ import {
 import { useUserRole } from "@/hooks/useUserRole";
 import { Navigate, Link } from "react-router-dom";
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from "@/components/ui/table";
-import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
@@ -227,8 +224,8 @@ export default function AdminProducts() {
         </CardContent>
       </Card>
 
-      {/* ===== Mobile: Cards ===== */}
-      <div className="block md:hidden space-y-3">
+      {/* ===== Cards responsivo (mobile + desktop) ===== */}
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
         {isLoading ? (
           <div className="flex justify-center py-10"><Loader2 className="h-6 w-6 animate-spin" /></div>
         ) : pageData.length === 0 ? (
@@ -308,80 +305,6 @@ export default function AdminProducts() {
         )}
       </div>
 
-      {/* ===== Desktop: Tabela ===== */}
-      <div className="hidden md:block border rounded-lg overflow-hidden bg-card shadow-sm">
-        <Table>
-          <TableHeader>
-            <TableRow className="bg-muted/40">
-              <TableHead className="w-[80px]">Pos.</TableHead>
-              <TableHead className="w-[80px]">Foto</TableHead>
-              <TableHead>Nome</TableHead>
-              <TableHead>Categoria</TableHead>
-              <TableHead className="text-right">Preço</TableHead>
-              <TableHead className="text-right">Estoque</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Visibilidade</TableHead>
-              <TableHead className="text-right">Ações</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
-              <TableRow><TableCell colSpan={9} className="text-center py-10"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></TableCell></TableRow>
-            ) : pageData.length === 0 ? (
-              <TableRow><TableCell colSpan={9} className="text-center py-10 text-muted-foreground">Nenhum produto encontrado.</TableCell></TableRow>
-            ) : (
-              pageData.map((product) => {
-                const visible = (product as any).visible_in_all !== false;
-                const discount = (product as any).discount_value || 0;
-                return (
-                  <TableRow key={product.id} className="hover:bg-accent/30">
-                    <TableCell className="font-medium text-muted-foreground">{(product as any).display_order || 0}</TableCell>
-                    <TableCell>
-                      <img src={product.image || '/placeholder.svg'} alt={product.name}
-                        className="h-12 w-12 rounded-md object-cover border" />
-                    </TableCell>
-                    <TableCell>
-                      <div className="font-medium">{product.name}</div>
-                      {(product as any).subcategory && (
-                        <div className="text-xs text-muted-foreground">{(product as any).subcategory}</div>
-                      )}
-                    </TableCell>
-                    <TableCell className="capitalize">{product.category}</TableCell>
-                    <TableCell className="text-right">
-                      <div className="font-medium">R$ {product.price.toFixed(2)}</div>
-                      {discount > 0 && (
-                        <Badge variant="secondary" className="text-[10px] mt-0.5">
-                          -{discount}{(product as any).discount_type === 'fixed' ? '' : '%'}
-                        </Badge>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right font-medium">{product.stock}</TableCell>
-                    <TableCell>{stockBadge(product.stock, product.min_stock)}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Switch checked={visible} onCheckedChange={(c) => handleToggleVisibility(product.id, c)} />
-                        {visible
-                          ? <Eye className="h-4 w-4 text-emerald-600" />
-                          : <EyeOff className="h-4 w-4 text-muted-foreground" />}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-1">
-                        <Button variant="ghost" size="sm" onClick={() => { setEditProduct(product); setIsFormOpen(true); }}>
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="sm" onClick={() => setDeleteProductId(product.id)}>
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                );
-              })
-            )}
-          </TableBody>
-        </Table>
-      </div>
 
       {totalPages > 1 && (
         <div className="flex items-center justify-between">
