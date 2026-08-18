@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,10 +6,13 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
+import { Loader2, Copy, CheckCircle2, QrCode } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 import { useBalcaoBaixa } from '@/hooks/useBalcao';
 import { useFlavors } from '@/hooks/useFlavors';
 import type { Product } from '@/context/CartContext';
 import { getPromoPrice } from '@/lib/balcaoPricing';
+
 
 type Reason = 'venda_loja' | 'produto_danificado' | 'troca' | 'ajuste_estoque' | 'outro';
 const REASONS: { value: Reason; label: string }[] = [
@@ -47,6 +50,25 @@ export function BalcaoBaixaDialog({ open, onOpenChange, product }: Props) {
   const [payment, setPayment] = useState<PaymentMethod>('dinheiro');
   const [discountMode, setDiscountMode] = useState<'brl' | 'percent'>('brl');
   const [discountInput, setDiscountInput] = useState('');
+  // Pix Balcão (Asaas dinâmico)
+  const [pixCpf, setPixCpf] = useState('');
+  const [pixLoading, setPixLoading] = useState(false);
+  const [pixOrderId, setPixOrderId] = useState<string | null>(null);
+  const [pixQr, setPixQr] = useState<string | null>(null);
+  const [pixPayload, setPixPayload] = useState<string | null>(null);
+  const [pixPaid, setPixPaid] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const autoBaixaRef = useRef(false);
+
+  const resetPix = () => {
+    setPixLoading(false);
+    setPixOrderId(null);
+    setPixQr(null);
+    setPixPayload(null);
+    setPixPaid(false);
+    setCopied(false);
+    autoBaixaRef.current = false;
+  };
 
   useEffect(() => {
     if (open) {
@@ -57,9 +79,12 @@ export function BalcaoBaixaDialog({ open, onOpenChange, product }: Props) {
       setPayment('dinheiro');
       setDiscountMode('brl');
       setDiscountInput('');
+      setPixCpf('');
+      resetPix();
       setRequestId(crypto.randomUUID());
     }
   }, [open, product?.id]);
+
 
   const flavor = useMemo(
     () => (flavorId && flavors ? flavors.find((f) => f.id === flavorId) ?? null : null),
@@ -88,9 +113,95 @@ export function BalcaoBaixaDialog({ open, onOpenChange, product }: Props) {
 
   const finalPrice = useMemo(() => Number((subtotal - manualDiscount).toFixed(2)), [subtotal, manualDiscount]);
 
+  // Confirmação automática via webhook do Asaas (Supabase Realtime)
+  useEffect(() => {
+    if (!pixOrderId) return;
+    const channel = supabase
+      .channel(`balcao-pix-${pixOrderId}`)
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'orders', filter: `id=eq.${pixOrderId}` },
+        (payload) => {
+          const status = (payload.new as { status?: string })?.status;
+          if (status && ['confirmed', 'paid', 'received', 'shipped', 'delivered'].includes(status)) {
+            setPixPaid(true);
+          }
+        },
+      )
+      .subscribe();
+
+    // Fallback: consulta periódica caso o canal falhe
+    const poll = setInterval(async () => {
+      const { data } = await supabase.from('orders').select('status').eq('id', pixOrderId).maybeSingle();
+      if (data?.status && ['confirmed', 'paid', 'received', 'shipped', 'delivered'].includes(data.status)) {
+        setPixPaid(true);
+      }
+    }, 5000);
+
+    return () => {
+      supabase.removeChannel(channel);
+      clearInterval(poll);
+    };
+  }, [pixOrderId]);
+
+  // Dá baixa no estoque automaticamente assim que o pagamento é confirmado
+  useEffect(() => {
+    if (!pixPaid || !product || autoBaixaRef.current) return;
+    autoBaixaRef.current = true;
+    baixa
+      .mutateAsync({
+        product_id: product.id,
+        flavor_id: flavorId || null,
+        quantity,
+        movement_type: 'venda_loja_fisica',
+        reason: 'venda_loja',
+        notes: notes.trim() || null,
+        request_id: requestId,
+        manual_discount: manualDiscount,
+        payment_method: 'pix_balcao',
+      })
+      .then(() => toast.success('Pagamento confirmado e baixa registrada!'))
+      .catch((e: any) => toast.error(e?.message || 'Pagamento confirmado, mas falhou a baixa do estoque'));
+  }, [pixPaid]);
+
   if (!product) return null;
 
   const isSale = reason === 'venda_loja';
+  const isPix = isSale && payment === 'pix_balcao';
+
+  const generatePix = async () => {
+    if (!quantity || quantity < 1) return toast.error('Quantidade inválida');
+    if (quantity > currentStock) return toast.error('Quantidade maior que o estoque');
+    if (finalPrice <= 0) return toast.error('Valor da venda inválido');
+    setPixLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('balcao-pix-charge', {
+        body: {
+          amount: finalPrice,
+          description: `${product.name}${flavor ? ` • ${flavor.name}` : ''} (${quantity}x)`,
+          customerCpf: pixCpf.replace(/\D/g, ''),
+          customerName: 'Cliente Balcão',
+        },
+      });
+      if (error) throw new Error((data as any)?.error || error.message);
+      if ((data as any)?.error) throw new Error((data as any).error);
+      setPixOrderId((data as any).orderId);
+      setPixQr((data as any).qrCodeBase64 ?? null);
+      setPixPayload((data as any).qrCode ?? null);
+    } catch (e: any) {
+      toast.error(e?.message || 'Não foi possível gerar o Pix');
+    } finally {
+      setPixLoading(false);
+    }
+  };
+
+  const copyPayload = async () => {
+    if (!pixPayload) return;
+    await navigator.clipboard.writeText(pixPayload);
+    setCopied(true);
+    toast.success('Código Pix copiado');
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   const submit = async () => {
     if (!quantity || quantity < 1) return toast.error('Quantidade inválida');
@@ -113,6 +224,7 @@ export function BalcaoBaixaDialog({ open, onOpenChange, product }: Props) {
       toast.error(e?.message || 'Falha ao registrar baixa');
     }
   };
+
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -220,13 +332,70 @@ export function BalcaoBaixaDialog({ open, onOpenChange, product }: Props) {
 
               <div>
                 <Label>Forma de pagamento</Label>
-                <Select value={payment} onValueChange={(v) => setPayment(v as PaymentMethod)}>
+                <Select
+                  value={payment}
+                  onValueChange={(v) => { setPayment(v as PaymentMethod); resetPix(); }}
+                >
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {PAYMENTS.map(p => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
+
+              {isPix && (
+                <div className="rounded-md border p-3 space-y-3">
+                  {pixPaid ? (
+                    <div className="flex flex-col items-center gap-2 py-4 text-center">
+                      <CheckCircle2 className="h-10 w-10 text-green-600" />
+                      <div className="font-semibold">Pagamento confirmado</div>
+                      <p className="text-xs text-muted-foreground">
+                        A baixa do estoque foi registrada automaticamente.
+                      </p>
+                    </div>
+                  ) : pixQr || pixPayload ? (
+                    <div className="space-y-3">
+                      {pixQr && (
+                        <img
+                          src={`data:image/png;base64,${pixQr}`}
+                          alt="QR Code Pix da venda no balcão"
+                          className="mx-auto h-48 w-48 rounded-md bg-white p-2"
+                        />
+                      )}
+                      {pixPayload && (
+                        <>
+                          <p className="text-xs break-all bg-muted rounded-md p-2 font-mono">{pixPayload}</p>
+                          <Button type="button" variant="outline" className="w-full" onClick={copyPayload}>
+                            <Copy className="h-4 w-4 mr-2" />
+                            {copied ? 'Copiado!' : 'Copiar Código'}
+                          </Button>
+                        </>
+                      )}
+                      <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                        <Loader2 className="h-3 w-3 animate-spin" /> Aguardando confirmação do pagamento…
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <Label>CPF/CNPJ do cliente</Label>
+                      <Input
+                        inputMode="numeric"
+                        placeholder="Somente números"
+                        value={pixCpf}
+                        onChange={(e) => setPixCpf(e.target.value)}
+                      />
+                      <Button type="button" className="w-full" onClick={generatePix} disabled={pixLoading}>
+                        {pixLoading ? (
+                          <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Gerando cobrança…</>
+                        ) : (
+                          <><QrCode className="h-4 w-4 mr-2" /> Gerar Pix • {brl(finalPrice)}</>
+                        )}
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )}
+
             </>
           )}
 
@@ -236,11 +405,16 @@ export function BalcaoBaixaDialog({ open, onOpenChange, product }: Props) {
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-          <Button onClick={submit} disabled={baixa.isPending}>
-            {baixa.isPending ? 'Registrando…' : isSale ? `Confirmar venda • ${brl(finalPrice)}` : 'Confirmar Baixa'}
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            {pixPaid ? 'Fechar' : 'Cancelar'}
           </Button>
+          {!(isPix && (pixOrderId || pixPaid)) && (
+            <Button onClick={submit} disabled={baixa.isPending || (isPix && !pixPaid)}>
+              {baixa.isPending ? 'Registrando…' : isSale ? `Confirmar venda • ${brl(finalPrice)}` : 'Confirmar Baixa'}
+            </Button>
+          )}
         </DialogFooter>
+
       </DialogContent>
     </Dialog>
   );
