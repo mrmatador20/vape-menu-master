@@ -332,13 +332,70 @@ export function BalcaoBaixaDialog({ open, onOpenChange, product }: Props) {
 
               <div>
                 <Label>Forma de pagamento</Label>
-                <Select value={payment} onValueChange={(v) => setPayment(v as PaymentMethod)}>
+                <Select
+                  value={payment}
+                  onValueChange={(v) => { setPayment(v as PaymentMethod); resetPix(); }}
+                >
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {PAYMENTS.map(p => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
+
+              {isPix && (
+                <div className="rounded-md border p-3 space-y-3">
+                  {pixPaid ? (
+                    <div className="flex flex-col items-center gap-2 py-4 text-center">
+                      <CheckCircle2 className="h-10 w-10 text-green-600" />
+                      <div className="font-semibold">Pagamento confirmado</div>
+                      <p className="text-xs text-muted-foreground">
+                        A baixa do estoque foi registrada automaticamente.
+                      </p>
+                    </div>
+                  ) : pixQr || pixPayload ? (
+                    <div className="space-y-3">
+                      {pixQr && (
+                        <img
+                          src={`data:image/png;base64,${pixQr}`}
+                          alt="QR Code Pix da venda no balcão"
+                          className="mx-auto h-48 w-48 rounded-md bg-white p-2"
+                        />
+                      )}
+                      {pixPayload && (
+                        <>
+                          <p className="text-xs break-all bg-muted rounded-md p-2 font-mono">{pixPayload}</p>
+                          <Button type="button" variant="outline" className="w-full" onClick={copyPayload}>
+                            <Copy className="h-4 w-4 mr-2" />
+                            {copied ? 'Copiado!' : 'Copiar Código'}
+                          </Button>
+                        </>
+                      )}
+                      <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                        <Loader2 className="h-3 w-3 animate-spin" /> Aguardando confirmação do pagamento…
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <Label>CPF/CNPJ do cliente</Label>
+                      <Input
+                        inputMode="numeric"
+                        placeholder="Somente números"
+                        value={pixCpf}
+                        onChange={(e) => setPixCpf(e.target.value)}
+                      />
+                      <Button type="button" className="w-full" onClick={generatePix} disabled={pixLoading}>
+                        {pixLoading ? (
+                          <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Gerando cobrança…</>
+                        ) : (
+                          <><QrCode className="h-4 w-4 mr-2" /> Gerar Pix • {brl(finalPrice)}</>
+                        )}
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )}
+
             </>
           )}
 
