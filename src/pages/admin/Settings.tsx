@@ -36,6 +36,8 @@ export default function Settings() {
 
       <SiteIdentitySettings />
 
+      <FooterSettings />
+
       <SiteThemeSettings />
 
       <CategoriesSettings />
