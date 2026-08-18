@@ -105,13 +105,15 @@ export default function MyOrders() {
           order.expires_at &&
           new Date(order.expires_at) < now
         ) {
-          await supabase
+          const { error: expireError } = await supabase
             .from('orders')
             .update({ status: 'expired' })
             .eq('id', order.id);
-          order.status = 'expired';
+          // Se o banco recusar (regras de segurança), mantemos o status real
+          if (!expireError) order.status = 'expired';
         }
       }
+
       
       return data;
     },
