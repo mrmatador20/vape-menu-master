@@ -158,64 +158,45 @@ export default function AdminDiscounts() {
         </Card>
       )}
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Cupons de Desconto</CardTitle>
-          <CardDescription>Lista de todos os descontos ativos e inativos</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {/* Cards no mobile */}
-          <div className="block md:hidden space-y-3">
+      <section className="min-w-0 space-y-4">
+        <div>
+          <h2 className="text-xl font-semibold">Cupons de Desconto</h2>
+          <p className="text-sm text-muted-foreground">Lista de todos os descontos ativos e inativos</p>
+        </div>
+
+          {/* Cards exclusivos do mobile: sem qualquer estrutura de tabela */}
+          <div className="flex flex-col gap-3 md:hidden">
             {discounts?.map((discount) => (
-              <div key={discount.id} className="border rounded-lg p-3 bg-muted/30 space-y-3">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="font-mono font-semibold text-sm truncate">{discount.code}</span>
+              <Card key={discount.id} className="p-4 space-y-2 min-w-0">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <Badge variant="outline" className="max-w-full font-mono font-semibold break-all">
+                    {discount.code}
+                  </Badge>
                   <Badge variant={discount.is_active ? "default" : "secondary"}>
                     {discount.is_active ? 'Ativo' : 'Inativo'}
                   </Badge>
                 </div>
-                <div className="space-y-1 text-sm">
-                  <div className="flex items-center gap-2">
-                    <span className="text-muted-foreground">Parceiro:</span>
-                    {discount.is_influencer_coupon ? (
-                      <Badge variant="secondary" className="gap-1">
-                        <Sparkles className="h-3 w-3" />
-                        {discount.influencer_name || 'Parceiro'}
-                      </Badge>
-                    ) : (
-                      <span className="text-muted-foreground">—</span>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-muted-foreground">Tipo:</span>
-                    <Badge variant="outline">
-                      {discount.type === 'percent' ? 'Percentual' : 'Fixo'}
-                    </Badge>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-muted-foreground">Valor:</span>
-                    <span className="font-medium">
-                      {discount.type === 'percent' 
-                        ? `${discount.value}%` 
-                        : `R$ ${discount.value}`}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-muted-foreground">Usos:</span>
-                    <span className={discount.max_uses ? 'font-medium' : ''}>
-                      {discount.usage_count || 0}
-                      {discount.max_uses && ` / ${discount.max_uses}`}
-                    </span>
-                    {discount.max_uses && discount.usage_count >= discount.max_uses && (
-                      <Badge variant="destructive">Esgotado</Badge>
-                    )}
-                  </div>
+                <div className="space-y-1 text-sm break-words">
+                  <p><span className="text-muted-foreground">Parceiro:</span> {discount.is_influencer_coupon ? discount.influencer_name || 'Parceiro' : '—'}</p>
+                  <p><span className="text-muted-foreground">Tipo:</span> {discount.type === 'percent' ? 'Percentual' : 'Fixo'}</p>
+                  <p>
+                    <span className="text-muted-foreground">Valor:</span>{' '}
+                    <span className="font-medium">{discount.type === 'percent' ? `${discount.value}%` : `R$ ${discount.value}`}</span>
+                  </p>
                 </div>
-                <div className="flex gap-2 pt-1">
+                <div className="flex flex-wrap items-center gap-2 text-sm">
+                  <span className="text-muted-foreground">Usos acumulados:</span>
+                  <span className={discount.max_uses ? 'font-medium' : ''}>
+                    {discount.usage_count || 0}{discount.max_uses && ` / ${discount.max_uses}`}
+                  </span>
+                  {discount.max_uses && discount.usage_count >= discount.max_uses && (
+                    <Badge variant="destructive">Esgotado</Badge>
+                  )}
+                </div>
+                <div className="flex justify-end gap-2 pt-2">
                   <Button
                     variant="outline"
                     size="sm"
-                    className="flex-1"
                     onClick={() => {
                       setEditingDiscount(discount);
                       setDialogOpen(true);
@@ -226,28 +207,13 @@ export default function AdminDiscounts() {
                   <Button
                     variant="outline"
                     size="sm"
-                    className="flex-1"
-                    onClick={() => {
-                      if (discount.is_influencer_coupon) {
-                        copyInfluencerLink(discount.code);
-                      } else {
-                        navigator.clipboard.writeText(discount.code);
-                        toast.success('Código copiado!');
-                      }
-                    }}
-                  >
-                    <Copy className="h-4 w-4 mr-1" /> Copiar
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
                     onClick={() => deleteMutation.mutate(discount.id)}
                     disabled={deleteMutation.isPending}
                   >
-                    <Trash2 className="h-4 w-4" />
+                    <Trash2 className="h-4 w-4 mr-1" /> Excluir
                   </Button>
                 </div>
-              </div>
+              </Card>
             ))}
             {!discounts?.length && (
               <p className="text-center text-muted-foreground py-8">
@@ -256,8 +222,9 @@ export default function AdminDiscounts() {
             )}
           </div>
 
-          {/* Tabela no desktop */}
-          <Table className="hidden md:table">
+          {/* Tabela e seu wrapper de overflow existem apenas no desktop */}
+          <div className="hidden md:block">
+          <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Código</TableHead>
@@ -353,8 +320,8 @@ export default function AdminDiscounts() {
               ))}
             </TableBody>
           </Table>
-        </CardContent>
-      </Card>
+          </div>
+      </section>
 
       <DiscountFormDialog 
         open={dialogOpen} 
