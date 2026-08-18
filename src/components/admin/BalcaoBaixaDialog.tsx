@@ -227,6 +227,11 @@ export function BalcaoBaixaDialog({ open, onOpenChange, product }: Props) {
                   </SelectContent>
                 </Select>
               </div>
+
+              {payment === 'pix_balcao' && finalPrice > 0 && (
+                <PixBalcaoQr amount={finalPrice} txid={requestId.replace(/-/g, '').slice(0, 25)} />
+              )}
+
             </>
           )}
 
