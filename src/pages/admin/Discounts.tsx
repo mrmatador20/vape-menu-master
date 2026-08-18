@@ -237,13 +237,13 @@ export default function AdminDiscounts() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Código</TableHead>
+                <TableHead>Cupom</TableHead>
                 <TableHead>Parceiro</TableHead>
                 <TableHead>Tipo</TableHead>
                 <TableHead>Valor</TableHead>
                 <TableHead>Agendamento</TableHead>
                 <TableHead>Validade</TableHead>
-                <TableHead>Usos</TableHead>
+                <TableHead>Usos acumulados</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Ações</TableHead>
               </TableRow>
