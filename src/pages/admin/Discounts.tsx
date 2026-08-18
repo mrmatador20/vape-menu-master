@@ -109,17 +109,17 @@ export default function AdminDiscounts() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Gestão de Descontos</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold">Gestão de Descontos</h1>
           <p className="text-muted-foreground">Crie e gerencie cupons de desconto</p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => navigate('/546498@18/influencer-metrics')}>
+        <div className="w-full grid grid-cols-2 gap-2 sm:w-auto sm:flex">
+          <Button variant="outline" className="whitespace-nowrap" onClick={() => navigate('/546498@18/influencer-metrics')}>
             <BarChart3 className="h-4 w-4 mr-2" />
             Ver Métricas
           </Button>
-          <Button onClick={() => setDialogOpen(true)}>
+          <Button className="whitespace-nowrap" onClick={() => setDialogOpen(true)}>
             <Plus className="h-4 w-4 mr-2" />
             Novo Desconto
           </Button>
@@ -164,7 +164,100 @@ export default function AdminDiscounts() {
           <CardDescription>Lista de todos os descontos ativos e inativos</CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
+          {/* Cards no mobile */}
+          <div className="block md:hidden space-y-3">
+            {discounts?.map((discount) => (
+              <div key={discount.id} className="border rounded-lg p-3 bg-muted/30 space-y-3">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-mono font-semibold text-sm truncate">{discount.code}</span>
+                  <Badge variant={discount.is_active ? "default" : "secondary"}>
+                    {discount.is_active ? 'Ativo' : 'Inativo'}
+                  </Badge>
+                </div>
+                <div className="space-y-1 text-sm">
+                  <div className="flex items-center gap-2">
+                    <span className="text-muted-foreground">Parceiro:</span>
+                    {discount.is_influencer_coupon ? (
+                      <Badge variant="secondary" className="gap-1">
+                        <Sparkles className="h-3 w-3" />
+                        {discount.influencer_name || 'Parceiro'}
+                      </Badge>
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-muted-foreground">Tipo:</span>
+                    <Badge variant="outline">
+                      {discount.type === 'percent' ? 'Percentual' : 'Fixo'}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-muted-foreground">Valor:</span>
+                    <span className="font-medium">
+                      {discount.type === 'percent' 
+                        ? `${discount.value}%` 
+                        : `R$ ${discount.value}`}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-muted-foreground">Usos:</span>
+                    <span className={discount.max_uses ? 'font-medium' : ''}>
+                      {discount.usage_count || 0}
+                      {discount.max_uses && ` / ${discount.max_uses}`}
+                    </span>
+                    {discount.max_uses && discount.usage_count >= discount.max_uses && (
+                      <Badge variant="destructive">Esgotado</Badge>
+                    )}
+                  </div>
+                </div>
+                <div className="flex gap-2 pt-1">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1"
+                    onClick={() => {
+                      setEditingDiscount(discount);
+                      setDialogOpen(true);
+                    }}
+                  >
+                    <Pencil className="h-4 w-4 mr-1" /> Editar
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1"
+                    onClick={() => {
+                      if (discount.is_influencer_coupon) {
+                        copyInfluencerLink(discount.code);
+                      } else {
+                        navigator.clipboard.writeText(discount.code);
+                        toast.success('Código copiado!');
+                      }
+                    }}
+                  >
+                    <Copy className="h-4 w-4 mr-1" /> Copiar
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => deleteMutation.mutate(discount.id)}
+                    disabled={deleteMutation.isPending}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            ))}
+            {!discounts?.length && (
+              <p className="text-center text-muted-foreground py-8">
+                Nenhum desconto cadastrado. Clique em “Novo Desconto”.
+              </p>
+            )}
+          </div>
+
+          {/* Tabela no desktop */}
+          <Table className="hidden md:table">
             <TableHeader>
               <TableRow>
                 <TableHead>Código</TableHead>
