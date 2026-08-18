@@ -227,7 +227,89 @@ export default function AdminProducts() {
         </CardContent>
       </Card>
 
-      <div className="border rounded-lg overflow-hidden bg-card shadow-sm">
+      {/* ===== Mobile: Cards ===== */}
+      <div className="block md:hidden space-y-3">
+        {isLoading ? (
+          <div className="flex justify-center py-10"><Loader2 className="h-6 w-6 animate-spin" /></div>
+        ) : pageData.length === 0 ? (
+          <p className="text-center py-10 text-muted-foreground">Nenhum produto encontrado.</p>
+        ) : (
+          pageData.map((product) => {
+            const visible = (product as any).visible_in_all !== false;
+            const discount = (product as any).discount_value || 0;
+            return (
+              <Card key={product.id} className="overflow-hidden">
+                <CardContent className="p-3 space-y-3">
+                  {/* Topo: foto + nome + categoria */}
+                  <div className="flex items-start gap-3">
+                    <img
+                      src={product.image || '/placeholder.svg'}
+                      alt={product.name}
+                      className="h-16 w-16 rounded-md object-cover border shrink-0"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium leading-tight truncate">{product.name}</p>
+                      <p className="text-xs text-muted-foreground capitalize mt-0.5">
+                        {product.category}{(product as any).subcategory ? ` · ${(product as any).subcategory}` : ''}
+                      </p>
+                      <div className="flex items-baseline gap-2 mt-1">
+                        <span className="font-medium text-sm">R$ {product.price.toFixed(2)}</span>
+                        {discount > 0 && (
+                          <Badge variant="secondary" className="text-[10px]">
+                            -{discount}{(product as any).discount_type === 'fixed' ? '' : '%'}
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Meio: status + visibilidade */}
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-muted-foreground">Estoque:</span>
+                      <span className="font-medium text-sm">{product.stock}</span>
+                      {stockBadge(product.stock, product.min_stock)}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {visible
+                        ? <Eye className="h-4 w-4 text-emerald-600" />
+                        : <EyeOff className="h-4 w-4 text-muted-foreground" />}
+                      <Switch
+                        checked={visible}
+                        onCheckedChange={(c) => handleToggleVisibility(product.id, c)}
+                        aria-label="Visibilidade"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Rodapé: ações */}
+                  <div className="flex gap-2 pt-1 border-t">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1 h-10"
+                      onClick={() => { setEditProduct(product); setIsFormOpen(true); }}
+                    >
+                      <Edit className="h-4 w-4 mr-1.5" /> Editar
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1 h-10 text-destructive hover:text-destructive"
+                      onClick={() => setDeleteProductId(product.id)}
+                    >
+                      <Trash2 className="h-4 w-4 mr-1.5" /> Excluir
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })
+        )}
+      </div>
+
+      {/* ===== Desktop: Tabela ===== */}
+      <div className="hidden md:block border rounded-lg overflow-hidden bg-card shadow-sm">
         <Table>
           <TableHeader>
             <TableRow className="bg-muted/40">
