@@ -186,7 +186,7 @@ const Profile = () => {
     return (
       <div className="min-h-screen bg-background">
         <Header />
-        <div className="container mx-auto px-4 py-12 max-w-2xl">
+        <div className="container mx-auto px-4 py-12 max-w-xl">
           <Card>
             <CardHeader>
               <CardTitle>Não foi possível carregar seu perfil</CardTitle>
@@ -208,10 +208,10 @@ const Profile = () => {
     <div className="min-h-screen bg-background">
       <Header />
 
-      <div className="container mx-auto px-4 py-6 sm:py-8 max-w-4xl">
+      <div className="container mx-auto px-4 py-6 sm:py-8 max-w-xl">
         <div className="mb-6">
           <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-1">Meu Perfil</h1>
-          <p className="text-sm text-muted-foreground">Gerencie suas informações pessoais, endereços e segurança</p>
+          <p className="text-sm text-muted-foreground">Gerencie suas informações pessoais, pedidos e segurança</p>
         </div>
         <h2 className="sr-only">Seções do perfil</h2>
 
@@ -225,11 +225,11 @@ const Profile = () => {
               <span className="text-xs sm:text-sm">Dados Pessoais</span>
             </TabsTrigger>
             <TabsTrigger
-              value="addresses"
+              value="orders"
               className="flex flex-col items-center gap-1 py-2 px-1 sm:flex-row sm:gap-2 sm:px-3"
             >
-              <MapPin className="h-4 w-4" />
-              <span className="text-xs sm:text-sm">Meus Endereços</span>
+              <Package className="h-4 w-4" />
+              <span className="text-xs sm:text-sm">Pedidos</span>
             </TabsTrigger>
             <TabsTrigger
               value="security"
@@ -240,8 +240,8 @@ const Profile = () => {
             </TabsTrigger>
           </TabsList>
 
-          {/* Aba 1: Dados Pessoais */}
-          <TabsContent value="personal" className="mt-4">
+          {/* Aba 1: Dados Pessoais & Endereços */}
+          <TabsContent value="personal" className="mt-4 space-y-4">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -353,15 +353,62 @@ const Profile = () => {
                 </Form>
               </CardContent>
             </Card>
+
+            {/* Endereços Salvos */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <MapPin className="h-5 w-5" />
+                  Endereços Salvos
+                </CardTitle>
+                <CardDescription>
+                  Gerencie seus endereços de entrega
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="p-4 sm:p-6">
+                <SavedAddressesManager />
+              </CardContent>
+            </Card>
           </TabsContent>
 
-          {/* Aba 2: Meus Endereços */}
-          <TabsContent value="addresses" className="mt-4">
-            <SavedAddressesManager />
+          {/* Aba 2: Pedidos */}
+          <TabsContent value="orders" className="mt-4 space-y-4">
+            <Card className="cursor-pointer hover:border-primary transition-colors" onClick={() => navigate('/my-orders')}>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Package className="h-5 w-5" />
+                  Histórico de Pedidos
+                </CardTitle>
+                <CardDescription>
+                  Visualize todos os seus pedidos anteriores
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button variant="outline" className="w-full">
+                  Ver Meus Pedidos
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card className="cursor-pointer hover:border-primary transition-colors" onClick={() => navigate('/affiliate')}>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <ShieldCheck className="h-5 w-5" />
+                  Área do Afiliado
+                </CardTitle>
+                <CardDescription>
+                  Veja o desempenho do seu cupom de parceiro (se houver)
+                </CardDescription>
+              </CardHeader>
+            </Card>
+
+            <ReferralCard />
+            <ReferralTierBadge />
+            <UserCouponsCard />
           </TabsContent>
 
-          {/* Aba 3: Segurança */}
-          <TabsContent value="security" className="mt-4 space-y-6">
+          {/* Aba 3: Segurança & Privacidade */}
+          <TabsContent value="security" className="mt-4 space-y-4">
             {/* Autenticação de Dois Fatores (2FA) */}
             <Card>
               <CardHeader>
@@ -507,48 +554,14 @@ const Profile = () => {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Sessões / Histórico de Login */}
+            <ActivityLogsCard />
+
+            {/* Privacidade e Dados (LGPD) */}
+            <PrivacyDataCard />
           </TabsContent>
         </Tabs>
-
-        {/* Acesso rápido e conteúdo complementar */}
-        <div className="mt-8 space-y-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Card className="cursor-pointer hover:border-primary transition-colors" onClick={() => navigate('/my-orders')}>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Package className="h-5 w-5" />
-                  Histórico de Pedidos
-                </CardTitle>
-                <CardDescription>
-                  Visualize todos os seus pedidos anteriores
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button variant="outline" className="w-full">
-                  Ver Meus Pedidos
-                </Button>
-              </CardContent>
-            </Card>
-
-            <Card className="cursor-pointer hover:border-primary transition-colors" onClick={() => navigate('/affiliate')}>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <ShieldCheck className="h-5 w-5" />
-                  Área do Afiliado
-                </CardTitle>
-                <CardDescription>
-                  Veja o desempenho do seu cupom de parceiro (se houver)
-                </CardDescription>
-              </CardHeader>
-            </Card>
-          </div>
-
-          <ReferralCard />
-          <ReferralTierBadge />
-          <UserCouponsCard />
-          <ActivityLogsCard />
-          <PrivacyDataCard />
-        </div>
 
         {/* MFA Enrollment Dialog */}
         <MFAEnrollDialog
