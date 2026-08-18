@@ -164,8 +164,8 @@ export default function AdminDiscounts() {
           <p className="text-sm text-muted-foreground">Lista de todos os descontos ativos e inativos</p>
         </div>
 
-          {/* Cards exclusivos do mobile: sem qualquer estrutura de tabela */}
-          <div className="flex flex-col gap-3 md:hidden">
+          {/* Cards de cupom — chave-valor em todos os tamanhos de tela */}
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
             {discounts?.map((discount) => (
               <Card key={discount.id} className="p-4 space-y-3 min-w-0">
                 <div className="flex items-center justify-between gap-2">
