@@ -266,7 +266,7 @@ export default function AdminDiscounts() {
                   </TableCell>
                   <TableCell>
                     <Badge variant="outline">
-                      {discount.type === 'percent' ? 'Percentual' : 'Fixo'}
+                      {discount.type === 'percent' ? 'Percentual' : 'Valor Fixo'}
                     </Badge>
                   </TableCell>
                   <TableCell>
