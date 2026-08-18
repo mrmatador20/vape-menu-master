@@ -113,9 +113,96 @@ export function BalcaoBaixaDialog({ open, onOpenChange, product }: Props) {
 
   const finalPrice = useMemo(() => Number((subtotal - manualDiscount).toFixed(2)), [subtotal, manualDiscount]);
 
+  // Confirmação automática via webhook do Asaas (Supabase Realtime)
+  useEffect(() => {
+    if (!pixOrderId) return;
+    const channel = supabase
+      .channel(`balcao-pix-${pixOrderId}`)
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'orders', filter: `id=eq.${pixOrderId}` },
+        (payload) => {
+          const status = (payload.new as { status?: string })?.status;
+          if (status && ['confirmed', 'paid', 'received', 'shipped', 'delivered'].includes(status)) {
+            setPixPaid(true);
+          }
+        },
+      )
+      .subscribe();
+
+    // Fallback: consulta periódica caso o canal falhe
+    const poll = setInterval(async () => {
+      const { data } = await supabase.from('orders').select('status').eq('id', pixOrderId).maybeSingle();
+      if (data?.status && ['confirmed', 'paid', 'received', 'shipped', 'delivered'].includes(data.status)) {
+        setPixPaid(true);
+      }
+    }, 5000);
+
+    return () => {
+      supabase.removeChannel(channel);
+      clearInterval(poll);
+    };
+  }, [pixOrderId]);
+
+  // Dá baixa no estoque automaticamente assim que o pagamento é confirmado
+  useEffect(() => {
+    if (!pixPaid || !product || autoBaixaRef.current) return;
+    autoBaixaRef.current = true;
+    clearInterval(undefined);
+    baixa
+      .mutateAsync({
+        product_id: product.id,
+        flavor_id: flavorId || null,
+        quantity,
+        movement_type: 'venda_loja_fisica',
+        reason: 'venda_loja',
+        notes: notes.trim() || null,
+        request_id: requestId,
+        manual_discount: manualDiscount,
+        payment_method: 'pix_balcao',
+      })
+      .then(() => toast.success('Pagamento confirmado e baixa registrada!'))
+      .catch((e: any) => toast.error(e?.message || 'Pagamento confirmado, mas falhou a baixa do estoque'));
+  }, [pixPaid]);
+
   if (!product) return null;
 
   const isSale = reason === 'venda_loja';
+  const isPix = isSale && payment === 'pix_balcao';
+
+  const generatePix = async () => {
+    if (!quantity || quantity < 1) return toast.error('Quantidade inválida');
+    if (quantity > currentStock) return toast.error('Quantidade maior que o estoque');
+    if (finalPrice <= 0) return toast.error('Valor da venda inválido');
+    setPixLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('balcao-pix-charge', {
+        body: {
+          amount: finalPrice,
+          description: `${product.name}${flavor ? ` • ${flavor.name}` : ''} (${quantity}x)`,
+          customerCpf: pixCpf.replace(/\D/g, ''),
+          customerName: 'Cliente Balcão',
+        },
+      });
+      if (error) throw new Error((data as any)?.error || error.message);
+      if ((data as any)?.error) throw new Error((data as any).error);
+      setPixOrderId((data as any).orderId);
+      setPixQr((data as any).qrCodeBase64 ?? null);
+      setPixPayload((data as any).qrCode ?? null);
+    } catch (e: any) {
+      toast.error(e?.message || 'Não foi possível gerar o Pix');
+    } finally {
+      setPixLoading(false);
+    }
+  };
+
+  const copyPayload = async () => {
+    if (!pixPayload) return;
+    await navigator.clipboard.writeText(pixPayload);
+    setCopied(true);
+    toast.success('Código Pix copiado');
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   const submit = async () => {
     if (!quantity || quantity < 1) return toast.error('Quantidade inválida');
@@ -138,6 +225,7 @@ export function BalcaoBaixaDialog({ open, onOpenChange, product }: Props) {
       toast.error(e?.message || 'Falha ao registrar baixa');
     }
   };
+
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
