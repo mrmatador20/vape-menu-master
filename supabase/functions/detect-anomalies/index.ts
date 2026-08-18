@@ -87,14 +87,14 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Check if user is admin
-    const { data: userRole } = await supabase
+    // Check if user is admin or super_admin (users may have multiple roles)
+    const { data: userRoles } = await supabase
       .from('user_roles')
       .select('role')
       .eq('user_id', user.id)
-      .maybeSingle()
-    
-    if (!userRole || userRole.role !== 'admin') {
+      .in('role', ['admin', 'super_admin'])
+
+    if (!userRoles || userRoles.length === 0) {
       console.error('[detect-anomalies] Non-admin user attempted access')
       return new Response(
         JSON.stringify({ error: 'Forbidden - Admin access required' }),
