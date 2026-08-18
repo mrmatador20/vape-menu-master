@@ -174,27 +174,6 @@ const Profile = () => {
     onChange(formatted);
   };
 
-  const handleCepChange = async (cep: string, onChange: (value: string) => void) => {
-    const cleanCep = cep.replace(/\D/g, '');
-    const formatted = cleanCep.length > 5 
-      ? `${cleanCep.slice(0, 5)}-${cleanCep.slice(5, 8)}`
-      : cleanCep;
-    
-    onChange(formatted);
-
-    // Consultar ViaCEP quando CEP tiver 8 dígitos
-    if (cleanCep.length === 8) {
-      const cepData = await lookupCep(cleanCep);
-      
-      if (cepData) {
-        form.setValue('address_street', cepData.logradouro || '');
-        form.setValue('address_neighborhood', cepData.bairro || '');
-        form.setValue('address_city', cepData.localidade || '');
-        form.setValue('address_state', cepData.uf || '');
-      }
-    }
-  };
-
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
