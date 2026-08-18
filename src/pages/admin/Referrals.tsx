@@ -129,14 +129,14 @@ export default function Referrals() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Sistema de Indicação</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold">Sistema de Indicação</h1>
           <p className="text-muted-foreground">
             Gerencie recompensas, pontos dos clientes e acompanhe o programa de indicação
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="w-full grid grid-cols-2 gap-2 sm:w-auto sm:flex">
           <Button onClick={() => navigate('/546498@18/referrals/metrics')} variant="outline">
             <BarChart3 className="h-4 w-4 mr-2" />
             Ver Métricas
@@ -163,54 +163,56 @@ export default function Referrals() {
           {settingLoading || minValueLoading ? (
             <Skeleton className="h-10 w-full" />
           ) : (
-            <div className="space-y-4">
-              <div className="flex gap-3 items-end max-w-md">
-                <div className="flex-1 space-y-2">
-                  <Label htmlFor="points_per_order">Pontos por Pedido Confirmado</Label>
-                  <Input
-                    id="points_per_order"
-                    type="number"
-                    min="1"
-                    value={pointsPerOrder || pointsSetting?.value || '10'}
-                    onChange={(e) => setPointsPerOrder(e.target.value)}
-                    placeholder="10"
-                  />
+              <div className="space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-end sm:gap-3 sm:max-w-md gap-2">
+                  <div className="flex-1 space-y-2">
+                    <Label htmlFor="points_per_order">Pontos por Pedido Confirmado</Label>
+                    <Input
+                      id="points_per_order"
+                      type="number"
+                      min="1"
+                      value={pointsPerOrder || pointsSetting?.value || '10'}
+                      onChange={(e) => setPointsPerOrder(e.target.value)}
+                      placeholder="10"
+                    />
+                  </div>
+                  <Button
+                    className="sm:w-auto w-full"
+                    onClick={handleUpdatePointsPerOrder}
+                    disabled={updateSetting.isPending || !pointsPerOrder || parseInt(pointsPerOrder) < 1}
+                  >
+                    Salvar
+                  </Button>
                 </div>
-                <Button
-                  onClick={handleUpdatePointsPerOrder}
-                  disabled={updateSetting.isPending || !pointsPerOrder || parseInt(pointsPerOrder) < 1}
-                >
-                  Salvar
-                </Button>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Valor atual: <strong>{pointsSetting?.value || '10'} pontos</strong> por pedido confirmado
-              </p>
+                <p className="text-xs text-muted-foreground">
+                  Valor atual: <strong>{pointsSetting?.value || '10'} pontos</strong> por pedido confirmado
+                </p>
 
-              <div className="flex gap-3 items-end max-w-md pt-4 border-t">
-                <div className="flex-1 space-y-2">
-                  <Label htmlFor="min_order_value">Valor Mínimo do Pedido (R$)</Label>
-                  <Input
-                    id="min_order_value"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={minOrderValue || minValueSetting?.value || '50'}
-                    onChange={(e) => setMinOrderValue(e.target.value)}
-                    placeholder="50.00"
-                  />
+                <div className="flex flex-col sm:flex-row sm:items-end sm:gap-3 sm:max-w-md gap-2 pt-4 border-t">
+                  <div className="flex-1 space-y-2">
+                    <Label htmlFor="min_order_value">Valor Mínimo do Pedido (R$)</Label>
+                    <Input
+                      id="min_order_value"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={minOrderValue || minValueSetting?.value || '50'}
+                      onChange={(e) => setMinOrderValue(e.target.value)}
+                      placeholder="50.00"
+                    />
+                  </div>
+                  <Button
+                    className="sm:w-auto w-full"
+                    onClick={handleUpdateMinOrderValue}
+                    disabled={updateSetting.isPending || !minOrderValue || parseFloat(minOrderValue) < 0}
+                  >
+                    Salvar
+                  </Button>
                 </div>
-                <Button
-                  onClick={handleUpdateMinOrderValue}
-                  disabled={updateSetting.isPending || !minOrderValue || parseFloat(minOrderValue) < 0}
-                >
-                  Salvar
-                </Button>
+                <p className="text-xs text-muted-foreground">
+                  Valor atual: <strong>R$ {parseFloat(minValueSetting?.value || '50').toFixed(2)}</strong> - Pedidos abaixo deste valor não geram pontos
+                </p>
               </div>
-              <p className="text-xs text-muted-foreground">
-                Valor atual: <strong>R$ {parseFloat(minValueSetting?.value || '50').toFixed(2)}</strong> - Pedidos abaixo deste valor não geram pontos
-              </p>
-            </div>
           )}
         </CardContent>
       </Card>
@@ -228,14 +230,14 @@ export default function Referrals() {
         </TabsList>
 
         <TabsContent value="rewards" className="space-y-4">
-          <div className="flex justify-between items-center">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
             <div>
               <h2 className="text-xl font-semibold">Recompensas</h2>
               <p className="text-sm text-muted-foreground">
                 Configure as recompensas que clientes podem resgatar com pontos
               </p>
             </div>
-            <Button onClick={handleNewReward}>
+            <Button onClick={handleNewReward} className="w-full sm:w-auto">
               <Plus className="h-4 w-4 mr-2" />
               Nova Recompensa
             </Button>
@@ -250,61 +252,120 @@ export default function Referrals() {
                   <Skeleton className="h-12 w-full" />
                 </div>
               ) : rewards && rewards.length > 0 ? (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Nome</TableHead>
-                      <TableHead>Descrição</TableHead>
-                      <TableHead>Pontos</TableHead>
-                      <TableHead>Cupom</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Ações</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
+                <>
+                  {/* Mobile: cards */}
+                  <div className="md:hidden p-4 space-y-3">
                     {rewards.map((reward) => (
-                      <TableRow key={reward.id}>
-                        <TableCell className="font-medium">{reward.name}</TableCell>
-                        <TableCell className="max-w-xs truncate">
+                      <div
+                        key={reward.id}
+                        className="border rounded-lg p-4 space-y-2 flex flex-col"
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="font-semibold truncate">{reward.name}</span>
+                          <Badge variant="secondary" className="whitespace-nowrap">
+                            {reward.points_required} pts
+                          </Badge>
+                        </div>
+                        <Badge
+                          variant={reward.is_active ? "default" : "outline"}
+                          className="w-fit"
+                        >
+                          {reward.is_active ? 'Ativa' : 'Inativa'}
+                        </Badge>
+                        <p className="text-sm text-muted-foreground break-words">
                           {reward.description || '-'}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="secondary">{reward.points_required} pts</Badge>
-                        </TableCell>
-                        <TableCell>
-                          {reward.discount_code ? (
-                            <code className="text-xs bg-muted px-2 py-1 rounded">
+                        </p>
+                        {reward.discount_code && (
+                          <div className="text-sm">
+                            <span className="text-muted-foreground">Cupom: </span>
+                            <code className="text-xs bg-muted px-2 py-1 rounded break-all">
                               {reward.discount_code}
                             </code>
-                          ) : '-'}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={reward.is_active ? "default" : "outline"}>
-                            {reward.is_active ? 'Ativa' : 'Inativa'}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-2">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleEditReward(reward)}
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => setDeleteRewardId(reward.id)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
                           </div>
-                        </TableCell>
-                      </TableRow>
+                        )}
+                        <div className="flex gap-2 pt-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="flex-1"
+                            onClick={() => handleEditReward(reward)}
+                          >
+                            <Pencil className="h-4 w-4 mr-1" />
+                            Editar
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="flex-1"
+                            onClick={() => setDeleteRewardId(reward.id)}
+                          >
+                            <Trash2 className="h-4 w-4 mr-1" />
+                            Excluir
+                          </Button>
+                        </div>
+                      </div>
                     ))}
-                  </TableBody>
-                </Table>
+                  </div>
+
+                  {/* Desktop: table */}
+                  <div className="hidden md:block">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Nome</TableHead>
+                          <TableHead>Descrição</TableHead>
+                          <TableHead>Pontos</TableHead>
+                          <TableHead>Cupom</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead className="text-right">Ações</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {rewards.map((reward) => (
+                          <TableRow key={reward.id}>
+                            <TableCell className="font-medium">{reward.name}</TableCell>
+                            <TableCell className="max-w-xs truncate">
+                              {reward.description || '-'}
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="secondary">{reward.points_required} pts</Badge>
+                            </TableCell>
+                            <TableCell>
+                              {reward.discount_code ? (
+                                <code className="text-xs bg-muted px-2 py-1 rounded">
+                                  {reward.discount_code}
+                                </code>
+                              ) : '-'}
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant={reward.is_active ? "default" : "outline"}>
+                                {reward.is_active ? 'Ativa' : 'Inativa'}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex justify-end gap-2">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleEditReward(reward)}
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => setDeleteRewardId(reward.id)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </>
               ) : (
                 <div className="p-12 text-center">
                   <Gift className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
@@ -339,48 +400,94 @@ export default function Referrals() {
                   <Skeleton className="h-12 w-full" />
                 </div>
               ) : allPoints && allPoints.length > 0 ? (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Cliente</TableHead>
-                      <TableHead>Código de Indicação</TableHead>
-                      <TableHead>Saldo</TableHead>
-                      <TableHead>Total Ganho</TableHead>
-                      <TableHead>Total Resgatado</TableHead>
-                      <TableHead className="text-right">Ações</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
+                <>
+                  {/* Mobile: cards */}
+                  <div className="md:hidden p-4 space-y-3">
                     {allPoints.map((point: any) => (
-                      <TableRow key={point.id}>
-                        <TableCell className="font-medium">
-                          {point.profiles?.full_name || 'Usuário sem nome'}
-                        </TableCell>
-                        <TableCell>
-                          <code className="text-xs bg-muted px-2 py-1 rounded">
+                      <div
+                        key={point.id}
+                        className="border rounded-lg p-4 space-y-2 flex flex-col"
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="font-semibold truncate">
+                            {point.profiles?.full_name || 'Usuário sem nome'}
+                          </span>
+                          <Badge variant="default" className="font-bold whitespace-nowrap">
+                            {point.points_balance} pts
+                          </Badge>
+                        </div>
+                        <div className="text-sm">
+                          <span className="text-muted-foreground">Código: </span>
+                          <code className="text-xs bg-muted px-2 py-1 rounded break-all">
                             {point.profiles?.referral_code || '-'}
                           </code>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="default" className="font-bold">
-                            {point.points_balance}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>{point.total_earned}</TableCell>
-                        <TableCell>{point.total_redeemed}</TableCell>
-                        <TableCell className="text-right">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleAdjustPoints(point.user_id)}
-                          >
-                            Ajustar Pontos
-                          </Button>
-                        </TableCell>
-                      </TableRow>
+                        </div>
+                        <div className="flex gap-4 text-sm">
+                          <span className="text-muted-foreground">
+                            Ganho: <strong>{point.total_earned}</strong>
+                          </span>
+                          <span className="text-muted-foreground">
+                            Resgatado: <strong>{point.total_redeemed}</strong>
+                          </span>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full"
+                          onClick={() => handleAdjustPoints(point.user_id)}
+                        >
+                          Ajustar Pontos
+                        </Button>
+                      </div>
                     ))}
-                  </TableBody>
-                </Table>
+                  </div>
+
+                  {/* Desktop: table */}
+                  <div className="hidden md:block">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Cliente</TableHead>
+                          <TableHead>Código de Indicação</TableHead>
+                          <TableHead>Saldo</TableHead>
+                          <TableHead>Total Ganho</TableHead>
+                          <TableHead>Total Resgatado</TableHead>
+                          <TableHead className="text-right">Ações</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {allPoints.map((point: any) => (
+                          <TableRow key={point.id}>
+                            <TableCell className="font-medium">
+                              {point.profiles?.full_name || 'Usuário sem nome'}
+                            </TableCell>
+                            <TableCell>
+                              <code className="text-xs bg-muted px-2 py-1 rounded">
+                                {point.profiles?.referral_code || '-'}
+                              </code>
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="default" className="font-bold">
+                                {point.points_balance}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>{point.total_earned}</TableCell>
+                            <TableCell>{point.total_redeemed}</TableCell>
+                            <TableCell className="text-right">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleAdjustPoints(point.user_id)}
+                              >
+                                Ajustar Pontos
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </>
               ) : (
                 <div className="p-12 text-center">
                   <Users className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
