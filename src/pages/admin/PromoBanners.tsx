@@ -30,9 +30,9 @@ export default function PromoBanners() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Banners Promocionais (Home)</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold">Banners Promocionais (Home)</h1>
           <p className="text-muted-foreground mt-1">
             Carrossel full-width exibido logo abaixo da seção “Bem-vindo”.
             Tamanhos ideais: desktop 1920×500, mobile 1080×1350 (.webp).
