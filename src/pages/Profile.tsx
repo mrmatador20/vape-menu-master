@@ -6,7 +6,7 @@ import { useMFA } from '@/hooks/useMFA';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Loader2, User, MapPin, Phone, Calendar, Package, Shield, ShieldCheck, ShieldOff, Key } from 'lucide-react';
+import { Loader2, User, MapPin, Package, Shield, ShieldCheck, ShieldOff, Key } from 'lucide-react';
 import Header from '@/components/Header';
 import { logActivity } from '@/hooks/useActivityLogs';
 import { Button } from '@/components/ui/button';
@@ -35,7 +35,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { useCepLookup } from '@/hooks/useCepLookup';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
 const profileSchema = z.object({
   full_name: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres').max(100, 'Nome muito longo'),
@@ -63,7 +63,6 @@ const Profile = () => {
   const [showUnenrollDialog, setShowUnenrollDialog] = useState(false);
   const [selectedFactorId, setSelectedFactorId] = useState<string | null>(null);
   const [showChangePasswordDialog, setShowChangePasswordDialog] = useState(false);
-  const { isLoading: isLoadingCep, lookupCep } = useCepLookup();
 
   const form = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
@@ -175,27 +174,6 @@ const Profile = () => {
     onChange(formatted);
   };
 
-  const handleCepChange = async (cep: string, onChange: (value: string) => void) => {
-    const cleanCep = cep.replace(/\D/g, '');
-    const formatted = cleanCep.length > 5 
-      ? `${cleanCep.slice(0, 5)}-${cleanCep.slice(5, 8)}`
-      : cleanCep;
-    
-    onChange(formatted);
-
-    // Consultar ViaCEP quando CEP tiver 8 dígitos
-    if (cleanCep.length === 8) {
-      const cepData = await lookupCep(cleanCep);
-      
-      if (cepData) {
-        form.setValue('address_street', cepData.logradouro || '');
-        form.setValue('address_neighborhood', cepData.bairro || '');
-        form.setValue('address_city', cepData.localidade || '');
-        form.setValue('address_state', cepData.uf || '');
-      }
-    }
-  };
-
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -229,434 +207,347 @@ const Profile = () => {
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground mb-2">Meu Perfil</h1>
-          <p className="text-muted-foreground">Gerencie suas informações pessoais e endereço de entrega</p>
+
+      <div className="container mx-auto px-4 py-6 sm:py-8 max-w-4xl">
+        <div className="mb-6">
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-1">Meu Perfil</h1>
+          <p className="text-sm text-muted-foreground">Gerencie suas informações pessoais, endereços e segurança</p>
         </div>
         <h2 className="sr-only">Seções do perfil</h2>
 
-        <div className="grid gap-6">
-          {/* Account Info Card */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <User className="h-5 w-5" />
-                Informações da Conta
-              </CardTitle>
-              <CardDescription>
-                Email de login e informações pessoais
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex flex-col items-center pb-4">
-                <AvatarUpload
-                  currentAvatarUrl={profile?.avatar_url || null}
-                  onAvatarChange={(url) => {
-                    // Avatar is already updated via direct DB call in component
-                  }}
-                />
-              </div>
+        <Tabs defaultValue="personal" className="w-full">
+          <TabsList className="grid w-full grid-cols-3 h-auto gap-1">
+            <TabsTrigger
+              value="personal"
+              className="flex flex-col items-center gap-1 py-2 px-1 sm:flex-row sm:gap-2 sm:px-3"
+            >
+              <User className="h-4 w-4" />
+              <span className="text-xs sm:text-sm">Dados Pessoais</span>
+            </TabsTrigger>
+            <TabsTrigger
+              value="addresses"
+              className="flex flex-col items-center gap-1 py-2 px-1 sm:flex-row sm:gap-2 sm:px-3"
+            >
+              <MapPin className="h-4 w-4" />
+              <span className="text-xs sm:text-sm">Meus Endereços</span>
+            </TabsTrigger>
+            <TabsTrigger
+              value="security"
+              className="flex flex-col items-center gap-1 py-2 px-1 sm:flex-row sm:gap-2 sm:px-3"
+            >
+              <Shield className="h-4 w-4" />
+              <span className="text-xs sm:text-sm">Segurança</span>
+            </TabsTrigger>
+          </TabsList>
 
-              <Separator />
-
-              <div>
-                <label className="text-sm font-medium text-muted-foreground">Email</label>
-                <p className="text-foreground font-medium">{userEmail}</p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  O email não pode ser alterado por segurança
-                </p>
-              </div>
-
-              <Separator />
-
-              <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                  <FormField
-                    control={form.control}
-                    name="full_name"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Nome Completo *</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Seu nome completo" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
+          {/* Aba 1: Dados Pessoais */}
+          <TabsContent value="personal" className="mt-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <User className="h-5 w-5" />
+                  Informações da Conta
+                </CardTitle>
+                <CardDescription>
+                  Email de login e informações pessoais
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4 p-4 sm:p-6">
+                <div className="flex flex-col items-center pb-2">
+                  <AvatarUpload
+                    currentAvatarUrl={profile?.avatar_url || null}
+                    onAvatarChange={() => {
+                      // Avatar é atualizado diretamente no componente
+                    }}
                   />
-
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="phone"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Telefone</FormLabel>
-                          <FormControl>
-                            <Input 
-                              placeholder="(00) 00000-0000" 
-                              maxLength={15}
-                              {...field}
-                              onChange={(e) => handlePhoneChange(e.target.value, field.onChange)}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="birth_date"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Data de Nascimento</FormLabel>
-                          <FormControl>
-                            <Input type="date" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                </form>
-              </Form>
-            </CardContent>
-          </Card>
-
-          {/* Address Card */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <MapPin className="h-5 w-5" />
-                Endereço de Entrega
-              </CardTitle>
-              <CardDescription>
-                Seu endereço padrão para entrega de pedidos
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                  <div className="grid md:grid-cols-3 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="cep"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>CEP</FormLabel>
-                          <FormControl>
-                            <Input 
-                              placeholder="00000-000" 
-                              maxLength={9}
-                              disabled={isLoadingCep}
-                              {...field}
-                              onChange={(e) => handleCepChange(e.target.value, field.onChange)}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="address_street"
-                      render={({ field }) => (
-                        <FormItem className="md:col-span-2">
-                          <FormLabel>Rua</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Nome da rua" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-
-                  <div className="grid md:grid-cols-4 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="address_number"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Número</FormLabel>
-                          <FormControl>
-                            <Input placeholder="000" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="address_neighborhood"
-                      render={({ field }) => (
-                        <FormItem className="md:col-span-2">
-                          <FormLabel>Bairro</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Nome do bairro" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="address_state"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Estado</FormLabel>
-                          <FormControl>
-                            <Input placeholder="SP" maxLength={2} {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-
-                  <FormField
-                    control={form.control}
-                    name="address_city"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Cidade</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Nome da cidade" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <div className="flex gap-4 pt-4">
-                    <Button
-                      type="submit"
-                      disabled={isUpdating}
-                      className="flex-1"
-                    >
-                      {isUpdating ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Salvando...
-                        </>
-                      ) : (
-                        'Salvar Alterações'
-                      )}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => form.reset()}
-                    >
-                      Cancelar
-                    </Button>
-                  </div>
-                </form>
-              </Form>
-            </CardContent>
-          </Card>
-
-          {/* Saved Addresses Manager */}
-          <SavedAddressesManager />
-
-          {/* Security - Two-Factor Authentication */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Shield className="h-5 w-5" />
-                Autenticação de Dois Fatores (2FA)
-              </CardTitle>
-              <CardDescription>
-                Adicione uma camada extra de segurança à sua conta
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-start justify-between p-4 border rounded-lg">
-                <div className="flex-1 space-y-2">
-                  <div className="flex items-center gap-2">
-                    <h4 className="font-medium">Aplicativo Autenticador</h4>
-                    {mfaFactors.length > 0 ? (
-                      <Badge variant="default" className="bg-green-500">
-                        <ShieldCheck className="h-3 w-3 mr-1" />
-                        Ativo
-                      </Badge>
-                    ) : (
-                      <Badge variant="secondary">
-                        <ShieldOff className="h-3 w-3 mr-1" />
-                        Inativo
-                      </Badge>
-                    )}
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    {mfaFactors.length > 0
-                      ? 'Sua conta está protegida com 2FA. Você precisará de um código do aplicativo autenticador para fazer login.'
-                      : 'Use um aplicativo como Google Authenticator ou Authy para gerar códigos de verificação.'}
-                  </p>
-                  {mfaFactors.length > 0 && (
-                    <p className="text-xs text-muted-foreground">
-                      Configurado em: {new Date(mfaFactors[0].created_at).toLocaleDateString('pt-BR')}
-                    </p>
-                  )}
                 </div>
+
+                <Separator />
+
                 <div>
-                  {mfaFactors.length > 0 ? (
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => {
-                        setSelectedFactorId(mfaFactors[0].id);
-                        setShowUnenrollDialog(true);
-                      }}
-                      disabled={isUnenrolling}
-                    >
-                      {isUnenrolling ? (
-                        <>
-                          <Loader2 className="mr-2 h-3 w-3 animate-spin" />
-                          Desativando...
-                        </>
-                      ) : (
-                        'Desativar'
-                      )}
-                    </Button>
-                  ) : (
-                    <Button
-                      variant="default"
-                      size="sm"
-                      onClick={() => setShowEnrollDialog(true)}
-                    >
-                       Ativar 2FA
-                    </Button>
-                  )}
+                  <label className="text-sm font-medium text-muted-foreground">Email</label>
+                  <p className="text-foreground font-medium break-words">{userEmail}</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    O email não pode ser alterado por segurança
+                  </p>
                 </div>
-              </div>
 
-              {/* Trusted Devices Management */}
-              {mfaFactors.length > 0 && (
-                <div className="flex items-start justify-between p-4 border rounded-lg bg-muted/30">
+                <Separator />
+
+                <Form {...form}>
+                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                    <FormField
+                      control={form.control}
+                      name="full_name"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Nome Completo *</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Seu nome completo" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <div className="grid grid-cols-1 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="phone"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Telefone</FormLabel>
+                            <FormControl>
+                              <Input
+                                placeholder="(00) 00000-0000"
+                                maxLength={15}
+                                {...field}
+                                onChange={(e) => handlePhoneChange(e.target.value, field.onChange)}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="birth_date"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Data de Nascimento</FormLabel>
+                            <FormControl>
+                              <Input type="date" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                      <Button
+                        type="submit"
+                        disabled={isUpdating}
+                        className="flex-1"
+                      >
+                        {isUpdating ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Salvando...
+                          </>
+                        ) : (
+                          'Salvar Alterações'
+                        )}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => form.reset()}
+                        className="sm:w-auto"
+                      >
+                        Cancelar
+                      </Button>
+                    </div>
+                  </form>
+                </Form>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Aba 2: Meus Endereços */}
+          <TabsContent value="addresses" className="mt-4">
+            <SavedAddressesManager />
+          </TabsContent>
+
+          {/* Aba 3: Segurança */}
+          <TabsContent value="security" className="mt-4 space-y-6">
+            {/* Autenticação de Dois Fatores (2FA) */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Shield className="h-5 w-5" />
+                  Autenticação de Dois Fatores (2FA)
+                </CardTitle>
+                <CardDescription>
+                  Adicione uma camada extra de segurança à sua conta
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4 p-4 sm:p-6">
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 p-4 border rounded-lg">
                   <div className="flex-1 space-y-2">
                     <div className="flex items-center gap-2">
-                      <h4 className="font-medium">Dispositivos Confiáveis</h4>
+                      <h4 className="font-medium">Aplicativo Autenticador</h4>
+                      {mfaFactors.length > 0 ? (
+                        <Badge variant="default" className="bg-green-500">
+                          <ShieldCheck className="h-3 w-3 mr-1" />
+                          Ativo
+                        </Badge>
+                      ) : (
+                        <Badge variant="secondary">
+                          <ShieldOff className="h-3 w-3 mr-1" />
+                          Inativo
+                        </Badge>
+                      )}
                     </div>
                     <p className="text-sm text-muted-foreground">
-                      Gerencie dispositivos onde você não precisa de verificação 2FA por 30 dias
+                      {mfaFactors.length > 0
+                        ? 'Sua conta está protegida com 2FA. Você precisará de um código do aplicativo autenticador para fazer login.'
+                        : 'Use um aplicativo como Google Authenticator ou Authy para gerar códigos de verificação.'}
+                    </p>
+                    {mfaFactors.length > 0 && (
+                      <p className="text-xs text-muted-foreground">
+                        Configurado em: {new Date(mfaFactors[0].created_at).toLocaleDateString('pt-BR')}
+                      </p>
+                    )}
+                  </div>
+                  <div>
+                    {mfaFactors.length > 0 ? (
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => {
+                          setSelectedFactorId(mfaFactors[0].id);
+                          setShowUnenrollDialog(true);
+                        }}
+                        disabled={isUnenrolling}
+                      >
+                        {isUnenrolling ? (
+                          <>
+                            <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                            Desativando...
+                          </>
+                        ) : (
+                          'Desativar'
+                        )}
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="default"
+                        size="sm"
+                        onClick={() => setShowEnrollDialog(true)}
+                      >
+                        Ativar 2FA
+                      </Button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Dispositivos Confiáveis */}
+                {mfaFactors.length > 0 && (
+                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 p-4 border rounded-lg bg-muted/30">
+                    <div className="flex-1 space-y-2">
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-medium">Dispositivos Confiáveis</h4>
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        Gerencie dispositivos onde você não precisa de verificação 2FA por 30 dias
+                      </p>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => navigate('/trusted-devices')}
+                    >
+                      Gerenciar
+                    </Button>
+                  </div>
+                )}
+
+                {mfaFactors.length === 0 && (
+                  <div className="bg-muted/50 p-4 rounded-lg space-y-2">
+                    <h5 className="font-medium text-sm">Por que usar 2FA?</h5>
+                    <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
+                      <li>Protege sua conta mesmo se sua senha foi comprometida</li>
+                      <li>Impede acessos não autorizados</li>
+                      <li>Adiciona uma camada extra de segurança</li>
+                      <li>Recomendado para contas com informações sensíveis</li>
+                    </ul>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Alterar Senha */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Key className="h-5 w-5" />
+                  Alterar Senha
+                </CardTitle>
+                <CardDescription>
+                  Mantenha sua conta segura atualizando sua senha regularmente
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4 p-4 sm:p-6">
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 p-4 border rounded-lg">
+                  <div className="flex-1 space-y-2">
+                    <h4 className="font-medium">Senha da Conta</h4>
+                    <p className="text-sm text-muted-foreground">
+                      Escolha uma senha forte com no mínimo 8 caracteres, incluindo letras maiúsculas, minúsculas, números e caracteres especiais.
                     </p>
                   </div>
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => navigate('/trusted-devices')}
+                    onClick={() => setShowChangePasswordDialog(true)}
                   >
-                    Gerenciar
+                    Alterar Senha
                   </Button>
                 </div>
-              )}
 
-              {mfaFactors.length === 0 && (
                 <div className="bg-muted/50 p-4 rounded-lg space-y-2">
-                  <h5 className="font-medium text-sm">Por que usar 2FA?</h5>
+                  <h5 className="font-medium text-sm">Dicas de segurança:</h5>
                   <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
-                    <li>Protege sua conta mesmo se sua senha foi comprometida</li>
-                    <li>Impede acessos não autorizados</li>
-                    <li>Adiciona uma camada extra de segurança</li>
-                    <li>Recomendado para contas com informações sensíveis</li>
+                    <li>Use uma senha única que você não usa em outros sites</li>
+                    <li>Evite informações pessoais óbvias (nome, data de nascimento)</li>
+                    <li>Considere usar um gerenciador de senhas</li>
+                    <li>Altere sua senha periodicamente</li>
                   </ul>
                 </div>
-              )}
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
 
-          {/* Password Change */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Key className="h-5 w-5" />
-                Alterar Senha
-              </CardTitle>
-              <CardDescription>
-                Mantenha sua conta segura atualizando sua senha regularmente
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-start justify-between p-4 border rounded-lg">
-                <div className="flex-1 space-y-2">
-                  <h4 className="font-medium">Senha da Conta</h4>
-                  <p className="text-sm text-muted-foreground">
-                    Escolha uma senha forte com no mínimo 8 caracteres, incluindo letras maiúsculas, minúsculas, números e caracteres especiais.
-                  </p>
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowChangePasswordDialog(true)}
-                >
-                  Alterar Senha
+        {/* Acesso rápido e conteúdo complementar */}
+        <div className="mt-8 space-y-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Card className="cursor-pointer hover:border-primary transition-colors" onClick={() => navigate('/my-orders')}>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Package className="h-5 w-5" />
+                  Histórico de Pedidos
+                </CardTitle>
+                <CardDescription>
+                  Visualize todos os seus pedidos anteriores
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button variant="outline" className="w-full">
+                  Ver Meus Pedidos
                 </Button>
-              </div>
+              </CardContent>
+            </Card>
 
-              <div className="bg-muted/50 p-4 rounded-lg space-y-2">
-                <h5 className="font-medium text-sm">Dicas de segurança:</h5>
-                <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
-                  <li>Use uma senha única que você não usa em outros sites</li>
-                  <li>Evite informações pessoais óbvias (nome, data de nascimento)</li>
-                  <li>Considere usar um gerenciador de senhas</li>
-                  <li>Altere sua senha periodicamente</li>
-                </ul>
-              </div>
-            </CardContent>
-          </Card>
+            <Card className="cursor-pointer hover:border-primary transition-colors" onClick={() => navigate('/affiliate')}>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <ShieldCheck className="h-5 w-5" />
+                  Área do Afiliado
+                </CardTitle>
+                <CardDescription>
+                  Veja o desempenho do seu cupom de parceiro (se houver)
+                </CardDescription>
+              </CardHeader>
+            </Card>
+          </div>
 
-          {/* Activity Logs */}
-          <ActivityLogsCard />
-
-          {/* LGPD - Privacidade e Dados */}
-          <PrivacyDataCard />
-
-          {/* Referral System */}
           <ReferralCard />
-
-          {/* Referral Tier Badge */}
           <ReferralTierBadge />
-
-          {/* User Coupons */}
           <UserCouponsCard />
-
-          {/* Affiliate Area */}
-          <Card className="cursor-pointer hover:border-primary transition-colors" onClick={() => navigate('/affiliate')}>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <ShieldCheck className="h-5 w-5" />
-                Área do Afiliado
-              </CardTitle>
-              <CardDescription>
-                Veja o desempenho do seu cupom de parceiro (se houver)
-              </CardDescription>
-            </CardHeader>
-          </Card>
-
-
-          {/* Orders History Link */}
-          <Card className="cursor-pointer hover:border-primary transition-colors" onClick={() => navigate('/my-orders')}>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Package className="h-5 w-5" />
-                Histórico de Pedidos
-              </CardTitle>
-              <CardDescription>
-                Visualize todos os seus pedidos anteriores
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button variant="outline" className="w-full">
-                Ver Meus Pedidos
-              </Button>
-            </CardContent>
-          </Card>
+          <ActivityLogsCard />
+          <PrivacyDataCard />
         </div>
 
         {/* MFA Enrollment Dialog */}
@@ -672,7 +563,7 @@ const Profile = () => {
             <AlertDialogHeader>
               <AlertDialogTitle>Desativar Autenticação de Dois Fatores?</AlertDialogTitle>
               <AlertDialogDescription>
-                Isso removerá a proteção extra da sua conta. Você não precisará mais fornecer 
+                Isso removerá a proteção extra da sua conta. Você não precisará mais fornecer
                 códigos de verificação ao fazer login, mas sua conta ficará menos segura.
               </AlertDialogDescription>
             </AlertDialogHeader>
@@ -696,6 +587,7 @@ const Profile = () => {
       </div>
     </div>
   );
+
 };
 
 export default Profile;
