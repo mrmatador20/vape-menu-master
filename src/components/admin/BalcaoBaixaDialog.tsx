@@ -10,8 +10,6 @@ import { useBalcaoBaixa } from '@/hooks/useBalcao';
 import { useFlavors } from '@/hooks/useFlavors';
 import type { Product } from '@/context/CartContext';
 import { getPromoPrice } from '@/lib/balcaoPricing';
-import { PixBalcaoQr } from '@/components/admin/PixBalcaoQr';
-
 
 type Reason = 'venda_loja' | 'produto_danificado' | 'troca' | 'ajuste_estoque' | 'outro';
 const REASONS: { value: Reason; label: string }[] = [
@@ -229,11 +227,6 @@ export function BalcaoBaixaDialog({ open, onOpenChange, product }: Props) {
                   </SelectContent>
                 </Select>
               </div>
-
-              {payment === 'pix_balcao' && finalPrice > 0 && (
-                <PixBalcaoQr amount={finalPrice} txid={requestId.replace(/-/g, '').slice(0, 25)} />
-              )}
-
             </>
           )}
 
