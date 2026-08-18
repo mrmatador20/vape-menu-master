@@ -143,7 +143,7 @@ export function PromoBannerFormDialog({ banner, trigger }: Props) {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         {trigger || (
-          <Button>
+          <Button className="w-full sm:w-auto whitespace-nowrap">
             <Plus className="mr-2 h-4 w-4" /> Novo Banner Promocional
           </Button>
         )}
