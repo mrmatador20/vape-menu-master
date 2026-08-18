@@ -199,6 +199,18 @@ export default function AdminDiscounts() {
                       {discount.usage_count || 0}{discount.max_uses ? ` / ${discount.max_uses}` : ''}
                     </span>
                   </div>
+                  <div className="flex justify-between gap-2">
+                    <span className="text-muted-foreground shrink-0">Agendamento:</span>
+                    <span className="text-right break-words">{getScheduleLabel(discount)}</span>
+                  </div>
+                  <div className="flex justify-between gap-2">
+                    <span className="text-muted-foreground shrink-0">Validade:</span>
+                    <span className="text-right">
+                      {discount.valid_until
+                        ? new Date(discount.valid_until).toLocaleDateString('pt-BR')
+                        : 'Sem limite'}
+                    </span>
+                  </div>
                 </div>
                 {discount.max_uses && discount.usage_count >= discount.max_uses && (
                   <Badge variant="destructive" className="w-fit">Esgotado</Badge>
