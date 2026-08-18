@@ -482,6 +482,45 @@ export type Database = {
           },
         ]
       }
+      footer_settings: {
+        Row: {
+          brand_description: string
+          contact_email: string
+          contact_phone: string
+          copyright_year: string
+          created_at: string
+          custom_copyright_text: string
+          id: string
+          legal_city_state: string
+          legal_controller_name: string
+          updated_at: string
+        }
+        Insert: {
+          brand_description?: string
+          contact_email?: string
+          contact_phone?: string
+          copyright_year?: string
+          created_at?: string
+          custom_copyright_text?: string
+          id?: string
+          legal_city_state?: string
+          legal_controller_name?: string
+          updated_at?: string
+        }
+        Update: {
+          brand_description?: string
+          contact_email?: string
+          contact_phone?: string
+          copyright_year?: string
+          created_at?: string
+          custom_copyright_text?: string
+          id?: string
+          legal_city_state?: string
+          legal_controller_name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       legal_documents: {
         Row: {
           change_summary: string | null

@@ -5,37 +5,38 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Loader2, Save, PanelBottom } from 'lucide-react';
-import { useFooterSettings, FOOTER_SETTINGS_KEYS, FooterSettings as FooterSettingsType } from '@/hooks/useFooterSettings';
-import { useUpdateSetting } from '@/hooks/useSettings';
+import { useFooterSettings, FooterSettings as FooterSettingsType } from '@/hooks/useFooterSettings';
+import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
+type FieldKey = Exclude<keyof FooterSettingsType, 'id'>;
+
 const GROUPS: {
   title: string;
-  fields: { key: keyof FooterSettingsType; label: string; description: string; multiline?: boolean; maxLength?: number }[];
+  fields: { key: FieldKey; label: string; description: string; multiline?: boolean; maxLength?: number }[];
 }[] = [
   {
     title: 'Informações da Marca & Contato',
     fields: [
-      { key: 'site_footer_brand_description', label: 'Descrição curta', description: 'Texto exibido abaixo do nome da loja no rodapé.', multiline: true, maxLength: 200 },
-      { key: 'site_footer_contact_email', label: 'E-mail de atendimento', description: 'E-mail exibido no rodapé.', maxLength: 120 },
-      { key: 'site_footer_contact_phone', label: 'Telefone / WhatsApp (opcional)', description: 'Deixe em branco para ocultar.', maxLength: 40 },
+      { key: 'brand_description', label: 'Descrição curta', description: 'Texto exibido abaixo do nome da loja no rodapé.', multiline: true, maxLength: 200 },
+      { key: 'contact_email', label: 'E-mail de atendimento', description: 'E-mail exibido no rodapé.', maxLength: 120 },
+      { key: 'contact_phone', label: 'Telefone / WhatsApp (opcional)', description: 'Deixe em branco para ocultar.', maxLength: 40 },
     ],
   },
   {
     title: 'Rodapé Legal (LGPD / Titular)',
     fields: [
-      { key: 'site_footer_legal_controller', label: 'Nome do controlador', description: 'Responsável legal pelos dados (LGPD).', maxLength: 120 },
-      { key: 'site_footer_legal_city_state', label: 'Cidade/UF', description: 'Ex: Cuité/PB', maxLength: 60 },
-      { key: 'site_footer_copyright_year', label: 'Ano do copyright', description: 'Deixe em branco para usar o ano atual automaticamente.', maxLength: 9 },
-      { key: 'site_footer_custom_copyright', label: 'Texto legal completo (opcional)', description: 'Se preenchido, substitui a linha legal montada automaticamente.', multiline: true, maxLength: 300 },
+      { key: 'legal_controller_name', label: 'Nome do controlador', description: 'Responsável legal pelos dados (LGPD).', maxLength: 120 },
+      { key: 'legal_city_state', label: 'Cidade/UF', description: 'Ex: Cuité/PB', maxLength: 60 },
+      { key: 'copyright_year', label: 'Ano do copyright', description: 'Deixe em branco para usar o ano atual automaticamente.', maxLength: 9 },
+      { key: 'custom_copyright_text', label: 'Texto legal completo (opcional)', description: 'Se preenchido, substitui a linha legal montada automaticamente.', multiline: true, maxLength: 300 },
     ],
   },
 ];
 
 export default function FooterSettings() {
   const { data: settings, isLoading } = useFooterSettings();
-  const updateSetting = useUpdateSetting();
   const queryClient = useQueryClient();
   const [values, setValues] = useState<FooterSettingsType | null>(null);
   const [saving, setSaving] = useState(false);
@@ -57,22 +58,50 @@ export default function FooterSettings() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      for (const key of FOOTER_SETTINGS_KEYS) {
-        await updateSetting.mutateAsync({ key, value: values[key] ?? '' });
+      const payload = {
+        brand_description: values.brand_description ?? '',
+        contact_email: values.contact_email ?? '',
+        contact_phone: values.contact_phone ?? '',
+        legal_controller_name: values.legal_controller_name ?? '',
+        legal_city_state: values.legal_city_state ?? '',
+        copyright_year: values.copyright_year ?? '',
+        custom_copyright_text: values.custom_copyright_text ?? '',
+      };
+
+      if (values.id) {
+        const { error } = await supabase.from('footer_settings').update(payload).eq('id', values.id);
+        if (error) throw error;
+      } else {
+        const { data, error } = await supabase.from('footer_settings').insert(payload).select('id').single();
+        if (error) throw error;
+        setValues({ ...values, id: data.id });
       }
+
       await queryClient.invalidateQueries({ queryKey: ['footer-settings'] });
       toast.success('Rodapé atualizado!');
     } catch (e: any) {
-      toast.error('Erro ao salvar: ' + (e?.message ?? 'desconhecido'));
+      const msg = String(e?.message ?? '');
+      if (msg.toLowerCase().includes('row-level security') || e?.code === '42501') {
+        toast.error('Permissão negada: apenas administradores podem editar o rodapé.');
+      } else {
+        toast.error('Erro ao salvar: ' + (msg || 'desconhecido'));
+      }
     } finally {
       setSaving(false);
     }
   };
 
-  const year = values.site_footer_copyright_year || String(new Date().getFullYear());
+  const year = values.copyright_year || String(new Date().getFullYear());
   const previewLegal =
-    values.site_footer_custom_copyright ||
-    `© ${year} Fox Velour. Controlador: ${values.site_footer_legal_controller} · ${values.site_footer_legal_city_state} · Em conformidade com a LGPD (Lei 13.709/2018).`;
+    values.custom_copyright_text ||
+    [
+      `© ${year} Fox Velour.`,
+      values.legal_controller_name ? `Controlador: ${values.legal_controller_name}` : '',
+      values.legal_city_state,
+      'Em conformidade com a LGPD (Lei 13.709/2018).',
+    ]
+      .filter(Boolean)
+      .join(' · ');
 
   return (
     <Card>
@@ -114,11 +143,9 @@ export default function FooterSettings() {
 
         <div className="rounded-md border bg-muted/40 p-4">
           <p className="text-xs font-semibold text-muted-foreground mb-2">Pré-visualização</p>
-          <p className="text-sm">{values.site_footer_brand_description}</p>
-          <p className="text-sm text-muted-foreground">{values.site_footer_contact_email}</p>
-          {values.site_footer_contact_phone && (
-            <p className="text-sm text-muted-foreground">{values.site_footer_contact_phone}</p>
-          )}
+          <p className="text-sm">{values.brand_description}</p>
+          <p className="text-sm text-muted-foreground">{values.contact_email}</p>
+          {values.contact_phone && <p className="text-sm text-muted-foreground">{values.contact_phone}</p>}
           <p className="text-xs text-muted-foreground mt-2">{previewLegal}</p>
         </div>
 

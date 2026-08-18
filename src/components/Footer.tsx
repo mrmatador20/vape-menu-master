@@ -8,28 +8,33 @@ const Footer = () => {
   const { data: identity } = useSiteIdentity();
   const f = data ?? FOOTER_DEFAULTS;
   const storeName = identity?.site_name || 'Fox Velour';
-  const year = f.site_footer_copyright_year || String(new Date().getFullYear());
-  const legalLine =
-    f.site_footer_custom_copyright ||
-    `© ${year} ${storeName}. Controlador: ${f.site_footer_legal_controller} · ${f.site_footer_legal_city_state} · Em conformidade com a LGPD (Lei 13.709/2018).`;
+  const year = f.copyright_year || String(new Date().getFullYear());
+  const legalParts = [
+    `© ${year} ${storeName}.`,
+    f.legal_controller_name ? `Controlador: ${f.legal_controller_name}` : '',
+    f.legal_city_state,
+    'Em conformidade com a LGPD (Lei 13.709/2018).',
+  ].filter(Boolean);
+  const legalLine = f.custom_copyright_text || legalParts.join(' · ');
 
   return (
     <footer className="border-t bg-background mt-12">
       <div className="container mx-auto px-4 py-8 grid gap-6 md:grid-cols-3 text-sm">
         <div>
           <h3 className="font-semibold mb-2">{storeName}</h3>
-          <p className="text-muted-foreground">{f.site_footer_brand_description}</p>
-          {f.site_footer_contact_email && (
+          {f.brand_description && <p className="text-muted-foreground">{f.brand_description}</p>}
+          {f.contact_email && (
             <p className="text-muted-foreground mt-2 flex items-center gap-1">
-              <Mail className="h-3 w-3" /> {f.site_footer_contact_email}
+              <Mail className="h-3 w-3" /> {f.contact_email}
             </p>
           )}
-          {f.site_footer_contact_phone && (
+          {f.contact_phone && (
             <p className="text-muted-foreground mt-1 flex items-center gap-1">
-              <Phone className="h-3 w-3" /> {f.site_footer_contact_phone}
+              <Phone className="h-3 w-3" /> {f.contact_phone}
             </p>
           )}
         </div>
+
         <div>
           <h3 className="font-semibold mb-2">Privacidade e Termos</h3>
           <ul className="space-y-1">
