@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Plus, Trash2, Pencil, BarChart3, Copy, Sparkles } from "lucide-react";
@@ -164,8 +164,8 @@ export default function AdminDiscounts() {
           <p className="text-sm text-muted-foreground">Lista de todos os descontos ativos e inativos</p>
         </div>
 
-          {/* Cards exclusivos do mobile: sem qualquer estrutura de tabela */}
-          <div className="flex flex-col gap-3 md:hidden">
+          {/* Cards de cupom — chave-valor em todos os tamanhos de tela */}
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
             {discounts?.map((discount) => (
               <Card key={discount.id} className="p-4 space-y-3 min-w-0">
                 <div className="flex items-center justify-between gap-2">
@@ -199,11 +199,33 @@ export default function AdminDiscounts() {
                       {discount.usage_count || 0}{discount.max_uses ? ` / ${discount.max_uses}` : ''}
                     </span>
                   </div>
+                  <div className="flex justify-between gap-2">
+                    <span className="text-muted-foreground shrink-0">Agendamento:</span>
+                    <span className="text-right break-words">{getScheduleLabel(discount)}</span>
+                  </div>
+                  <div className="flex justify-between gap-2">
+                    <span className="text-muted-foreground shrink-0">Validade:</span>
+                    <span className="text-right">
+                      {discount.valid_until
+                        ? new Date(discount.valid_until).toLocaleDateString('pt-BR')
+                        : 'Sem limite'}
+                    </span>
+                  </div>
                 </div>
                 {discount.max_uses && discount.usage_count >= discount.max_uses && (
                   <Badge variant="destructive" className="w-fit">Esgotado</Badge>
                 )}
                 <div className="flex justify-end gap-2 pt-1">
+                  {discount.is_influencer_coupon && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      title="Copiar link de indicação"
+                      onClick={() => copyInfluencerLink(discount.code)}
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                  )}
                   <Button
                     variant="outline"
                     size="sm"
@@ -230,106 +252,6 @@ export default function AdminDiscounts() {
                 Nenhum desconto cadastrado. Clique em “Novo Desconto”.
               </p>
             )}
-          </div>
-
-          {/* Tabela e seu wrapper de overflow existem apenas no desktop */}
-          <div className="hidden md:block">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Cupom</TableHead>
-                <TableHead>Parceiro</TableHead>
-                <TableHead>Tipo</TableHead>
-                <TableHead>Valor</TableHead>
-                <TableHead>Agendamento</TableHead>
-                <TableHead>Validade</TableHead>
-                <TableHead>Usos acumulados</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {discounts?.map((discount) => (
-                <TableRow key={discount.id}>
-                  <TableCell className="font-mono font-semibold">
-                    {discount.code}
-                  </TableCell>
-                  <TableCell>
-                    {discount.is_influencer_coupon ? (
-                      <Badge variant="secondary" className="gap-1">
-                        <Sparkles className="h-3 w-3" />
-                        {discount.influencer_name || 'Parceiro'}
-                      </Badge>
-                    ) : (
-                      <span className="text-muted-foreground text-sm">—</span>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline">
-                      {discount.type === 'percent' ? 'Percentual' : 'Valor Fixo'}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    {discount.type === 'percent' 
-                      ? `${discount.value}%` 
-                      : `R$ ${discount.value}`}
-                  </TableCell>
-                  <TableCell>{getScheduleLabel(discount)}</TableCell>
-                  <TableCell>
-                    {discount.valid_until 
-                      ? new Date(discount.valid_until).toLocaleDateString('pt-BR')
-                      : 'Sem limite'}
-                  </TableCell>
-                  <TableCell>
-                    <span className={discount.max_uses ? 'font-medium' : ''}>
-                      {discount.usage_count || 0}
-                      {discount.max_uses && ` / ${discount.max_uses}`}
-                    </span>
-                    {discount.max_uses && discount.usage_count >= discount.max_uses && (
-                      <Badge variant="destructive" className="ml-2">Esgotado</Badge>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={discount.is_active ? "default" : "secondary"}>
-                      {discount.is_active ? 'Ativo' : 'Inativo'}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex gap-2">
-                      {discount.is_influencer_coupon && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          title="Copiar link de indicação"
-                          onClick={() => copyInfluencerLink(discount.code)}
-                        >
-                          <Copy className="h-4 w-4" />
-                        </Button>
-                      )}
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          setEditingDiscount(discount);
-                          setDialogOpen(true);
-                        }}
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => deleteMutation.mutate(discount.id)}
-                        disabled={deleteMutation.isPending}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
           </div>
       </section>
 
