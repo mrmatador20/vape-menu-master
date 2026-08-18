@@ -671,6 +671,7 @@ export type Database = {
           message: string | null
           metadata: Json
           order_id: string
+          performed_by: string | null
           refusal_reason: string | null
         }
         Insert: {
@@ -680,6 +681,7 @@ export type Database = {
           message?: string | null
           metadata?: Json
           order_id: string
+          performed_by?: string | null
           refusal_reason?: string | null
         }
         Update: {
@@ -689,6 +691,7 @@ export type Database = {
           message?: string | null
           metadata?: Json
           order_id?: string
+          performed_by?: string | null
           refusal_reason?: string | null
         }
         Relationships: [

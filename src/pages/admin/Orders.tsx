@@ -111,11 +111,26 @@ export default function AdminOrders() {
 
   const handleStatusChange = async (orderId: string, newStatus: string) => {
     const order = orders?.find(o => o.id === orderId);
+
+    // Pix Balcão: confirmação de pagamento só pode ocorrer no servidor (Zero-Trust)
+    if (order?.payment_method === 'pix_balcao' && ['confirmed', 'shipped', 'delivered'].includes(newStatus) && !['confirmed', 'shipped', 'delivered'].includes(order.status)) {
+      const { data, error: fnError } = await supabase.functions.invoke('confirm-pix-balcao', { body: { orderId } });
+      if (fnError || (data as any)?.error) {
+        toast({ title: "Erro ao confirmar Pix Balcão", description: (data as any)?.error || fnError?.message, variant: "destructive" });
+        return;
+      }
+      toast({ title: "Pagamento Pix Balcão confirmado" });
+      queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+      if (newStatus === 'confirmed') return;
+    }
+
     const { error } = await supabase.from('orders').update({ status: newStatus }).eq('id', orderId);
     if (error) {
       toast({ title: "Erro ao atualizar status", description: error.message, variant: "destructive" });
       return;
     }
+
     if (newStatus === 'delivered' && order) {
       try {
         const { data: userData } = await supabase.from('profiles').select('full_name').eq('id', order.user_id).single();
@@ -133,6 +148,23 @@ export default function AdminOrders() {
   const bulkUpdateStatus = async (newStatus: string) => {
     if (selected.size === 0) return;
     const ids = Array.from(selected);
+    const paidStatuses = ['confirmed', 'shipped', 'delivered'];
+
+    // Pix Balcão precisa passar pela validação do servidor antes de virar pago
+    if (paidStatuses.includes(newStatus)) {
+      const balcaoIds = ids.filter((id) => {
+        const o = orders?.find((ord) => ord.id === id);
+        return o?.payment_method === 'pix_balcao' && !paidStatuses.includes(o.status);
+      });
+      for (const id of balcaoIds) {
+        const { data, error: fnError } = await supabase.functions.invoke('confirm-pix-balcao', { body: { orderId: id } });
+        if (fnError || (data as any)?.error) {
+          toast({ title: "Erro ao confirmar Pix Balcão", description: (data as any)?.error || fnError?.message, variant: "destructive" });
+          return;
+        }
+      }
+    }
+
     const { error } = await supabase.from('orders').update({ status: newStatus }).in('id', ids);
     if (error) {
       toast({ title: "Erro na ação em massa", description: error.message, variant: "destructive" });
@@ -142,6 +174,7 @@ export default function AdminOrders() {
     setSelected(new Set());
     queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
   };
+
 
   const handleDelete = async (orderId: string) => {
     if (!confirm("Tem certeza que deseja excluir este pedido?")) return;
