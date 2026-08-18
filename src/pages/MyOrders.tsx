@@ -15,6 +15,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { PostDeliveryReviewDialog } from "@/components/PostDeliveryReviewDialog";
 import { AsaasPaymentDialog } from "@/components/AsaasPaymentDialog";
 import { usePageMeta } from '@/hooks/usePageMeta';
+import { friendlyOrderError } from '@/lib/orderErrors';
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -48,11 +50,14 @@ export default function MyOrders() {
       toast.success('Pedido cancelado com sucesso');
       queryClient.invalidateQueries({ queryKey: ['my-orders'] });
     } catch (e: any) {
-      toast.error(e?.message || 'Erro ao cancelar pedido');
+      toast.error(friendlyOrderError(e));
+      // Reverte o estado da tela para o valor real do banco
+      queryClient.invalidateQueries({ queryKey: ['my-orders'] });
     } finally {
       setCancellingId(null);
     }
   };
+
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -105,13 +110,15 @@ export default function MyOrders() {
           order.expires_at &&
           new Date(order.expires_at) < now
         ) {
-          await supabase
+          const { error: expireError } = await supabase
             .from('orders')
             .update({ status: 'expired' })
             .eq('id', order.id);
-          order.status = 'expired';
+          // Se o banco recusar (regras de segurança), mantemos o status real
+          if (!expireError) order.status = 'expired';
         }
       }
+
       
       return data;
     },
