@@ -167,33 +167,43 @@ export default function AdminDiscounts() {
           {/* Cards exclusivos do mobile: sem qualquer estrutura de tabela */}
           <div className="flex flex-col gap-3 md:hidden">
             {discounts?.map((discount) => (
-              <Card key={discount.id} className="p-4 space-y-2 min-w-0">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <Badge variant="outline" className="max-w-full font-mono font-semibold break-all">
-                    {discount.code}
-                  </Badge>
-                  <Badge variant={discount.is_active ? "default" : "secondary"}>
+              <Card key={discount.id} className="p-4 space-y-3 min-w-0">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-mono font-semibold break-all text-sm">
+                    Cupom: {discount.code}
+                  </span>
+                  <Badge variant={discount.is_active ? "default" : "secondary"} className="shrink-0">
                     {discount.is_active ? 'Ativo' : 'Inativo'}
                   </Badge>
                 </div>
-                <div className="space-y-1 text-sm break-words">
-                  <p><span className="text-muted-foreground">Parceiro:</span> {discount.is_influencer_coupon ? discount.influencer_name || 'Parceiro' : '—'}</p>
-                  <p><span className="text-muted-foreground">Tipo:</span> {discount.type === 'percent' ? 'Percentual' : 'Fixo'}</p>
-                  <p>
-                    <span className="text-muted-foreground">Valor:</span>{' '}
-                    <span className="font-medium">{discount.type === 'percent' ? `${discount.value}%` : `R$ ${discount.value}`}</span>
-                  </p>
+                <div className="space-y-1.5 text-sm">
+                  <div className="flex justify-between gap-2">
+                    <span className="text-muted-foreground shrink-0">Parceiro:</span>
+                    <span className="text-right break-words">
+                      {discount.is_influencer_coupon ? discount.influencer_name || 'Parceiro' : '—'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between gap-2">
+                    <span className="text-muted-foreground shrink-0">Tipo:</span>
+                    <span>{discount.type === 'percent' ? 'Percentual' : 'Valor Fixo'}</span>
+                  </div>
+                  <div className="flex justify-between gap-2">
+                    <span className="text-muted-foreground shrink-0">Valor:</span>
+                    <span className="font-medium">
+                      {discount.type === 'percent' ? `${discount.value}%` : `R$ ${discount.value}`}
+                    </span>
+                  </div>
+                  <div className="flex justify-between gap-2">
+                    <span className="text-muted-foreground shrink-0">Usos acumulados:</span>
+                    <span className="whitespace-nowrap font-medium">
+                      {discount.usage_count || 0}{discount.max_uses ? ` / ${discount.max_uses}` : ''}
+                    </span>
+                  </div>
                 </div>
-                <div className="flex flex-wrap items-center gap-2 text-sm">
-                  <span className="text-muted-foreground">Usos acumulados:</span>
-                  <span className={discount.max_uses ? 'font-medium' : ''}>
-                    {discount.usage_count || 0}{discount.max_uses && ` / ${discount.max_uses}`}
-                  </span>
-                  {discount.max_uses && discount.usage_count >= discount.max_uses && (
-                    <Badge variant="destructive">Esgotado</Badge>
-                  )}
-                </div>
-                <div className="flex justify-end gap-2 pt-2">
+                {discount.max_uses && discount.usage_count >= discount.max_uses && (
+                  <Badge variant="destructive" className="w-fit">Esgotado</Badge>
+                )}
+                <div className="flex justify-end gap-2 pt-1">
                   <Button
                     variant="outline"
                     size="sm"
@@ -227,13 +237,13 @@ export default function AdminDiscounts() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Código</TableHead>
+                <TableHead>Cupom</TableHead>
                 <TableHead>Parceiro</TableHead>
                 <TableHead>Tipo</TableHead>
                 <TableHead>Valor</TableHead>
                 <TableHead>Agendamento</TableHead>
                 <TableHead>Validade</TableHead>
-                <TableHead>Usos</TableHead>
+                <TableHead>Usos acumulados</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Ações</TableHead>
               </TableRow>
@@ -256,7 +266,7 @@ export default function AdminDiscounts() {
                   </TableCell>
                   <TableCell>
                     <Badge variant="outline">
-                      {discount.type === 'percent' ? 'Percentual' : 'Fixo'}
+                      {discount.type === 'percent' ? 'Percentual' : 'Valor Fixo'}
                     </Badge>
                   </TableCell>
                   <TableCell>
