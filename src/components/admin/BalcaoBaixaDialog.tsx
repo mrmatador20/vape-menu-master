@@ -148,7 +148,6 @@ export function BalcaoBaixaDialog({ open, onOpenChange, product }: Props) {
   useEffect(() => {
     if (!pixPaid || !product || autoBaixaRef.current) return;
     autoBaixaRef.current = true;
-    clearInterval(undefined);
     baixa
       .mutateAsync({
         product_id: product.id,
