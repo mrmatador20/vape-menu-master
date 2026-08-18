@@ -3,6 +3,7 @@ import { useUserRole } from '@/hooks/useUserRole';
 import { Navigate } from 'react-router-dom';
 import LogRetentionSettings from '@/components/admin/LogRetentionSettings';
 import SiteIdentitySettings from '@/components/admin/SiteIdentitySettings';
+import FooterSettings from '@/components/admin/FooterSettings';
 import SiteThemeSettings from '@/components/admin/SiteThemeSettings';
 import CategoriesSettings from '@/components/admin/CategoriesSettings';
 import PaymentSettingsCard from '@/components/admin/PaymentSettingsCard';

@@ -1,16 +1,34 @@
 import { Link } from 'react-router-dom';
-import { Mail, Shield } from 'lucide-react';
+import { Mail, Phone, Shield } from 'lucide-react';
+import { useFooterSettings, FOOTER_DEFAULTS } from '@/hooks/useFooterSettings';
+import { useSiteIdentity } from '@/hooks/useSiteIdentity';
 
 const Footer = () => {
+  const { data } = useFooterSettings();
+  const { data: identity } = useSiteIdentity();
+  const f = data ?? FOOTER_DEFAULTS;
+  const storeName = identity?.site_name || 'Fox Velour';
+  const year = f.site_footer_copyright_year || String(new Date().getFullYear());
+  const legalLine =
+    f.site_footer_custom_copyright ||
+    `© ${year} ${storeName}. Controlador: ${f.site_footer_legal_controller} · ${f.site_footer_legal_city_state} · Em conformidade com a LGPD (Lei 13.709/2018).`;
+
   return (
     <footer className="border-t bg-background mt-12">
       <div className="container mx-auto px-4 py-8 grid gap-6 md:grid-cols-3 text-sm">
         <div>
-          <h3 className="font-semibold mb-2">Fox Velour</h3>
-          <p className="text-muted-foreground">Loja online de produtos selecionados.</p>
-          <p className="text-muted-foreground mt-2 flex items-center gap-1">
-            <Mail className="h-3 w-3" /> foxvelour@gmail.com
-          </p>
+          <h3 className="font-semibold mb-2">{storeName}</h3>
+          <p className="text-muted-foreground">{f.site_footer_brand_description}</p>
+          {f.site_footer_contact_email && (
+            <p className="text-muted-foreground mt-2 flex items-center gap-1">
+              <Mail className="h-3 w-3" /> {f.site_footer_contact_email}
+            </p>
+          )}
+          {f.site_footer_contact_phone && (
+            <p className="text-muted-foreground mt-1 flex items-center gap-1">
+              <Phone className="h-3 w-3" /> {f.site_footer_contact_phone}
+            </p>
+          )}
         </div>
         <div>
           <h3 className="font-semibold mb-2">Privacidade e Termos</h3>
@@ -28,8 +46,8 @@ const Footer = () => {
           </ul>
         </div>
       </div>
-      <div className="border-t py-4 text-center text-xs text-muted-foreground">
-        © {new Date().getFullYear()} Fox Velour. Controlador: Matheus Herminio Costa Cardoso · Cuité/PB · Em conformidade com a LGPD (Lei 13.709/2018).
+      <div className="border-t py-4 text-center text-xs text-muted-foreground px-4">
+        {legalLine}
       </div>
     </footer>
   );
