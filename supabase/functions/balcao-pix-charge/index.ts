@@ -162,6 +162,7 @@ Deno.serve(async (req) => {
         performed_by_role: operatorRole,
         payment_id: payment.id,
         amount: roundedAmount,
+        used_store_fallback_document: usedFallback,
       },
     })
 

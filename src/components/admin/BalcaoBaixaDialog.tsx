@@ -176,14 +176,15 @@ export function BalcaoBaixaDialog({ open, onOpenChange, product }: Props) {
     if (!quantity || quantity < 1) return toast.error('Quantidade inválida');
     if (quantity > currentStock) return toast.error('Quantidade maior que o estoque');
     if (finalPrice <= 0) return toast.error('Valor da venda inválido');
-    if (!cpfValid) return toast.error('Informe um CPF (11 dígitos) ou CNPJ (14 dígitos) válido');
+    if (cpfDigits.length > 0 && !cpfValid)
+      return toast.error('Informe um CPF (11 dígitos) ou CNPJ (14 dígitos) válido');
     setPixLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke('balcao-pix-charge', {
         body: {
           amount: finalPrice,
           description: `${product.name}${flavor ? ` • ${flavor.name}` : ''} (${quantity}x)`,
-          customerCpf: cpfDigits,
+          customerCpf: cpfValid ? cpfDigits : '',
           customerName: 'Cliente Balcão',
         },
       });
@@ -381,7 +382,7 @@ export function BalcaoBaixaDialog({ open, onOpenChange, product }: Props) {
                     </div>
                   ) : (
                     <div className="space-y-2">
-                      <Label>CPF/CNPJ do cliente (obrigatório)</Label>
+                      <Label>CPF/CNPJ do cliente (opcional)</Label>
                       <Input
                         inputMode="numeric"
                         maxLength={14}
@@ -389,10 +390,19 @@ export function BalcaoBaixaDialog({ open, onOpenChange, product }: Props) {
                         value={pixCpf}
                         onChange={(e) => setPixCpf(e.target.value.replace(/\D/g, '').slice(0, 14))}
                       />
-                      {!cpfValid && pixCpf.length > 0 && (
+                      {pixCpf.length > 0 && !cpfValid ? (
                         <p className="text-xs text-destructive">CPF deve ter 11 dígitos ou CNPJ 14 dígitos.</p>
+                      ) : (
+                        <p className="text-xs text-muted-foreground">
+                          Em branco: usaremos os dados do titular cadastrados em Sistema → Configurações.
+                        </p>
                       )}
-                      <Button type="button" className="w-full" onClick={generatePix} disabled={pixLoading || !cpfValid}>
+                      <Button
+                        type="button"
+                        className="w-full"
+                        onClick={generatePix}
+                        disabled={pixLoading || (pixCpf.length > 0 && !cpfValid)}
+                      >
                         {pixLoading ? (
                           <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Gerando cobrança…</>
                         ) : (
