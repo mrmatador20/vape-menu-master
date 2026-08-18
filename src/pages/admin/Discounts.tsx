@@ -1,10 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Plus, Trash2, Pencil, BarChart3, Copy, Sparkles } from "lucide-react";
+import { Loader2, Plus, Trash2, Pencil, BarChart3, Copy } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { DiscountFormDialog } from "@/components/admin/DiscountFormDialog";
@@ -126,46 +126,14 @@ export default function AdminDiscounts() {
         </div>
       </div>
 
-      {/* Cupons de Parceiros - destaque */}
-      {discounts && discounts.filter((d: any) => d.is_influencer_coupon).length > 0 && (
-        <Card className="border-primary/30">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-primary" />
-              Cupons Ativos de Parceiros
-            </CardTitle>
-            <CardDescription>Cupons vinculados a influencers — clique para copiar o link de indicação</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-3">
-              {discounts
-                .filter((d: any) => d.is_influencer_coupon)
-                .map((d: any) => (
-                  <div key={d.id} className="flex items-center justify-between border rounded-lg p-3 bg-muted/30">
-                    <div>
-                      <div className="font-mono font-semibold">{d.code}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {d.influencer_name || 'Sem responsável'} · {d.usage_count || 0} usos
-                      </div>
-                    </div>
-                    <Button size="sm" variant="ghost" onClick={() => copyInfluencerLink(d.code)}>
-                      <Copy className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
       <section className="min-w-0 space-y-4">
         <div>
           <h2 className="text-xl font-semibold">Cupons de Desconto</h2>
           <p className="text-sm text-muted-foreground">Lista de todos os descontos ativos e inativos</p>
         </div>
 
-          {/* Cards de cupom — chave-valor em todos os tamanhos de tela */}
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          {/* Cards de cupom — única visualização em todos os tamanhos de tela */}
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
             {discounts?.map((discount) => (
               <Card key={discount.id} className="p-4 space-y-3 min-w-0">
                 <div className="flex items-center justify-between gap-2">
