@@ -163,54 +163,56 @@ export default function Referrals() {
           {settingLoading || minValueLoading ? (
             <Skeleton className="h-10 w-full" />
           ) : (
-            <div className="space-y-4">
-              <div className="flex gap-3 items-end max-w-md">
-                <div className="flex-1 space-y-2">
-                  <Label htmlFor="points_per_order">Pontos por Pedido Confirmado</Label>
-                  <Input
-                    id="points_per_order"
-                    type="number"
-                    min="1"
-                    value={pointsPerOrder || pointsSetting?.value || '10'}
-                    onChange={(e) => setPointsPerOrder(e.target.value)}
-                    placeholder="10"
-                  />
+              <div className="space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-end sm:gap-3 sm:max-w-md gap-2">
+                  <div className="flex-1 space-y-2">
+                    <Label htmlFor="points_per_order">Pontos por Pedido Confirmado</Label>
+                    <Input
+                      id="points_per_order"
+                      type="number"
+                      min="1"
+                      value={pointsPerOrder || pointsSetting?.value || '10'}
+                      onChange={(e) => setPointsPerOrder(e.target.value)}
+                      placeholder="10"
+                    />
+                  </div>
+                  <Button
+                    className="sm:w-auto w-full"
+                    onClick={handleUpdatePointsPerOrder}
+                    disabled={updateSetting.isPending || !pointsPerOrder || parseInt(pointsPerOrder) < 1}
+                  >
+                    Salvar
+                  </Button>
                 </div>
-                <Button
-                  onClick={handleUpdatePointsPerOrder}
-                  disabled={updateSetting.isPending || !pointsPerOrder || parseInt(pointsPerOrder) < 1}
-                >
-                  Salvar
-                </Button>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Valor atual: <strong>{pointsSetting?.value || '10'} pontos</strong> por pedido confirmado
-              </p>
+                <p className="text-xs text-muted-foreground">
+                  Valor atual: <strong>{pointsSetting?.value || '10'} pontos</strong> por pedido confirmado
+                </p>
 
-              <div className="flex gap-3 items-end max-w-md pt-4 border-t">
-                <div className="flex-1 space-y-2">
-                  <Label htmlFor="min_order_value">Valor Mínimo do Pedido (R$)</Label>
-                  <Input
-                    id="min_order_value"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={minOrderValue || minValueSetting?.value || '50'}
-                    onChange={(e) => setMinOrderValue(e.target.value)}
-                    placeholder="50.00"
-                  />
+                <div className="flex flex-col sm:flex-row sm:items-end sm:gap-3 sm:max-w-md gap-2 pt-4 border-t">
+                  <div className="flex-1 space-y-2">
+                    <Label htmlFor="min_order_value">Valor Mínimo do Pedido (R$)</Label>
+                    <Input
+                      id="min_order_value"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={minOrderValue || minValueSetting?.value || '50'}
+                      onChange={(e) => setMinOrderValue(e.target.value)}
+                      placeholder="50.00"
+                    />
+                  </div>
+                  <Button
+                    className="sm:w-auto w-full"
+                    onClick={handleUpdateMinOrderValue}
+                    disabled={updateSetting.isPending || !minOrderValue || parseFloat(minOrderValue) < 0}
+                  >
+                    Salvar
+                  </Button>
                 </div>
-                <Button
-                  onClick={handleUpdateMinOrderValue}
-                  disabled={updateSetting.isPending || !minOrderValue || parseFloat(minOrderValue) < 0}
-                >
-                  Salvar
-                </Button>
+                <p className="text-xs text-muted-foreground">
+                  Valor atual: <strong>R$ {parseFloat(minValueSetting?.value || '50').toFixed(2)}</strong> - Pedidos abaixo deste valor não geram pontos
+                </p>
               </div>
-              <p className="text-xs text-muted-foreground">
-                Valor atual: <strong>R$ {parseFloat(minValueSetting?.value || '50').toFixed(2)}</strong> - Pedidos abaixo deste valor não geram pontos
-              </p>
-            </div>
           )}
         </CardContent>
       </Card>
