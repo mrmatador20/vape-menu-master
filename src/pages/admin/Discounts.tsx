@@ -109,17 +109,17 @@ export default function AdminDiscounts() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Gestão de Descontos</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold">Gestão de Descontos</h1>
           <p className="text-muted-foreground">Crie e gerencie cupons de desconto</p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => navigate('/546498@18/influencer-metrics')}>
+        <div className="w-full grid grid-cols-2 gap-2 sm:w-auto sm:flex">
+          <Button variant="outline" className="whitespace-nowrap" onClick={() => navigate('/546498@18/influencer-metrics')}>
             <BarChart3 className="h-4 w-4 mr-2" />
             Ver Métricas
           </Button>
-          <Button onClick={() => setDialogOpen(true)}>
+          <Button className="whitespace-nowrap" onClick={() => setDialogOpen(true)}>
             <Plus className="h-4 w-4 mr-2" />
             Novo Desconto
           </Button>
