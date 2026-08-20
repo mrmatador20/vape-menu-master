@@ -44,16 +44,10 @@ export default function WelcomeSection() {
       {slides.map((banner, i) => (
         <div
           key={banner.id}
-          className="absolute inset-0 transition-opacity duration-1000 ease-in-out"
-          style={{ opacity: i === index ? 1 : 0 }}
+          className="absolute inset-0 min-h-[350px] md:min-h-[500px] bg-cover bg-center bg-no-repeat transition-opacity duration-1000 ease-in-out"
+          style={{ backgroundImage: `url(${banner.image_url})`, opacity: i === index ? 1 : 0 }}
           aria-hidden={i !== index}
         >
-          <img
-            src={banner.image_url}
-            alt=""
-            loading={i === 0 ? 'eager' : 'lazy'}
-            className="w-full h-full object-cover"
-          />
           <div
             className="absolute inset-0 bg-background backdrop-blur-[1px]"
             style={{ opacity: banner.opacity / 100 }}
@@ -63,6 +57,7 @@ export default function WelcomeSection() {
       ))}
 
       <div className="relative container max-w-4xl text-center space-y-8">
+
         {siteIdentity && (
           <>
             <h1 className="font-serif text-3xl sm:text-5xl md:text-7xl font-normal tracking-[0.08em] sm:tracking-[0.15em] leading-tight sm:leading-[1.1] uppercase text-foreground max-w-[14ch] sm:max-w-none mx-auto animate-in fade-in slide-in-from-bottom-4 duration-1000 [text-shadow:0_2px_12px_hsl(var(--background))]">
