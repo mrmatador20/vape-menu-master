@@ -313,7 +313,7 @@ export function PromoBannerFormDialog({ banner, trigger }: Props) {
 
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
-            <Button type="submit" disabled={uploading}>
+            <Button type="submit" disabled={uploading || !canManage || roleLoading}>
               {uploading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Salvar
             </Button>
