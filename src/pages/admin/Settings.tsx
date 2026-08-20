@@ -46,7 +46,7 @@ export default function Settings() {
 
         <TabsContent value="identidade" className="mt-6 space-y-6">
           <SiteIdentitySettings />
-          <HeroBannerSettings />
+          
           <SiteThemeSettings />
         </TabsContent>
 
