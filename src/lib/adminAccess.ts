@@ -6,7 +6,6 @@ export const MODERATOR_ALLOWED_PATHS = [
   `${ADMIN_BASE}/orders`,
   `${ADMIN_BASE}/reviews`,
   `${ADMIN_BASE}/banners`,
-  `${ADMIN_BASE}/promo-banners`,
 ];
 
 export const isPathAllowedForModerator = (pathname: string) => {

@@ -46,8 +46,7 @@ const groups: Group[] = [
     title: "Catálogo", icon: Boxes, items: [
       { title: "Produtos", url: "/546498@18/products", icon: Package },
       { title: "Categorias", url: "/546498@18/categories", icon: FolderTree },
-      { title: "Banners", url: "/546498@18/banners", icon: Megaphone },
-      { title: "Banners Promo (Home)", url: "/546498@18/promo-banners", icon: Megaphone },
+      { title: "Banners da Home", url: "/546498@18/banners", icon: Megaphone },
     ],
   },
   {
