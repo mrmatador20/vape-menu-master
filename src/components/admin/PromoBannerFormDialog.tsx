@@ -148,6 +148,8 @@ export function PromoBannerFormDialog({ banner, trigger }: Props) {
     }
   };
 
+  if (!roleLoading && !canManage && !trigger) return null;
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
@@ -161,6 +163,14 @@ export function PromoBannerFormDialog({ banner, trigger }: Props) {
         <DialogHeader>
           <DialogTitle>{banner ? 'Editar Banner Promocional' : 'Novo Banner Promocional'}</DialogTitle>
         </DialogHeader>
+        {!roleLoading && !canManage && (
+          <Alert variant="destructive">
+            <ShieldAlert className="h-4 w-4" />
+            <AlertDescription>
+              Permissão negada: apenas administradores podem enviar imagens ou alterar banners.
+            </AlertDescription>
+          </Alert>
+        )}
         <form onSubmit={handleSubmit} className="space-y-5">
           {/* Images */}
           <div className="grid md:grid-cols-2 gap-4">
@@ -168,6 +178,7 @@ export function PromoBannerFormDialog({ banner, trigger }: Props) {
               <Label>Imagem Desktop (1920×500) *</Label>
               <Input
                 type="file"
+                disabled={!canManage}
                 accept="image/webp,image/jpeg,image/png"
                 onChange={(e) => setDesktopFile(e.target.files?.[0] || null)}
               />
