@@ -31,11 +31,12 @@ export default function WelcomeSection() {
 
   return (
     <section
-      className="relative py-24 md:py-32 px-4 overflow-hidden bg-cover bg-center bg-no-repeat"
+      className="relative flex min-h-[350px] md:min-h-[500px] items-center justify-center py-16 md:py-24 px-4 overflow-hidden bg-cover bg-center bg-no-repeat"
       style={fallbackImage ? { backgroundImage: `url(${fallbackImage})` } : undefined}
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
+
       {fallbackImage && (
         <div className="absolute inset-0 bg-background/70 backdrop-blur-[1px]" aria-hidden="true" />
       )}
