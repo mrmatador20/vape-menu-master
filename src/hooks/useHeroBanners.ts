@@ -8,6 +8,9 @@ export interface HeroBanner {
   display_order: number;
   is_active: boolean;
   created_at: string;
+  title: string | null;
+  subtitle: string | null;
+  show_text_overlay: boolean;
 }
 
 export function useActiveHeroBanners() {
