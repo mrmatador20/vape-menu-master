@@ -529,6 +529,9 @@ export type Database = {
           image_url: string
           is_active: boolean
           opacity: number
+          show_text_overlay: boolean
+          subtitle: string | null
+          title: string | null
           updated_at: string
         }
         Insert: {
@@ -538,6 +541,9 @@ export type Database = {
           image_url: string
           is_active?: boolean
           opacity?: number
+          show_text_overlay?: boolean
+          subtitle?: string | null
+          title?: string | null
           updated_at?: string
         }
         Update: {
@@ -547,6 +553,9 @@ export type Database = {
           image_url?: string
           is_active?: boolean
           opacity?: number
+          show_text_overlay?: boolean
+          subtitle?: string | null
+          title?: string | null
           updated_at?: string
         }
         Relationships: []

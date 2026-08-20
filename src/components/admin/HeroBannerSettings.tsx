@@ -4,6 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -236,6 +238,56 @@ export default function HeroBannerSettings() {
                         onValueCommit={(v) => updateBanner(banner.id, { opacity: v[0] }, 'Opacidade atualizada!')}
                       />
                     </div>
+
+                    <div className="flex items-center gap-3">
+                      <Switch
+                        checked={banner.show_text_overlay}
+                        disabled={!canEdit}
+                        onCheckedChange={(checked) =>
+                          updateBanner(
+                            banner.id,
+                            { show_text_overlay: checked },
+                            checked ? 'Texto será exibido neste banner.' : 'Texto ocultado neste banner.',
+                          )
+                        }
+                      />
+                      <Label className="text-sm">Exibir texto sobre o banner</Label>
+                    </div>
+
+                    {banner.show_text_overlay && (
+                      <div className="space-y-3">
+                        <div className="space-y-1.5">
+                          <Label className="text-sm">Título do Banner</Label>
+                          <Input
+                            defaultValue={banner.title ?? ''}
+                            maxLength={80}
+                            disabled={!canEdit}
+                            placeholder="Ex.: Bem-vindo à Fox Velour"
+                            onBlur={(e) => {
+                              const v = e.target.value.trim();
+                              if (v !== (banner.title ?? '')) updateBanner(banner.id, { title: v || null }, 'Título atualizado!');
+                            }}
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label className="text-sm">Subtítulo do Banner</Label>
+                          <Textarea
+                            defaultValue={banner.subtitle ?? ''}
+                            maxLength={280}
+                            rows={3}
+                            disabled={!canEdit}
+                            placeholder="Texto menor exibido abaixo do título"
+                            onBlur={(e) => {
+                              const v = e.target.value.trim();
+                              if (v !== (banner.subtitle ?? '')) updateBanner(banner.id, { subtitle: v || null }, 'Subtítulo atualizado!');
+                            }}
+                          />
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Deixe em branco para exibir apenas a imagem deste slide.
+                        </p>
+                      </div>
+                    )}
 
                     <div className="flex items-center gap-3">
                       <Switch
