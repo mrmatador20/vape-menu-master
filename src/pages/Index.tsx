@@ -13,7 +13,6 @@ import Footer from '@/components/Footer';
 import { PromoBannerCarousel } from '@/components/PromoBannerCarousel';
 import { Loader2 } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
-import { useSiteIdentity } from '@/hooks/useSiteIdentity';
 import { usePageMeta } from '@/hooks/usePageMeta';
 import WelcomeSection from '@/components/WelcomeSection';
 
@@ -26,7 +25,6 @@ const Index = () => {
   const { addToCart } = useCart();
   const { data: products, isLoading } = useProducts();
   const { data: orderedCategories } = useCategories();
-  const { data: siteIdentity } = useSiteIdentity();
   const [searchParams] = useSearchParams();
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [activeSubcategory, setActiveSubcategory] = useState<string>('all');
