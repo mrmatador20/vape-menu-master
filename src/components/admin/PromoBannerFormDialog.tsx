@@ -50,6 +50,8 @@ export function PromoBannerFormDialog({ banner, trigger }: Props) {
 
   const create = useCreatePromoBanner();
   const update = useUpdatePromoBanner();
+  const { data: role, isLoading: roleLoading } = useUserRole();
+  const canManage = role === 'admin';
 
   useEffect(() => {
     if (!banner) return;
