@@ -15,6 +15,7 @@ import { Loader2 } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { useSiteIdentity } from '@/hooks/useSiteIdentity';
 import { usePageMeta } from '@/hooks/usePageMeta';
+import WelcomeSection from '@/components/WelcomeSection';
 
 const Index = () => {
   usePageMeta({
