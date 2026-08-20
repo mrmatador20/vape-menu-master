@@ -206,6 +206,7 @@ export function PromoBannerFormDialog({ banner, trigger }: Props) {
               <Label>Imagem Mobile (1080×1350)</Label>
               <Input
                 type="file"
+                disabled={!canManage}
                 accept="image/webp,image/jpeg,image/png"
                 onChange={(e) => setMobileFile(e.target.files?.[0] || null)}
               />
