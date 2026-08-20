@@ -13,8 +13,8 @@ import Footer from '@/components/Footer';
 import { PromoBannerCarousel } from '@/components/PromoBannerCarousel';
 import { Loader2 } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
-import { useSiteIdentity } from '@/hooks/useSiteIdentity';
 import { usePageMeta } from '@/hooks/usePageMeta';
+import WelcomeSection from '@/components/WelcomeSection';
 
 const Index = () => {
   usePageMeta({
@@ -25,7 +25,6 @@ const Index = () => {
   const { addToCart } = useCart();
   const { data: products, isLoading } = useProducts();
   const { data: orderedCategories } = useCategories();
-  const { data: siteIdentity } = useSiteIdentity();
   const [searchParams] = useSearchParams();
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [activeSubcategory, setActiveSubcategory] = useState<string>('all');
@@ -136,32 +135,9 @@ const Index = () => {
 
       <BannerCarousel />
 
-      {/* Hero — minimal, editorial */}
-      <section
-        className="relative py-24 md:py-32 px-4 bg-cover bg-center bg-no-repeat"
-        style={
-          siteIdentity?.site_hero_image_url
-            ? { backgroundImage: `url(${siteIdentity.site_hero_image_url})` }
-            : undefined
-        }
-      >
-        {siteIdentity?.site_hero_image_url && (
-          <div className="absolute inset-0 bg-background/70 backdrop-blur-[1px]" aria-hidden="true" />
-        )}
-        <div className="relative container max-w-4xl text-center space-y-8">
-          {siteIdentity && (
-            <>
-              <h1 className="font-serif text-3xl sm:text-5xl md:text-7xl font-normal tracking-[0.08em] sm:tracking-[0.15em] leading-tight sm:leading-[1.1] uppercase text-foreground max-w-[14ch] sm:max-w-none mx-auto animate-in fade-in slide-in-from-bottom-4 duration-1000 [text-shadow:0_2px_12px_hsl(var(--background))]">
-                {siteIdentity.site_hero_title ?? 'Bem-vindo à Fox Velour'}
-              </h1>
-              <div className="mx-auto h-px w-16 bg-primary/60" />
-              <p className="text-sm md:text-base text-muted-foreground max-w-xl mx-auto leading-relaxed font-light whitespace-pre-line animate-in fade-in duration-1000 delay-200">
-                {siteIdentity.site_hero_subtitle ?? 'Descubra uma curadoria exclusiva de moda e fragrâncias feitas para quem não abre mão da sofisticação. Explore nossa linha de perfumaria fina e vestuário.'}
-              </p>
-            </>
-          )}
-        </div>
-      </section>
+      {/* Hero — dynamic welcome slideshow */}
+      <WelcomeSection />
+
 
 
       {/* Promo Banner — full-width editorial carousel */}
