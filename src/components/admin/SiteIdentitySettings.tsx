@@ -23,6 +23,8 @@ const FIELDS: {
   { key: 'site_description', label: 'Descrição (SEO)', description: 'Aparece em meta tags para Google e redes sociais.', multiline: true, maxLength: 200 },
   { key: 'site_pwa_short_name', label: 'Nome curto do app (PWA)', description: 'Nome exibido na tela inicial do celular ao instalar.', maxLength: 20 },
   { key: 'site_footer_text', label: 'Texto do rodapé', description: 'Aparece no rodapé do site.', maxLength: 150 },
+  { key: 'site_hero_title', label: 'Título de Boas-Vindas (Home)', description: 'Título global exibido na seção de boas-vindas da Home quando não há texto por banner.', multiline: true, maxLength: 120 },
+  { key: 'site_hero_subtitle', label: 'Subtítulo de Boas-Vindas (Home)', description: 'Subtítulo global exibido na seção de boas-vindas da Home quando não há texto por banner.', multiline: true, maxLength: 300 },
 ];
 
 export default function SiteIdentitySettings() {
