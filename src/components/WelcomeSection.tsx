@@ -56,20 +56,21 @@ export default function WelcomeSection() {
         </div>
       ))}
 
-      <div className="relative container max-w-4xl text-center space-y-8">
-
-        {siteIdentity && (
-          <>
+      {showText && (
+        <div className="relative container max-w-4xl text-center space-y-8">
+          {heroTitle && (
             <h1 className="font-serif text-3xl sm:text-5xl md:text-7xl font-normal tracking-[0.08em] sm:tracking-[0.15em] leading-tight sm:leading-[1.1] uppercase text-foreground max-w-[14ch] sm:max-w-none mx-auto animate-in fade-in slide-in-from-bottom-4 duration-1000 [text-shadow:0_2px_12px_hsl(var(--background))]">
-              {siteIdentity.site_hero_title ?? 'Bem-vindo à Fox Velour'}
+              {heroTitle}
             </h1>
-            <div className="mx-auto h-px w-16 bg-primary/60" />
+          )}
+          {heroTitle && heroSubtitle && <div className="mx-auto h-px w-16 bg-primary/60" />}
+          {heroSubtitle && (
             <p className="text-sm md:text-base text-foreground/80 max-w-xl mx-auto leading-relaxed font-light whitespace-pre-line animate-in fade-in duration-1000 delay-200 [text-shadow:0_1px_8px_hsl(var(--background))]">
-              {siteIdentity.site_hero_subtitle ?? 'Descubra uma curadoria exclusiva de moda e fragrâncias feitas para quem não abre mão da sofisticação. Explore nossa linha de perfumaria fina e vestuário.'}
+              {heroSubtitle}
             </p>
-          </>
-        )}
-      </div>
+          )}
+        </div>
+      )}
 
       {count > 1 && (
         <>
