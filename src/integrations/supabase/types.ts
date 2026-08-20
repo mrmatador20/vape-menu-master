@@ -521,6 +521,36 @@ export type Database = {
         }
         Relationships: []
       }
+      home_hero_banners: {
+        Row: {
+          created_at: string
+          display_order: number
+          id: string
+          image_url: string
+          is_active: boolean
+          opacity: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          image_url: string
+          is_active?: boolean
+          opacity?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          image_url?: string
+          is_active?: boolean
+          opacity?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       legal_documents: {
         Row: {
           change_summary: string | null
