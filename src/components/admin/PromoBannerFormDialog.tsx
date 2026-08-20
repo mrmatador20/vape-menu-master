@@ -6,10 +6,13 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, X, Loader2 } from 'lucide-react';
+import { Plus, X, Loader2, ShieldAlert } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { optimizeImage } from '@/lib/imageOptimizer';
+import { getStorageErrorMessage } from '@/lib/storageErrors';
+import { useUserRole } from '@/hooks/useUserRole';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   PromoBanner,
   useCreatePromoBanner,
