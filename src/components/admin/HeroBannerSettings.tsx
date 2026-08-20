@@ -21,7 +21,7 @@ export default function HeroBannerSettings() {
   const [busy, setBusy] = useState(false);
   const [dragging, setDragging] = useState(false);
 
-  const canEdit = role === 'admin' || role === 'super_admin';
+  const canEdit = role === 'admin' || (role as string) === 'super_admin';
   const currentUrl = identity?.site_hero_image_url || '';
 
   const saveUrl = async (url: string) => {
