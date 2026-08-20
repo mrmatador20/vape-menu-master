@@ -29,6 +29,15 @@ export default function WelcomeSection() {
 
   const fallbackImage = !count ? siteIdentity?.site_hero_image_url : undefined;
 
+  const current = slides[index];
+  const heroTitle = count ? (current?.title?.trim() || '') : 'Bem-vindo à Fox Velour';
+  const heroSubtitle = count
+    ? (current?.subtitle?.trim() || '')
+    : 'Descubra uma curadoria exclusiva de moda e fragrâncias feitas para quem não abre mão da sofisticação. Explore nossa linha de perfumaria fina e vestuário.';
+  const showText = count
+    ? Boolean(current?.show_text_overlay) && Boolean(heroTitle || heroSubtitle)
+    : true;
+
   return (
     <section
       className="relative flex min-h-[350px] md:min-h-[500px] items-center justify-center py-16 md:py-24 px-4 overflow-hidden bg-cover bg-center bg-no-repeat"
