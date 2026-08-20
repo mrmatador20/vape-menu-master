@@ -96,6 +96,10 @@ export function PromoBannerFormDialog({ banner, trigger }: Props) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!canManage) {
+      toast.error('Permissão negada: apenas administradores podem gerenciar banners.');
+      return;
+    }
     setUploading(true);
     try {
       let finalImage = imageUrl;
