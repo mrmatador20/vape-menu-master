@@ -6,13 +6,10 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, X, Loader2, ShieldAlert } from 'lucide-react';
+import { Plus, X, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { optimizeImage } from '@/lib/imageOptimizer';
-import { getStorageErrorMessage } from '@/lib/storageErrors';
-import { useUserRole } from '@/hooks/useUserRole';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   PromoBanner,
   useCreatePromoBanner,
@@ -50,8 +47,6 @@ export function PromoBannerFormDialog({ banner, trigger }: Props) {
 
   const create = useCreatePromoBanner();
   const update = useUpdatePromoBanner();
-  const { data: role, isLoading: roleLoading } = useUserRole();
-  const canManage = role === 'admin';
 
   useEffect(() => {
     if (!banner) return;
@@ -96,10 +91,6 @@ export function PromoBannerFormDialog({ banner, trigger }: Props) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!canManage) {
-      toast.error('Permissão negada: apenas administradores podem gerenciar banners.');
-      return;
-    }
     setUploading(true);
     try {
       let finalImage = imageUrl;
@@ -142,13 +133,11 @@ export function PromoBannerFormDialog({ banner, trigger }: Props) {
       setOpen(false);
       if (!banner) reset();
     } catch (err: any) {
-      toast.error(getStorageErrorMessage(err));
+      toast.error('Erro: ' + (err.message || 'falha ao salvar'));
     } finally {
       setUploading(false);
     }
   };
-
-  if (!roleLoading && !canManage && !trigger) return null;
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -163,14 +152,6 @@ export function PromoBannerFormDialog({ banner, trigger }: Props) {
         <DialogHeader>
           <DialogTitle>{banner ? 'Editar Banner Promocional' : 'Novo Banner Promocional'}</DialogTitle>
         </DialogHeader>
-        {!roleLoading && !canManage && (
-          <Alert variant="destructive">
-            <ShieldAlert className="h-4 w-4" />
-            <AlertDescription>
-              Permissão negada: apenas administradores podem enviar imagens ou alterar banners.
-            </AlertDescription>
-          </Alert>
-        )}
         <form onSubmit={handleSubmit} className="space-y-5">
           {/* Images */}
           <div className="grid md:grid-cols-2 gap-4">
@@ -178,7 +159,6 @@ export function PromoBannerFormDialog({ banner, trigger }: Props) {
               <Label>Imagem Desktop (1920×500) *</Label>
               <Input
                 type="file"
-                disabled={!canManage}
                 accept="image/webp,image/jpeg,image/png"
                 onChange={(e) => setDesktopFile(e.target.files?.[0] || null)}
               />
@@ -206,7 +186,6 @@ export function PromoBannerFormDialog({ banner, trigger }: Props) {
               <Label>Imagem Mobile (1080×1350)</Label>
               <Input
                 type="file"
-                disabled={!canManage}
                 accept="image/webp,image/jpeg,image/png"
                 onChange={(e) => setMobileFile(e.target.files?.[0] || null)}
               />
@@ -325,7 +304,7 @@ export function PromoBannerFormDialog({ banner, trigger }: Props) {
 
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
-            <Button type="submit" disabled={uploading || !canManage || roleLoading}>
+            <Button type="submit" disabled={uploading}>
               {uploading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Salvar
             </Button>
