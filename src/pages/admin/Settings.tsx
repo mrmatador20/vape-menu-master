@@ -4,6 +4,8 @@ import { Navigate } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import LogRetentionSettings from '@/components/admin/LogRetentionSettings';
 import SiteIdentitySettings from '@/components/admin/SiteIdentitySettings';
+import HeroBannerSettings from '@/components/admin/HeroBannerSettings';
+
 import FooterSettings from '@/components/admin/FooterSettings';
 import SiteThemeSettings from '@/components/admin/SiteThemeSettings';
 import CategoriesSettings from '@/components/admin/CategoriesSettings';
