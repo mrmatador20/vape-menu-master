@@ -142,7 +142,7 @@ export function PromoBannerFormDialog({ banner, trigger }: Props) {
       setOpen(false);
       if (!banner) reset();
     } catch (err: any) {
-      toast.error('Erro: ' + (err.message || 'falha ao salvar'));
+      toast.error(getStorageErrorMessage(err));
     } finally {
       setUploading(false);
     }
