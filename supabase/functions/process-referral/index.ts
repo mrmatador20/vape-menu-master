@@ -75,7 +75,7 @@ serve(async (req) => {
     // 2. Get order details
     const { data: order, error: orderError } = await supabaseClient
       .from('orders')
-      .select('id, user_id, total_amount, referral_points_awarded')
+      .select('id, user_id, status, total_amount, referral_points_awarded, referred_by_code')
       .eq('id', orderId)
       .single();
 
