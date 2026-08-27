@@ -105,6 +105,18 @@ serve(async (req) => {
       );
     }
 
+    // 2.3. The referral code must match the one actually captured on the order
+    const orderCode = (order.referred_by_code ?? '').toUpperCase();
+    if (!orderCode || orderCode !== String(referralCode).toUpperCase()) {
+      console.error('[process-referral] Referral code does not match order');
+      return new Response(
+        JSON.stringify({ success: false, message: 'Código de indicação inválido para este pedido' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+      );
+    }
+
+
+
     // 3. Check if user is referring themselves (not allowed)
     if (order.user_id === referrerProfile.id) {
       console.log('[process-referral] User cannot refer themselves');
