@@ -623,6 +623,21 @@ serve(async (req) => {
       console.error('[create-order] push notification failed:', notifyError);
     }
 
+    // Notificação de venda no Telegram (credenciais em system_secrets)
+    try {
+      const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+      await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/notify-order-telegram`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${serviceKey}`,
+        },
+        body: JSON.stringify({ orderId: order.id }),
+      });
+    } catch (telegramError) {
+      console.error('[create-order] telegram notification failed:', telegramError);
+    }
+
     // Return the validated items with names for WhatsApp message
     console.log('[create-order] Order created successfully:', order.id);
 
