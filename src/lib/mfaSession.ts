@@ -64,6 +64,7 @@ export const hasMfaSessionFlag = (userId: string): boolean => {
 /** Remove a flag de sessão 2FA (somente no logout explícito). */
 export const clearMfaSession = () => {
   try {
+    invalidateMfaStatusCache();
     localStorage.removeItem(MFA_SESSION_KEY);
     sessionStorage.removeItem('2fa_verified');
     sessionStorage.removeItem('admin_2fa_verified');
@@ -160,32 +161,65 @@ export interface MfaStatus {
 }
 
 /**
+ * Cache em memória do status 2FA (curto), para evitar múltiplas idas ao
+ * servidor a cada navegação entre rotas. Invalidado no logout/verificação.
+ */
+const MFA_STATUS_TTL_MS = 60_000;
+let mfaStatusCache: { userId: string; status: MfaStatus; at: number } | null = null;
+let mfaStatusInflight: { userId: string; promise: Promise<MfaStatus> } | null = null;
+
+export const invalidateMfaStatusCache = () => {
+  mfaStatusCache = null;
+  mfaStatusInflight = null;
+};
+
+/**
  * Fonte de verdade para "o 2FA já foi resolvido?".
  * Combina AAL2 (servidor) + dispositivo confiável (banco) + flag local.
  */
 export const getMfaStatus = async (userId: string): Promise<MfaStatus> => {
-  let isAAL2 = false;
-  // Se o usuário não tem fator TOTP habilitado, o servidor reporta nextLevel !== 'aal2'
-  // e ele NUNCA conseguiria atingir AAL2 — nesse caso não há 2FA a exigir.
-  let hasEnrolledFactor = false;
+  const cached = mfaStatusCache;
+  if (cached && cached.userId === userId && Date.now() - cached.at < MFA_STATUS_TTL_MS) {
+    return cached.status;
+  }
+  if (mfaStatusInflight && mfaStatusInflight.userId === userId) {
+    return mfaStatusInflight.promise;
+  }
+
+  const promise = (async (): Promise<MfaStatus> => {
+    let isAAL2 = false;
+    // Se o usuário não tem fator TOTP habilitado, o servidor reporta nextLevel !== 'aal2'
+    // e ele NUNCA conseguiria atingir AAL2 — nesse caso não há 2FA a exigir.
+    let hasEnrolledFactor = false;
+    try {
+      const { data } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+      isAAL2 = data?.currentLevel === 'aal2';
+      hasEnrolledFactor = data?.nextLevel === 'aal2';
+    } catch {
+      isAAL2 = false;
+      hasEnrolledFactor = false;
+    }
+
+    const hasFlag = hasMfaSessionFlag(userId);
+    let isTrustedDevice = false;
+
+    if (!isAAL2 && hasEnrolledFactor) {
+      isTrustedDevice = await isDeviceTrustedOnServer(userId);
+    }
+
+    const satisfied = isAAL2 || isTrustedDevice || !hasEnrolledFactor;
+    if (satisfied) markMfaVerified(userId);
+
+    const status: MfaStatus = { satisfied, isAAL2, isTrustedDevice, hasFlag, hasEnrolledFactor };
+    mfaStatusCache = { userId, status, at: Date.now() };
+    return status;
+  })();
+
+  mfaStatusInflight = { userId, promise };
   try {
-    const { data } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-    isAAL2 = data?.currentLevel === 'aal2';
-    hasEnrolledFactor = data?.nextLevel === 'aal2';
-  } catch {
-    isAAL2 = false;
-    hasEnrolledFactor = false;
+    return await promise;
+  } finally {
+    if (mfaStatusInflight?.promise === promise) mfaStatusInflight = null;
   }
-
-  const hasFlag = hasMfaSessionFlag(userId);
-  let isTrustedDevice = false;
-
-  if (!isAAL2 && hasEnrolledFactor) {
-    isTrustedDevice = await isDeviceTrustedOnServer(userId);
-  }
-
-  const satisfied = isAAL2 || isTrustedDevice || !hasEnrolledFactor;
-  if (satisfied) markMfaVerified(userId);
-
-  return { satisfied, isAAL2, isTrustedDevice, hasFlag, hasEnrolledFactor };
 };
+
