@@ -11,6 +11,7 @@ import SiteThemeSettings from '@/components/admin/SiteThemeSettings';
 import CategoriesSettings from '@/components/admin/CategoriesSettings';
 import PaymentSettingsCard from '@/components/admin/PaymentSettingsCard';
 import BalcaoPixFallbackSettings from '@/components/admin/BalcaoPixFallbackSettings';
+import TelegramNotificationSettings from '@/components/admin/TelegramNotificationSettings';
 
 export default function Settings() {
   const { data: role, isLoading: roleLoading } = useUserRole();
@@ -61,6 +62,7 @@ export default function Settings() {
         </TabsContent>
 
         <TabsContent value="sistema" className="mt-6 space-y-6">
+          <TelegramNotificationSettings />
           <CategoriesSettings />
           <LogRetentionSettings />
           <div className="text-center py-6 text-muted-foreground border-t">
