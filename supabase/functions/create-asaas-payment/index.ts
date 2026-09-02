@@ -207,6 +207,18 @@ serve(async (req) => {
     }
     const roundedAmount = parseFloat(numAmount.toFixed(2));
 
+    // Asaas exige valor mínimo de R$ 5,00 por cobrança
+    if (roundedAmount < 5) {
+      return new Response(
+        JSON.stringify({
+          error: 'O valor mínimo para pagamento online é de R$ 5,00. Adicione mais itens ao carrinho para concluir a compra.',
+          reasonCode: 'min_value',
+        }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+
     // Validação para cartão
     const isCard = paymentMethod === 'credit' || paymentMethod === 'debit';
     if (isCard) {
