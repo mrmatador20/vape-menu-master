@@ -439,6 +439,35 @@ serve(async (req) => {
     }
     await supabase.from('orders').update({ status: orderStatus }).eq('id', orderId);
 
+    // Notifica a equipe apenas quando o pagamento já foi aprovado na hora (cartão)
+    if (orderStatus === 'confirmed') {
+      const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+      const baseUrl = Deno.env.get('SUPABASE_URL');
+      try {
+        await fetch(`${baseUrl}/functions/v1/send-order-notification`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${serviceKey}` },
+          body: JSON.stringify({
+            title: 'Pagamento aprovado!',
+            body: `Pedido de R$ ${roundedAmount.toFixed(2)} pago e pronto para separação.`,
+            url: '/546498@18/orders',
+          }),
+        });
+      } catch (e) {
+        console.error('[Asaas] push notification failed:', e);
+      }
+      try {
+        await fetch(`${baseUrl}/functions/v1/notify-order-telegram`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${serviceKey}` },
+          body: JSON.stringify({ orderId }),
+        });
+      } catch (e) {
+        console.error('[Asaas] telegram notification failed:', e);
+      }
+    }
+
+
     return new Response(
       JSON.stringify({
         success: true,
