@@ -119,14 +119,25 @@ Deno.serve(async (req) => {
 
     if (!response.ok || result?.ok === false) {
       console.error(`[notify-order-telegram] telegram error [${response.status}]:`, JSON.stringify(result));
+      const description: string = result?.description ?? `HTTP ${response.status}`;
+      let hint = description;
+      if (/chat not found/i.test(description)) {
+        hint =
+          "Chat não encontrado. Verifique o ID do chat e envie /start para o bot (ou adicione o bot ao grupo). Para grupos o ID começa com -100.";
+      } else if (/bot was blocked|bot can't initiate/i.test(description)) {
+        hint = "O bot não pode iniciar a conversa. Abra o chat com o bot e envie /start antes de testar.";
+      } else if (/unauthorized/i.test(description)) {
+        hint = "Token do bot inválido. Gere um novo token no @BotFather e salve novamente.";
+      }
       return new Response(
         JSON.stringify({
           error: "Falha ao enviar mensagem no Telegram",
-          details: result?.description ?? `HTTP ${response.status}`,
+          details: hint,
         }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
+
 
     return new Response(JSON.stringify({ success: true, message_id: result?.result?.message_id }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
