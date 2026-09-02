@@ -35,11 +35,11 @@ export const AuthInterceptor = ({ children }: AuthInterceptorProps) => {
   useEffect(() => {
     let isMounted = true;
 
-    // Rotas públicas não precisam de nenhuma verificação bloqueante.
+    // Rotas públicas não precisam de verificação bloqueante: renderiza já.
     if (isPublicRoute) {
-      setGlobalAuthState((prev) => prev);
       setInterceptorState('authenticated');
     }
+
 
     const checkAuthentication = async () => {
       if (isCheckingRef.current) return;
