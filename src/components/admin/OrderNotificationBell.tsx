@@ -121,37 +121,63 @@ export function OrderNotificationBell() {
 
   // realtime subscription
   useEffect(() => {
+    const ONLINE_METHODS = ["pix", "credit", "debit"];
+    const PAID_STATUSES = ["confirmed", "paid", "received"];
+
+    const notify = (o: any, title: string) => {
+      const newItem: OrderNotification = {
+        id: o.id,
+        customer_name: o.customer_name ?? null,
+        total_amount: Number(o.total_amount ?? 0),
+        created_at: o.created_at ?? new Date().toISOString(),
+        read: false,
+      };
+
+      let isNew = true;
+      setNotifications((prev) => {
+        if (prev.some((n) => n.id === newItem.id)) {
+          isNew = false;
+          return prev;
+        }
+        return [newItem, ...prev].slice(0, MAX_STORED);
+      });
+      if (!isNew) return;
+
+      if (!mutedRef.current) playSelected(soundRef.current);
+      setRinging(true);
+      setTimeout(() => setRinging(false), 2500);
+
+      toast.success(title, {
+        description: `${newItem.customer_name ?? "Cliente"} — R$ ${newItem.total_amount?.toFixed(2)}`,
+        action: {
+          label: "Ver",
+          onClick: () => navigate("/546498@18/orders"),
+        },
+      });
+    };
+
     const channel = supabase
       .channel("admin-orders-notify")
+      // Pedidos com pagamento na entrega já valem como venda no momento da criação
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "orders" },
         (payload) => {
           const o: any = payload.new;
-          const newItem: OrderNotification = {
-            id: o.id,
-            customer_name: o.customer_name ?? null,
-            total_amount: Number(o.total_amount ?? 0),
-            created_at: o.created_at ?? new Date().toISOString(),
-            read: false,
-          };
-
-          setNotifications((prev) => {
-            if (prev.some((n) => n.id === newItem.id)) return prev;
-            return [newItem, ...prev].slice(0, MAX_STORED);
-          });
-
-          if (!mutedRef.current) playSelected(soundRef.current);
-          setRinging(true);
-          setTimeout(() => setRinging(false), 2500);
-
-          toast.success("Novo pedido recebido!", {
-            description: `${newItem.customer_name ?? "Cliente"} — R$ ${newItem.total_amount?.toFixed(2)}`,
-            action: {
-              label: "Ver",
-              onClick: () => navigate("/546498@18/orders"),
-            },
-          });
+          if (ONLINE_METHODS.includes(o?.payment_method)) return;
+          notify(o, "Novo pedido recebido!");
+        },
+      )
+      // Pedidos online só alertam quando o pagamento é realmente aprovado
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "orders" },
+        (payload) => {
+          const o: any = payload.new;
+          const old: any = payload.old;
+          if (!PAID_STATUSES.includes(o?.status)) return;
+          if (PAID_STATUSES.includes(old?.status)) return;
+          notify(o, "Pagamento aprovado!");
         },
       )
       .subscribe();
@@ -160,6 +186,7 @@ export function OrderNotificationBell() {
       supabase.removeChannel(channel);
     };
   }, [navigate]);
+
 
 
   const unreadCount = notifications.filter((n) => !n.read).length;

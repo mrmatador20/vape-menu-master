@@ -93,7 +93,43 @@ serve(async (req) => {
         null,
         { event: event.event, payment_id: payment.id },
       );
+
+      // Notifica a equipe SOMENTE após a confirmação real do pagamento
+      if (newStatus === 'confirmed') {
+        const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+        const baseUrl = Deno.env.get('SUPABASE_URL');
+        const { data: paidOrder } = await supabase
+          .from('orders')
+          .select('total_amount')
+          .eq('id', orderId)
+          .maybeSingle();
+
+        try {
+          await fetch(`${baseUrl}/functions/v1/send-order-notification`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${serviceKey}` },
+            body: JSON.stringify({
+              title: 'Pagamento aprovado!',
+              body: `Pedido de R$ ${Number(paidOrder?.total_amount ?? 0).toFixed(2)} pago e pronto para separação.`,
+              url: '/546498@18/orders',
+            }),
+          });
+        } catch (e) {
+          console.error('[Asaas Webhook] push notification failed:', e);
+        }
+
+        try {
+          await fetch(`${baseUrl}/functions/v1/notify-order-telegram`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${serviceKey}` },
+            body: JSON.stringify({ orderId }),
+          });
+        } catch (e) {
+          console.error('[Asaas Webhook] telegram notification failed:', e);
+        }
+      }
     }
+
 
     return new Response(JSON.stringify({ ok: true }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

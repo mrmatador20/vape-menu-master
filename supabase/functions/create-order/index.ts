@@ -604,39 +604,43 @@ serve(async (req) => {
       }
     }
 
-    // Dispara notificação push (alta prioridade) para a equipe administrativa
-    try {
-      const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
-      await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/send-order-notification`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${serviceKey}`,
-        },
-        body: JSON.stringify({
-          title: 'Novo pedido recebido!',
-          body: `Pedido de R$ ${Number(finalAmount).toFixed(2)} aguardando atendimento.`,
-          url: '/546498@18/orders',
-        }),
-      });
-    } catch (notifyError) {
-      console.error('[create-order] push notification failed:', notifyError);
+    // Notificações da equipe: SOMENTE para pedidos que já nascem válidos
+    // (pagamento na entrega). Pedidos online só notificam após o webhook
+    // confirmar o pagamento (ver asaas-webhook).
+    if (!onlinePayment) {
+      try {
+        const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+        await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/send-order-notification`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${serviceKey}`,
+          },
+          body: JSON.stringify({
+            title: 'Novo pedido recebido!',
+            body: `Pedido de R$ ${Number(finalAmount).toFixed(2)} aguardando atendimento.`,
+            url: '/546498@18/orders',
+          }),
+        });
+      } catch (notifyError) {
+        console.error('[create-order] push notification failed:', notifyError);
+      }
+
+      try {
+        const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+        await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/notify-order-telegram`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${serviceKey}`,
+          },
+          body: JSON.stringify({ orderId: order.id }),
+        });
+      } catch (telegramError) {
+        console.error('[create-order] telegram notification failed:', telegramError);
+      }
     }
 
-    // Notificação de venda no Telegram (credenciais em system_secrets)
-    try {
-      const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
-      await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/notify-order-telegram`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${serviceKey}`,
-        },
-        body: JSON.stringify({ orderId: order.id }),
-      });
-    } catch (telegramError) {
-      console.error('[create-order] telegram notification failed:', telegramError);
-    }
 
     // Return the validated items with names for WhatsApp message
     console.log('[create-order] Order created successfully:', order.id);
