@@ -11,6 +11,35 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
 const brl = (v: unknown) =>
   `R$ ${Number(v ?? 0).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
+const sep = "━━━━━━━━━━━━━━━━━━━";
+
+export const DEFAULT_TELEGRAM_TEMPLATE =
+  `🛍️ <b>NOVA VENDA REALIZADA! - FOX VELOUR</b>\n` +
+  `${sep}\n` +
+  `🆔 <b>Pedido:</b> <code>{order_id}</code>\n\n` +
+  `👤 <b>DADOS DO CLIENTE</b>\n` +
+  `• <b>Nome:</b> {cliente_nome}\n` +
+  `• <b>E-mail:</b> {cliente_email}\n` +
+  `• <b>Telefone:</b> {cliente_telefone}\n\n` +
+  `📍 <b>ENDEREÇO DE ENTREGA</b>\n` +
+  `{endereco_completo}\n\n` +
+  `📦 <b>ITENS DO PEDIDO</b>\n` +
+  `{itens}\n\n` +
+  `💵 <b>RESUMO FINANCEIRO</b>\n` +
+  `• <b>Subtotal:</b> {subtotal}\n` +
+  `• <b>Frete:</b> {frete}\n` +
+  `• <b>Desconto:</b> -{desconto}\n` +
+  `• 💰 <b>TOTAL PAGO:</b> <b>{total}</b>\n\n` +
+  `💳 <b>PAGAMENTO</b>\n` +
+  `• <b>Método:</b> {metodo_pagamento}\n` +
+  `• 🚚 <b>Status:</b> {status_pedido}\n` +
+  `${sep}`;
+
+const renderTemplate = (template: string, values: Record<string, string>) =>
+  template.replace(/\{(\w+)\}/g, (full, key: string) =>
+    Object.prototype.hasOwnProperty.call(values, key) ? values[key] : full,
+  );
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -22,15 +51,17 @@ Deno.serve(async (req) => {
     // Autorização: chamada interna (service role) OU admin autenticado
     const token = (req.headers.get("Authorization") ?? "").replace("Bearer ", "").trim();
     let authorized = !!token && token === SERVICE_ROLE_KEY;
+    let isAdminCaller = false;
 
     if (!authorized && token) {
       const { data: userData } = await admin.auth.getUser(token);
       const uid = userData?.user?.id;
       if (uid) {
         const { data: roles } = await admin.from("user_roles").select("role").eq("user_id", uid);
-        authorized = (roles ?? []).some((r: { role: string }) =>
+        isAdminCaller = (roles ?? []).some((r: { role: string }) =>
           ["admin", "super_admin"].includes(r.role)
         );
+        authorized = isAdminCaller;
       }
     }
 
@@ -48,7 +79,7 @@ Deno.serve(async (req) => {
     const { data: secrets, error: secretsError } = await admin
       .from("system_secrets")
       .select("key, value")
-      .in("key", ["telegram_bot_token", "telegram_chat_id"]);
+      .in("key", ["telegram_bot_token", "telegram_chat_id", "telegram_message_template"]);
 
     if (secretsError) {
       console.error("[notify-order-telegram] secrets error:", secretsError.message);
@@ -61,6 +92,13 @@ Deno.serve(async (req) => {
     const map = Object.fromEntries((secrets ?? []).map((s: any) => [s.key, s.value]));
     const botToken = (map.telegram_bot_token ?? "").trim();
     const chatId = (map.telegram_chat_id ?? "").trim();
+    const savedTemplate = (map.telegram_message_template ?? "").trim();
+
+    // Admin pode testar com um template ainda não salvo
+    const overrideTemplate =
+      isAdminCaller && typeof body?.template === "string" ? String(body.template).trim() : "";
+
+    const template = overrideTemplate || savedTemplate || DEFAULT_TELEGRAM_TEMPLATE;
 
     if (!botToken || !chatId) {
       return new Response(
@@ -69,17 +107,32 @@ Deno.serve(async (req) => {
       );
     }
 
-    let text: string;
+    let values: Record<string, string>;
+    let prefix = "";
 
     if (isTest) {
-      text =
-        `🧪 <b>Teste de notificação</b>\n\n` +
-        `🛒 <b>Nova venda confirmada</b>\n` +
-        `Pedido: <code>TESTE-0001</code>\n` +
-        `Cliente: Cliente Fictício\n` +
-        `Pagamento: PIX\n` +
-        `Total: <b>${brl(199.9)}</b>\n\n` +
-        `Se você recebeu esta mensagem, a integração está funcionando. ✅`;
+      prefix = `🧪 <b>Teste de notificação</b>\n\n`;
+      values = {
+        order_id: "#TESTE001",
+        cliente_nome: "Cliente Fictício",
+        cliente_email: "cliente@exemplo.com",
+        cliente_telefone: "(83) 99999-0000",
+        endereco_completo:
+          `• <b>Rua/Av:</b> Rua das Flores, Nº 123 - Apto 45\n` +
+          `• <b>Bairro:</b> Centro\n` +
+          `• <b>Cidade/UF:</b> João Pessoa/PB\n` +
+          `• <b>CEP:</b> 58000-000`,
+        itens:
+          `• <b>2x</b> Camiseta Fox Velour\n` +
+          `  └ 🎨 <b>Cor:</b> Preto | 📐 <b>Tamanho:</b> M\n` +
+          `  └ 💰 <b>Valor un.:</b> ${brl(89.9)}`,
+        subtotal: brl(179.8),
+        frete: `${brl(20.1)} (Entrega)`,
+        desconto: brl(0),
+        total: brl(199.9),
+        metodo_pagamento: "PIX",
+        status_pedido: "Confirmado",
+      };
     } else {
       const orderId: string | undefined = body?.orderId ?? body?.order?.id;
 
@@ -105,7 +158,6 @@ Deno.serve(async (req) => {
         });
       }
 
-      // Itens do pedido + produtos
       const { data: items } = await admin
         .from("order_items")
         .select("quantity, price, flavor, product_id, products(name)")
@@ -190,36 +242,30 @@ Deno.serve(async (req) => {
       const dataHora = new Date(order.created_at ?? Date.now()).toLocaleString("pt-BR", {
         timeZone: "America/Sao_Paulo",
       });
-      const sep = "━━━━━━━━━━━━━━━━━━━";
       const complemento = order.address_complement ? `- ${order.address_complement}` : "";
 
-      text =
-        `🛍️ <b>NOVA VENDA REALIZADA! - FOX VELOUR</b>\n` +
-        `${sep}\n` +
-        `🆔 <b>Pedido:</b> <code>#${String(order.id).slice(0, 8).toUpperCase()}</code>\n` +
-        `📅 <b>Data:</b> ${dataHora}\n\n` +
-        `👤 <b>DADOS DO CLIENTE</b>\n` +
-        `• <b>Nome:</b> ${order.customer_name ?? "N/A"}\n` +
-        `• <b>E-mail:</b> ${customerEmail}\n` +
-        `• <b>Telefone:</b> ${order.customer_phone ?? profilePhone ?? "N/A"}\n\n` +
-        `📍 <b>ENDEREÇO DE ENTREGA</b>\n` +
-        `• <b>Rua/Av:</b> ${order.address_street ?? "N/A"}, Nº ${order.address_number ?? "S/N"} ${complemento}\n` +
-        `• <b>Bairro:</b> ${order.address_neighborhood ?? "N/A"}\n` +
-        `• <b>Cidade/UF:</b> ${order.address_city ?? "N/A"}${order.address_state ? "/" + order.address_state : ""}\n` +
-        `• <b>CEP:</b> ${order.cep ?? "N/A"}\n\n` +
-        `📦 <b>ITENS DO PEDIDO</b>\n` +
-        `${itemLines.length ? itemLines.join("\n") : "• Nenhum item registrado"}\n\n` +
-        `💵 <b>RESUMO FINANCEIRO</b>\n` +
-        `• <b>Subtotal:</b> ${brl(subtotal)}\n` +
-        `• <b>Frete:</b> ${brl(shipping)} (${shipping > 0 ? "Entrega" : "Grátis"})\n` +
-        `• <b>Desconto:</b> -${brl(discount)}\n` +
-        `• 💰 <b>TOTAL PAGO:</b> <b>${brl(total)}</b>\n\n` +
-        `💳 <b>PAGAMENTO</b>\n` +
-        `• <b>Método:</b> ${paymentLabels[order.payment_method] ?? order.payment_method ?? "N/A"}\n` +
-        `• 🚚 <b>Status:</b> ${statusLabels[order.status] ?? order.status ?? "N/A"}\n` +
-        `${sep}`;
+      values = {
+        order_id: `#${String(order.id).slice(0, 8).toUpperCase()}`,
+        data_pedido: dataHora,
+        cliente_nome: order.customer_name ?? "N/A",
+        cliente_email: customerEmail,
+        cliente_telefone: order.customer_phone ?? profilePhone ?? "N/A",
+        endereco_completo:
+          `• <b>Rua/Av:</b> ${order.address_street ?? "N/A"}, Nº ${order.address_number ?? "S/N"} ${complemento}\n` +
+          `• <b>Bairro:</b> ${order.address_neighborhood ?? "N/A"}\n` +
+          `• <b>Cidade/UF:</b> ${order.address_city ?? "N/A"}${order.address_state ? "/" + order.address_state : ""}\n` +
+          `• <b>CEP:</b> ${order.cep ?? "N/A"}`,
+        itens: itemLines.length ? itemLines.join("\n") : "• Nenhum item registrado",
+        subtotal: brl(subtotal),
+        frete: `${brl(shipping)} (${shipping > 0 ? "Entrega" : "Grátis"})`,
+        desconto: brl(discount),
+        total: brl(total),
+        metodo_pagamento: paymentLabels[order.payment_method] ?? order.payment_method ?? "N/A",
+        status_pedido: statusLabels[order.status] ?? order.status ?? "N/A",
+      };
     }
 
+    const text = prefix + renderTemplate(template, values);
 
     const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
       method: "POST",
@@ -240,6 +286,8 @@ Deno.serve(async (req) => {
         hint = "O bot não pode iniciar a conversa. Abra o chat com o bot e envie /start antes de testar.";
       } else if (/unauthorized/i.test(description)) {
         hint = "Token do bot inválido. Gere um novo token no @BotFather e salve novamente.";
+      } else if (/can't parse entities/i.test(description)) {
+        hint = "O modelo de mensagem tem HTML inválido. Use apenas tags <b>, <i>, <code> e <a>.";
       }
       return new Response(
         JSON.stringify({
@@ -249,7 +297,6 @@ Deno.serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
-
 
     return new Response(JSON.stringify({ success: true, message_id: result?.result?.message_id }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
