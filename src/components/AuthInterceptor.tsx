@@ -35,19 +35,23 @@ export const AuthInterceptor = ({ children }: AuthInterceptorProps) => {
   useEffect(() => {
     let isMounted = true;
 
+    // Rotas públicas não precisam de nenhuma verificação bloqueante.
+    if (isPublicRoute) {
+      setGlobalAuthState((prev) => prev);
+      setInterceptorState('authenticated');
+    }
+
     const checkAuthentication = async () => {
       if (isCheckingRef.current) return;
       
       isCheckingRef.current = true;
-      console.log('🛡️ AuthInterceptor: Checking session for route:', location.pathname);
 
       try {
-        // Check if user has a session
+        // Sessão local (sem round-trip de rede)
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
         // If no session and trying to access protected route, redirect to login
         if ((sessionError || !session) && !isPublicRoute) {
-          console.log('🛡️ AuthInterceptor: No session found, redirecting to login');
           if (isMounted) {
             navigate('/auth');
           }
@@ -56,7 +60,6 @@ export const AuthInterceptor = ({ children }: AuthInterceptorProps) => {
 
         // If no session and on public route, allow access
         if (!session && isPublicRoute) {
-          console.log('🛡️ AuthInterceptor: No session, public route, allowing access');
           if (isMounted) {
             setGlobalAuthState('IDLE');
             setInterceptorState('authenticated');
@@ -65,16 +68,13 @@ export const AuthInterceptor = ({ children }: AuthInterceptorProps) => {
         }
 
         // Session exists - always derive 2FA verification from server-side state
-        // (AAL level or trusted device). NEVER trust sessionStorage as a gate, since
-        // it can be set via DevTools to bypass 2FA enforcement.
+        // (AAL level or trusted device). NEVER trust sessionStorage as a gate.
         let verified2FA = false;
         try {
-          const { data: { user } } = await supabase.auth.getUser();
-          if (user) {
-            // Server-derived: AAL2 (persists across F5 via JWT) OR trusted device
-            const status = await getMfaStatus(user.id);
+          const userId = session?.user?.id;
+          if (userId) {
+            const status = await getMfaStatus(userId);
             verified2FA = status.satisfied;
-            console.log('🛡️ AuthInterceptor: 2FA state', status);
           }
         } catch (e) {
           console.error('🛡️ AuthInterceptor: Error checking 2FA state:', e);
@@ -82,7 +82,6 @@ export const AuthInterceptor = ({ children }: AuthInterceptorProps) => {
         }
 
         if (!verified2FA && !isPublicRoute) {
-          console.log('🛡️ AuthInterceptor: Session exists but 2FA not verified, redirecting to login');
           if (isMounted) {
             const { secureSignOut } = await import('@/lib/secureLogout');
             await secureSignOut();
@@ -92,7 +91,6 @@ export const AuthInterceptor = ({ children }: AuthInterceptorProps) => {
         }
 
         // All checks passed
-        console.log('🛡️ AuthInterceptor: Session valid and verified, allowing access');
         if (isMounted) {
           setGlobalAuthState('AUTHENTICATED');
           setInterceptorState('authenticated');
@@ -116,6 +114,7 @@ export const AuthInterceptor = ({ children }: AuthInterceptorProps) => {
       isMounted = false;
     };
   }, [location.pathname, isPublicRoute, navigate, setGlobalAuthState]);
+
   
   // Reset verification when user explicitly navigates to auth page
   useEffect(() => {
