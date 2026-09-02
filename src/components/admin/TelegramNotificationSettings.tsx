@@ -36,6 +36,19 @@ export default function TelegramNotificationSettings() {
     })();
   }, []);
 
+  const persist = async () => {
+    const { error } = await (supabase as any)
+      .from('system_secrets')
+      .upsert(
+        [
+          { key: TOKEN_KEY, value: botToken.trim(), description: 'Token do bot do Telegram' },
+          { key: CHAT_KEY, value: chatId.trim(), description: 'ID do chat do Telegram' },
+        ],
+        { onConflict: 'key' },
+      );
+    if (error) throw error;
+  };
+
   const handleSave = async () => {
     if (!botToken.trim() || !chatId.trim()) {
       toast.error('Informe o token do bot e o ID do chat.');
@@ -43,16 +56,7 @@ export default function TelegramNotificationSettings() {
     }
     setSaving(true);
     try {
-      const { error } = await (supabase as any)
-        .from('system_secrets')
-        .upsert(
-          [
-            { key: TOKEN_KEY, value: botToken.trim(), description: 'Token do bot do Telegram' },
-            { key: CHAT_KEY, value: chatId.trim(), description: 'ID do chat do Telegram' },
-          ],
-          { onConflict: 'key' },
-        );
-      if (error) throw error;
+      await persist();
       toast.success('Configurações do Telegram salvas com segurança!');
     } catch (e: any) {
       toast.error('Erro ao salvar: ' + (e?.message ?? 'desconhecido'));
@@ -62,8 +66,15 @@ export default function TelegramNotificationSettings() {
   };
 
   const handleTest = async () => {
+    if (!botToken.trim() || !chatId.trim()) {
+      toast.error('Informe o token do bot e o ID do chat antes de testar.');
+      return;
+    }
     setTesting(true);
     try {
+      // Garante que as credenciais atuais estejam salvas antes do teste
+      await persist();
+
       const { data, error } = await supabase.functions.invoke('notify-order-telegram', {
         body: { test: true },
       });
@@ -76,6 +87,7 @@ export default function TelegramNotificationSettings() {
       setTesting(false);
     }
   };
+
 
   if (loading) {
     return (
