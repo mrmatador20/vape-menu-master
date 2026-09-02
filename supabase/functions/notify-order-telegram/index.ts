@@ -81,17 +81,22 @@ Deno.serve(async (req) => {
         `Total: <b>${brl(199.9)}</b>\n\n` +
         `Se você recebeu esta mensagem, a integração está funcionando. ✅`;
     } else {
-      const orderId: string | undefined = body?.orderId;
-      let order: any = body?.order ?? null;
+      const orderId: string | undefined = body?.orderId ?? body?.order?.id;
 
-      if (!order && orderId) {
-        const { data } = await admin
-          .from("orders")
-          .select("id, total_amount, payment_method, status, customer_name, address_city, address_state, created_at")
-          .eq("id", orderId)
-          .maybeSingle();
-        order = data;
+      if (!orderId) {
+        return new Response(JSON.stringify({ error: "Pedido não encontrado" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
       }
+
+      const { data: order } = await admin
+        .from("orders")
+        .select(
+          "id, user_id, total_amount, shipping_cost, payment_method, status, customer_name, customer_phone, address_street, address_number, address_complement, address_neighborhood, address_city, address_state, cep, created_at",
+        )
+        .eq("id", orderId)
+        .maybeSingle();
 
       if (!order) {
         return new Response(JSON.stringify({ error: "Pedido não encontrado" }), {
@@ -100,14 +105,121 @@ Deno.serve(async (req) => {
         });
       }
 
+      // Itens do pedido + produtos
+      const { data: items } = await admin
+        .from("order_items")
+        .select("quantity, price, flavor, product_id, products(name)")
+        .eq("order_id", orderId);
+
+      const productIds = [...new Set((items ?? []).map((i: any) => i.product_id).filter(Boolean))];
+      let flavors: any[] = [];
+      if (productIds.length > 0) {
+        const { data } = await admin
+          .from("flavors")
+          .select("product_id, name, color, size")
+          .in("product_id", productIds);
+        flavors = data ?? [];
+      }
+
+      // E-mail do cliente
+      let customerEmail = "N/A";
+      if (order.user_id) {
+        const { data: userRes } = await admin.auth.admin.getUserById(order.user_id);
+        customerEmail = userRes?.user?.email ?? "N/A";
+      }
+
+      // Perfil (telefone alternativo)
+      let profilePhone: string | null = null;
+      if (order.user_id) {
+        const { data: profile } = await admin
+          .from("profiles")
+          .select("phone, full_name")
+          .eq("id", order.user_id)
+          .maybeSingle();
+        profilePhone = profile?.phone ?? null;
+        if (!order.customer_name && profile?.full_name) order.customer_name = profile.full_name;
+      }
+
+      const paymentLabels: Record<string, string> = {
+        pix: "PIX",
+        credit: "Cartão de Crédito",
+        debit: "Cartão de Débito",
+        dinheiro: "Dinheiro na entrega",
+        balcao: "Balcão (PDV)",
+        pix_balcao: "PIX Balcão",
+      };
+      const statusLabels: Record<string, string> = {
+        pending_payment: "Aguardando pagamento",
+        pending: "Pendente",
+        confirmed: "Confirmado",
+        preparing: "Em preparação",
+        delivering: "Saiu para entrega",
+        delivered: "Entregue",
+        cancelled: "Cancelado",
+      };
+
+      const subtotal = (items ?? []).reduce(
+        (sum: number, i: any) => sum + Number(i.price ?? 0) * Number(i.quantity ?? 0),
+        0,
+      );
+      const shipping = Number(order.shipping_cost ?? 0);
+      const total = Number(order.total_amount ?? 0);
+      const discount = Math.max(0, subtotal + shipping - total);
+
+      const itemLines = (items ?? []).map((i: any) => {
+        const name = i.products?.name ?? "Produto";
+        const variant = (i.flavor ?? "").trim();
+        const match = flavors.find(
+          (f) =>
+            f.product_id === i.product_id &&
+            (f.name === variant ||
+              [f.color, f.size].filter(Boolean).join(" ") === variant ||
+              [f.name, f.size].filter(Boolean).join(" ") === variant),
+        );
+        const cor = match?.color ?? (variant || null);
+        const tamanho = match?.size ?? null;
+
+        let line = `• <b>${i.quantity}x</b> ${name}\n`;
+        if (cor || tamanho) {
+          line += `  └ 🎨 <b>Cor:</b> ${cor ?? "N/A"} | 📐 <b>Tamanho:</b> ${tamanho ?? "N/A"}\n`;
+        }
+        line += `  └ 💰 <b>Valor un.:</b> ${brl(i.price)}`;
+        return line;
+      });
+
+      const dataHora = new Date(order.created_at ?? Date.now()).toLocaleString("pt-BR", {
+        timeZone: "America/Sao_Paulo",
+      });
+      const sep = "━━━━━━━━━━━━━━━━━━━";
+      const complemento = order.address_complement ? `- ${order.address_complement}` : "";
+
       text =
-        `🛒 <b>Nova venda confirmada</b>\n\n` +
-        `Pedido: <code>${String(order.id).slice(0, 8).toUpperCase()}</code>\n` +
-        (order.customer_name ? `Cliente: ${order.customer_name}\n` : "") +
-        `Pagamento: ${order.payment_method ?? "-"}\n` +
-        (order.address_city ? `Local: ${order.address_city}${order.address_state ? "/" + order.address_state : ""}\n` : "") +
-        `Total: <b>${brl(order.total_amount)}</b>`;
+        `🛍️ <b>NOVA VENDA REALIZADA! - FOX VELOUR</b>\n` +
+        `${sep}\n` +
+        `🆔 <b>Pedido:</b> <code>#${String(order.id).slice(0, 8).toUpperCase()}</code>\n` +
+        `📅 <b>Data:</b> ${dataHora}\n\n` +
+        `👤 <b>DADOS DO CLIENTE</b>\n` +
+        `• <b>Nome:</b> ${order.customer_name ?? "N/A"}\n` +
+        `• <b>E-mail:</b> ${customerEmail}\n` +
+        `• <b>Telefone:</b> ${order.customer_phone ?? profilePhone ?? "N/A"}\n\n` +
+        `📍 <b>ENDEREÇO DE ENTREGA</b>\n` +
+        `• <b>Rua/Av:</b> ${order.address_street ?? "N/A"}, Nº ${order.address_number ?? "S/N"} ${complemento}\n` +
+        `• <b>Bairro:</b> ${order.address_neighborhood ?? "N/A"}\n` +
+        `• <b>Cidade/UF:</b> ${order.address_city ?? "N/A"}${order.address_state ? "/" + order.address_state : ""}\n` +
+        `• <b>CEP:</b> ${order.cep ?? "N/A"}\n\n` +
+        `📦 <b>ITENS DO PEDIDO</b>\n` +
+        `${itemLines.length ? itemLines.join("\n") : "• Nenhum item registrado"}\n\n` +
+        `💵 <b>RESUMO FINANCEIRO</b>\n` +
+        `• <b>Subtotal:</b> ${brl(subtotal)}\n` +
+        `• <b>Frete:</b> ${brl(shipping)} (${shipping > 0 ? "Entrega" : "Grátis"})\n` +
+        `• <b>Desconto:</b> -${brl(discount)}\n` +
+        `• 💰 <b>TOTAL PAGO:</b> <b>${brl(total)}</b>\n\n` +
+        `💳 <b>PAGAMENTO</b>\n` +
+        `• <b>Método:</b> ${paymentLabels[order.payment_method] ?? order.payment_method ?? "N/A"}\n` +
+        `• 🚚 <b>Status:</b> ${statusLabels[order.status] ?? order.status ?? "N/A"}\n` +
+        `${sep}`;
     }
+
 
     const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
       method: "POST",
