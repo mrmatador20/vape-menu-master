@@ -30,7 +30,9 @@ export const mapRefusal = (raw?: string | null): { code: RefusalCode; message: s
 
   let code: RefusalCode = 'generic';
 
-  if (has('insufficient', 'saldo', 'limite', 'sem limite', 'insuficiente', 'not enough')) {
+  if (has('não pode ser menor que', 'nao pode ser menor que', 'valor mínimo', 'valor minimo', 'minimum value')) {
+    code = 'min_value';
+  } else if (has('insufficient', 'saldo', 'limite', 'sem limite', 'insuficiente', 'not enough')) {
     code = 'insufficient_funds';
   } else if (has('expired', 'vencid', 'expirad', 'invalid expiration', 'validade')) {
     code = 'expired_card';
