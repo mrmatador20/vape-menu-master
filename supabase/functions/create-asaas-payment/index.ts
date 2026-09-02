@@ -363,18 +363,23 @@ serve(async (req) => {
         ? errJson.errors.map((e: any) => `${e?.code || ''} ${e?.description || ''}`.trim())
         : [];
       const raw = [errJson?.refusalReason, ...rawList].filter(Boolean).join(' | ');
-      console.error('[Asaas] Payment error status:', paymentRes.status, 'code:', errJson?.errors?.[0]?.code);
+      console.error('[Asaas] Payment error status:', paymentRes.status, 'code:', errJson?.errors?.[0]?.code, 'desc:', errJson?.errors?.[0]?.description);
 
       const mapped = mapRefusal(raw);
-      await logOrderEvent(supabase, orderId, 'payment_refused', mapped.message, raw, {
+      // Para PIX (sem cartão) usamos a descrição do Asaas quando a mensagem genérica não se aplica
+      const message = (!isCard && mapped.code === 'generic')
+        ? (rawList[0]?.replace(/^invalid_object\s*/i, '').trim() || 'Não foi possível gerar a cobrança PIX. Tente novamente.')
+        : mapped.message;
+      await logOrderEvent(supabase, orderId, 'payment_refused', message, raw, {
         http_status: paymentRes.status,
         reason_code: mapped.code,
       });
 
       return new Response(
-        JSON.stringify({ error: mapped.message, reasonCode: mapped.code, refusalReason: raw || null }),
+        JSON.stringify({ error: message, reasonCode: mapped.code, refusalReason: raw || null }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
+
     }
     const payment = await paymentRes.json();
     safeLog('[Asaas] Payment created', { id: payment.id, status: payment.status });
