@@ -115,13 +115,8 @@ export const AuthInterceptor = ({ children }: AuthInterceptorProps) => {
     };
   }, [location.pathname, isPublicRoute, navigate, setGlobalAuthState]);
 
-  
-  // Reset verification when user explicitly navigates to auth page
-  useEffect(() => {
-    if (location.pathname === '/auth') {
-      setInterceptorState('checking');
-    }
-  }, [location.pathname]);
+
+
 
   // Show loading state while checking
   if (interceptorState === 'checking') {
