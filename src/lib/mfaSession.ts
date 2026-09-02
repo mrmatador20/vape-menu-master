@@ -64,6 +64,7 @@ export const hasMfaSessionFlag = (userId: string): boolean => {
 /** Remove a flag de sessão 2FA (somente no logout explícito). */
 export const clearMfaSession = () => {
   try {
+    invalidateMfaStatusCache();
     localStorage.removeItem(MFA_SESSION_KEY);
     sessionStorage.removeItem('2fa_verified');
     sessionStorage.removeItem('admin_2fa_verified');
