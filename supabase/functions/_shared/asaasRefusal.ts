@@ -4,6 +4,7 @@ export type RefusalCode =
   | 'invalid_card_data'
   | 'expired_card'
   | 'security_block'
+  | 'min_value'
   | 'generic';
 
 const MESSAGES: Record<RefusalCode, string> = {
@@ -15,9 +16,12 @@ const MESSAGES: Record<RefusalCode, string> = {
     'O cartão informado está vencido. Por favor, utilize outro cartão.',
   security_block:
     'Transação não autorizada. Entre em contato com seu banco ou tente outro cartão.',
+  min_value:
+    'O valor mínimo para pagamento online é de R$ 5,00. Adicione mais itens ao carrinho para concluir a compra.',
   generic:
     'Não foi possível processar o pagamento com este cartão. Tente novamente ou utilize outro cartão.',
 };
+
 
 export const mapRefusal = (raw?: string | null): { code: RefusalCode; message: string } => {
   const t = String(raw || '').toLowerCase();
@@ -26,7 +30,9 @@ export const mapRefusal = (raw?: string | null): { code: RefusalCode; message: s
 
   let code: RefusalCode = 'generic';
 
-  if (has('insufficient', 'saldo', 'limite', 'sem limite', 'insuficiente', 'not enough')) {
+  if (has('não pode ser menor que', 'nao pode ser menor que', 'valor mínimo', 'valor minimo', 'minimum value')) {
+    code = 'min_value';
+  } else if (has('insufficient', 'saldo', 'limite', 'sem limite', 'insuficiente', 'not enough')) {
     code = 'insufficient_funds';
   } else if (has('expired', 'vencid', 'expirad', 'invalid expiration', 'validade')) {
     code = 'expired_card';
